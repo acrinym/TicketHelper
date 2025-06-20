@@ -98,37 +98,70 @@
 
         /* Main Panel for the entire App (sidebar + main content) */
         #mainAppPanel {
-            position: fixed; /* Keep it fixed to the viewport */
-            bottom: 6px; /* A small gap from the bottom of the viewport */
-            right: 6px; /* A small gap from the right of the viewport */
-            z-index: 999998; /* Below the floating icon */
-            width: calc(100vw - 12px); /* Full width minus side gaps */
-            height: calc(100vh - 12px); /* Full height minus top/bottom gaps */
-            max-width: 900px; /* Max width for readability */
-            max-height: 600px; /* Max height */
+            position: fixed;
+            /* CHANGE: Expand to almost full viewport */
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            width: calc(100vw - 20px);
+            height: calc(100vh - 20px);
+            max-width: none; /* REMOVED CONSTRAINT */
+            max-height: none; /* REMOVED CONSTRAINT */
+            
             background: var(--hermes-bg);
             border-radius: 16px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             border: 2px solid var(--hermes-border);
-            overflow: hidden; /* Ensure content doesn't spill */
-            display: flex; /* Flexbox for sidebar and main content */
-            flex-direction: column; /* Main panel should be column to stack tabs on top of workspace */
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
             transition: all 0.3s ease-out;
-            transform: scale(0.95); /* Slightly scale down when hidden */
+            transform: scale(0.95);
             opacity: 0;
-            pointer-events: none; /* Disable interaction when hidden */
+            pointer-events: none;
         }
         #mainAppPanel.open {
             transform: scale(1);
             opacity: 1;
-            pointer-events: auto; /* Enable interaction when open */
+            pointer-events: auto;
         }
+
+        /* NEW: Close button style for the top right */
+        #closeAppBtn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000; /* Ensure it's above other content */
+            background: var(--hermes-error-text);
+            color: white;
+            border-radius: 50%;
+            width: 32px; /* Small circle */
+            height: 32px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid var(--hermes-border); /* Match app border */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: all 0.2s ease;
+        }
+        #closeAppBtn:hover {
+            background: #e04444;
+            transform: scale(1.1);
+        }
+        #closeAppBtn:active {
+            transform: scale(0.9);
+        }
+
 
         /* Top tab bar */
         #tabBar {
             display: flex;
             border-bottom: 1px solid var(--hermes-panel-border);
-            flex-shrink: 0; /* Prevent tab bar from shrinking */
+            flex-shrink: 0;
         }
         .tab-button {
             flex: 1;
@@ -149,9 +182,9 @@
 
         /* Workspaces (Notes and Code) */
         #notesWorkspace, #codeWorkspace {
-            flex: 1; /* Both workspaces take remaining vertical space */
-            display: flex; /* They are also flex containers for their internal layout (sidebar + editor) */
-            min-height: 0; /* Crucial for nested flex containers to allow scrolling children */
+            flex: 1;
+            display: flex;
+            min-height: 0;
         }
 
         /* Code Workspace specific styles */
@@ -161,50 +194,50 @@
             color: var(--hermes-panel-text);
             border-right: 1px solid var(--hermes-panel-border);
             padding: 10px;
-            overflow-y: auto; /* Enable vertical scrolling */
+            overflow-y: auto;
             flex-shrink: 0;
-            min-height: 0; /* Important for flex item with overflow */
+            min-height: 0;
         }
         #codeEditorContainer {
             flex: 1;
-            min-height: 0; /* Important for flex items within a column to shrink and allow scrolling */
+            min-height: 0;
         }
 
         /* Media query for smaller screens */
         @media (max-width: 768px) {
             #mainAppPanel {
-                flex-direction: column; /* Stack sidebar and main content vertically */
+                flex-direction: column;
                 width: calc(100vw - 20px);
                 height: calc(100vh - 20px);
-                max-width: none; /* No max width for small screens */
-                max-height: none; /* No max height for small screens */
+                max-width: none;
+                max-height: none;
                 bottom: 10px;
                 right: 10px;
-                left: 10px; /* Center horizontally */
+                left: 10px;
                 top: 10px;
             }
             #sidebar {
                 width: 100%;
-                max-height: 40%; /* Allow sidebar to take some vertical space */
+                max-height: 40%;
                 border-right: none;
                 border-bottom: 1px solid var(--hermes-panel-border);
             }
             #mainContentArea {
-                flex: 1; /* Main content takes remaining space */
+                flex: 1;
             }
         }
 
 
         /* Sidebar Styling (from NextNote) */
         #sidebar {
-            width: 280px; /* Wider sidebar for better readability */
+            width: 280px;
             background: var(--hermes-panel-bg);
             color: var(--hermes-panel-text);
-            overflow-y: auto; /* Enable vertical scrolling */
+            overflow-y: auto;
             border-right: 1px solid var(--hermes-panel-border);
             padding: 15px;
-            flex-shrink: 0; /* Prevent sidebar from shrinking */
-            min-height: 0; /* Important for flex item with overflow */
+            flex-shrink: 0;
+            min-height: 0;
         }
         #sidebar h3 {
             font-size: 1.2em;
@@ -233,12 +266,12 @@
         }
 
         /* Section and Page Styling (from NextNote) */
-        .section-container { /* Renamed from .section to avoid conflict */
+        .section-container {
             margin-bottom: 10px;
             border: 1px solid var(--hermes-panel-border);
             border-radius: 8px;
             overflow: hidden;
-            background: var(--hermes-card); /* Lighter background for sections */
+            background: var(--hermes-card);
         }
         .section-header {
             display: flex;
@@ -246,27 +279,27 @@
             align-items: center;
             background: var(--hermes-accent-bar-bg);
             padding: 8px 10px;
-            cursor: grab; /* Indicates draggable */
+            cursor: grab;
             font-weight: bold;
             color: var(--hermes-text);
             border-bottom: 1px solid var(--hermes-panel-border);
-            gap: 5px; /* Added: Gap between elements in the header */
+            gap: 5px;
         }
         .section-header span {
             flex-grow: 1;
-            cursor: pointer; /* For toggling pages */
-            white-space: nowrap; /* Added: Prevent text wrapping */
-            overflow: hidden; /* Added: Hide overflow text */
-            text-overflow: ellipsis; /* Added: Add ellipsis for hidden text */
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        .pages-container { /* Renamed from .pages */
-            margin: 0; /* Remove default margin */
-            padding: 5px 0 5px 15px; /* Indent pages */
+        .pages-container {
+            margin: 0;
+            padding: 5px 0 5px 15px;
             min-height: 20px;
-            background: var(--hermes-input-bg); /* Use input bg for pages area */
+            background: var(--hermes-input-bg);
             border-top: 1px solid var(--hermes-panel-border);
         }
-        .page-title-item { /* Renamed from .page-title */
+        .page-title-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -277,45 +310,45 @@
             padding: 5px 8px;
             cursor: pointer;
             transition: background 0.15s ease;
-            gap: 5px; /* Added: Gap between elements in the page item */
+            gap: 5px;
         }
         .page-title-item:hover {
-            background: var(--hermes-button-hover-bg); /* Subtle hover */
+            background: var(--hermes-button-hover-bg);
         }
         .page-title-item.selected {
-            background: var(--hermes-highlight-bg); /* Highlight selected page */
+            background: var(--hermes-highlight-bg);
             color: var(--hermes-highlight-text);
             border-color: var(--hermes-highlight-bg);
         }
         .page-title-item.selected .page-name-span,
         .page-title-item.selected .lock-icon,
-        .page-title-item.selected .editable-page-title-input { /* Ensure input text also changes color */
+        .page-title-item.selected .editable-page-title-input {
             color: var(--hermes-highlight-text);
         }
-        .page-title-item span.page-name-span { /* Specific span for page name to target text color */
-            flex: 1; /* Allow the name to take available space */
+        .page-title-item span.page-name-span {
+            flex: 1;
             padding: 3px 0;
             color: var(--hermes-text);
-            white-space: nowrap; /* Added: Prevent text wrapping */
-            overflow: hidden; /* Added: Hide overflow text */
-            text-overflow: ellipsis; /* Added: Add ellipsis for hidden text */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         /* Styles for the editable page title input */
         .editable-page-title-input {
-            flex: 1; /* Allow input to take available space */
-            background: transparent; /* Make background blend with parent */
-            border: 1px solid transparent; /* Transparent border by default */
+            flex: 1;
+            background: transparent;
+            border: 1px solid transparent;
             border-radius: 4px;
-            padding: 3px 5px; /* Match the padding of the span */
-            margin: 0; /* Remove default margin */
-            outline: none; /* Remove default outline */
-            font-size: 1em; /* Ensure font size is consistent */
-            box-sizing: border-box; /* Include padding and border in element's total width and height */
+            padding: 3px 5px;
+            margin: 0;
+            outline: none;
+            font-size: 1em;
+            box-sizing: border-box;
         }
         .editable-page-title-input:focus {
-            border: 1px solid var(--hermes-accent); /* Highlight on focus */
-            background: var(--hermes-bg2); /* Slightly darker background on edit */
+            border: 1px solid var(--hermes-accent);
+            background: var(--hermes-bg2);
         }
 
 
@@ -327,16 +360,16 @@
         /* Combined styles for the small action buttons within list items */
         .delete-icon-btn,
         .hermes-btn.lock-toggle-btn {
-            padding: 4px 8px; /* Smaller padding */
-            font-size: 0.8em; /* Smaller font size for text/icons */
-            min-width: 40px; /* Ensure a minimum width */
-            flex-shrink: 0; /* Prevent these buttons from shrinking */
-            box-shadow: none; /* Remove shadow for these small buttons */
-            transform: none; /* Remove transform on hover for these small buttons */
+            padding: 4px 8px;
+            font-size: 0.8em;
+            min-width: 40px;
+            flex-shrink: 0;
+            box-shadow: none;
+            transform: none;
         }
         .delete-icon-btn:hover,
         .hermes-btn.lock-toggle-btn:hover {
-            transform: scale(1.0); /* Remove scale on hover for these small buttons */
+            transform: scale(1.0);
         }
 
         /* Specific style for small delete icons (trash can) */
@@ -345,13 +378,13 @@
             border: none;
             color: var(--hermes-error-text);
             cursor: pointer;
-            padding: 0 5px; /* Smaller padding for true icon-only button */
-            font-size: 1.2em; /* Bigger icon but not button padding */
+            padding: 0 5px;
+            font-size: 1.2em;
             line-height: 1;
             transition: color 0.2s ease;
-            width: 28px; /* Fixed width for consistency */
-            height: 28px; /* Fixed height for consistency */
-            display: flex; /* Use flex to center icon */
+            width: 28px;
+            height: 28px;
+            display: flex;
             justify-content: center;
             align-items: center;
         }
@@ -364,23 +397,23 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            min-height: 0; /* Crucial for nested flex containers to allow scrolling children */
+            min-height: 0;
         }
         #toolbar {
             padding: 10px;
             background: var(--hermes-panel-bg);
             border-bottom: 1px solid var(--hermes-panel-border);
             display: flex;
-            gap: 10px; /* Increased gap for better spacing */
+            gap: 10px;
             align-items: center;
             flex-wrap: wrap;
-            flex-shrink: 0; /* Prevent toolbar from shrinking */
+            flex-shrink: 0;
         }
         #toolbar span {
             font-weight: bold;
             color: var(--hermes-primary);
         }
-        #toolbar .theme-select-container { /* Encapsulate theme select */
+        #toolbar .theme-select-container {
             margin-left: auto;
         }
         #toolbar select {
@@ -391,13 +424,13 @@
             border-radius: 6px;
             cursor: pointer;
         }
-        #editorArea { /* Container for Quill and Preview */
+        #editorArea {
             flex: 1;
             display: flex;
             flex-direction: column;
-            overflow: hidden; /* Prevent overflow issues */
-            padding: 10px; /* Padding around the editor/preview */
-            min-height: 0; /* Crucial for flex item */
+            overflow: hidden;
+            padding: 10px;
+            min-height: 0;
         }
         #quillEditorContainer {
             flex: 1;
@@ -405,25 +438,25 @@
             color: var(--hermes-input-text);
             border: 1px solid var(--hermes-input-border);
             border-radius: 8px;
-            overflow: hidden; /* Contains Quill's own overflow */
-            display: flex; /* Flex container for Quill's toolbar and editor */
+            overflow: hidden;
+            display: flex;
             flex-direction: column;
-            margin-bottom: 10px; /* Space between editor and preview if both visible */
-            min-height: 0; /* Crucial for flex item */
+            margin-bottom: 10px;
+            min-height: 0;
         }
         #quillEditorContainer .ql-toolbar {
-            border: none; /* Removed Quill's default border for toolbar */
+            border: none;
             background: var(--hermes-accent-bar-bg);
-            border-bottom: 1px solid var(--hermes-panel-border); /* Add our border */
+            border-bottom: 1px solid var(--hermes-panel-border);
             padding: 8px 10px;
-            flex-shrink: 0; /* Prevent Quill toolbar from shrinking */
+            flex-shrink: 0;
         }
         #quillEditorContainer .ql-container {
-            flex: 1; /* Quill content fills remaining space */
-            overflow-y: auto; /* Make Quill editor content scrollable */
+            flex: 1;
+            overflow-y: auto;
             border: none;
-            padding: 10px; /* Padding inside the editor content area */
-            color: var(--hermes-input-text); /* Ensure text color is applied */
+            padding: 10px;
+            color: var(--hermes-input-text);
         }
         #preview {
             flex: 1;
@@ -431,10 +464,10 @@
             color: var(--hermes-input-text);
             border: 1px solid var(--hermes-input-border);
             border-radius: 8px;
-            overflow: auto; /* Make preview content scrollable */
+            overflow: auto;
             padding: 15px;
             line-height: 1.6;
-            min-height: 0; /* Crucial for flex item */
+            min-height: 0;
         }
         /* Style for rendered markdown elements in preview */
         #preview h1, #preview h2, #preview h3, #preview h4, #preview h5, #preview h6 { color: var(--hermes-primary); margin-top: 1em; margin-bottom: 0.5em; }
@@ -459,7 +492,7 @@
             align-items: center;
             justify-content: center;
             z-index: 9999999;
-            transition: opacity 0.3s ease; /* Fade effect for modal */
+            transition: opacity 0.3s ease;
             opacity: 0;
             pointer-events: none;
         }
@@ -467,7 +500,7 @@
             opacity: 1;
             pointer-events: auto;
         }
-        #customModal > div { /* The modal content box */
+        #customModal > div {
             background: var(--hermes-card);
             color: var(--hermes-text);
             padding: 24px;
@@ -507,66 +540,66 @@
             gap: 12px;
         }
 
-        /* NEW: Styles for the file list items in code sidebar */
+        /* Styles for the file list items in code sidebar */
         .file-list-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 4px; /* Adjust spacing */
-            gap: 5px; /* Spacing between button and delete icon */
+            margin-bottom: 4px;
+            gap: 5px;
         }
         .file-list-item button.file-name-button {
-            flex-grow: 1; /* Allow the file name button to take available space */
-            text-align: left; /* Align text left */
-            white-space: nowrap; /* Prevent text wrapping */
-            overflow: hidden; /* Hide overflow text */
-            text-overflow: ellipsis; /* Add ellipsis */
-            padding: 5px 8px; /* Consistent padding with other list items */
-            font-size: 0.9em; /* Slightly smaller font for file names */
-            box-shadow: none; /* No shadow for small list buttons */
-            transform: none; /* No transform on hover */
-            background: var(--hermes-input-bg); /* Match input background */
-            color: var(--hermes-input-text); /* Match input text color */
-            border: 1px solid var(--hermes-input-border); /* Match input border */
+            flex-grow: 1;
+            text-align: left;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding: 5px 8px;
+            font-size: 0.9em;
+            box-shadow: none;
+            transform: none;
+            background: var(--hermes-input-bg);
+            color: var(--hermes-input-text);
+            border: 1px solid var(--hermes-input-border);
         }
         .file-list-item button.file-name-button:hover {
-            background: var(--hermes-button-hover-bg); /* Hover effect */
+            background: var(--hermes-button-hover-bg);
         }
         .file-list-item .delete-file-btn {
-            padding: 4px 8px; /* Smaller padding */
-            font-size: 0.8em; /* Smaller font size for text */
-            min-width: 30px; /* Ensure a minimum width */
-            flex-shrink: 0; /* Prevent from shrinking */
-            margin-left: 5px; /* Space from file name */
-            box-shadow: none; /* No shadow for small buttons */
-            transform: none; /* No transform on hover */
+            padding: 4px 8px;
+            font-size: 0.8em;
+            min-width: 30px;
+            flex-shrink: 0;
+            margin-left: 5px;
+            box-shadow: none;
+            transform: none;
         }
         .file-list-item .delete-file-btn:hover {
-            transform: scale(1.0); /* No scale on hover */
+            transform: scale(1.0);
         }
 
         /* Override Quill's default toolbar styling to fit themes */
         .ql-toolbar.ql-snow {
-            border: none; /* Remove Quill's default border */
-            background: var(--hermes-accent-bar-bg); /* Use theme's accent bar background */
-            border-bottom: 1px solid var(--hermes-panel-border); /* Add our border */
-            padding: 8px 10px; /* Match toolbar padding */
+            border: none;
+            background: var(--hermes-accent-bar-bg);
+            border-bottom: 1px solid var(--hermes-panel-border);
+            padding: 8px 10px;
         }
         .ql-container.ql-snow {
-            border: none; /* Remove Quill's default container border */
+            border: none;
         }
         /* Adjust Quill icons/buttons for theme colors */
         .ql-snow .ql-stroke {
-            stroke: var(--hermes-text); /* Icon color */
+            stroke: var(--hermes-text);
         }
         .ql-snow .ql-fill {
-            fill: var(--hermes-text); /* Icon color */
+            fill: var(--hermes-text);
         }
         .ql-snow .ql-picker {
-            color: var(--hermes-text); /* Dropdown text color */
+            color: var(--hermes-text);
         }
         .ql-snow .ql-picker-label {
-            color: var(--hermes-text); /* Dropdown label text color */
+            color: var(--hermes-text);
         }
         .ql-snow .ql-picker.ql-expanded .ql-picker-label {
             background: var(--hermes-button-hover-bg);
@@ -584,7 +617,7 @@
             fill: var(--hermes-highlight-text);
         }
         .ql-snow .ql-active {
-            background: var(--hermes-highlight-bg); /* Active button background */
+            background: var(--hermes-highlight-bg);
             border-radius: 4px;
         }
 
@@ -601,6 +634,8 @@
         />
 
         <div id="mainAppPanel" class="hidden flex flex-col">
+            <div id="closeAppBtn">X</div>
+
             <div id="tabBar">
                 <div id="notesTab" class="tab-button active">Notes</div>
                 <div id="codeTab" class="tab-button">Code</div>
@@ -665,7 +700,7 @@
         // ==UserScript==
         // @name        Ultimate Note Overlay – Hermes Edition
         // @namespace   http://tampermonkey.net/
-        // @version     1.2 // Updated version to reflect changes
+        // @version     1.3 // Updated version to reflect changes
         // @description A floating, full-featured note-taking app with Hermes themes, Quill editor, and Markdown support.
         // @author      Justin & Gemini
         // @match       *://*/*
@@ -765,6 +800,7 @@
             const rootHost = document.getElementById('rootHost');
             const hermesFloatIcon = document.getElementById('hermesFloatIcon');
             const mainAppPanel = document.getElementById('mainAppPanel');
+            const closeAppBtn = document.getElementById('closeAppBtn'); // NEW
             const sidebar = document.getElementById('sidebar');
             const sectionsContainer = document.getElementById('sectionsContainer');
             const newSectionInput = document.getElementById('newSectionInput');
@@ -1476,6 +1512,20 @@
                     }
                 };
 
+                // NEW: Close button click handler
+                closeAppBtn.onclick = () => {
+                    if (mainAppPanel.classList.contains('open')) {
+                        // Save current state before closing
+                        if (!notesWorkspace.classList.contains('hidden') && currentSectionName !== null && currentPageIndex !== null) {
+                            saveCurrentPageContent();
+                        } else if (!codeWorkspace.classList.contains('hidden') && currentFileName) {
+                            saveCurrentFileContent();
+                        }
+                        mainAppPanel.classList.remove('open');
+                        mainAppPanel.classList.add('hidden');
+                    }
+                };
+
                 addSectionBtn.onclick = () => {
                     showModal(
                         "New Section Name",
@@ -1547,10 +1597,11 @@
                 // Refined Click outside handlers
                 document.addEventListener('mousedown', (e) => {
                     // Check if the click is outside the main app panel AND the floating icon
-                    // And not inside a modal
+                    // And not inside a modal, and not on the close button itself
                     if (mainAppPanel.classList.contains('open') &&
                         !mainAppPanel.contains(e.target) &&
                         !hermesFloatIcon.contains(e.target) &&
+                        !closeAppBtn.contains(e.target) && // NEW: Ignore clicks on the close button
                         customModal.classList.contains('hidden')) // Only close if modal is not open
                     {
                         mainAppPanel.classList.remove('open');
