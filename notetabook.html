@@ -1003,7 +1003,8 @@
                 const md = sections[currentSectionName][currentPageIndex].markdown;
                 const blob = new Blob([md], { type: "text/markdown" });
                 const a = document.createElement("a");
-                a.href = URL.createObjectURL(blob);
+                const url = URL.createObjectURL(blob);
+                a.href = url;
                 a.download = sections[currentSectionName][currentPageIndex].name.replace(/\s+/g, "_") + ".md";
                 document.body.appendChild(a); // Append to body to make it clickable in all browsers
                 a.click();
@@ -1220,22 +1221,27 @@
                 });
                 themeSelect.value = currentTheme; // Set initial selected theme
 
-                // Initialize Quill Editor
-                quill = new Quill('#quillEditorContainer', {
-                    theme: 'snow',
-                    modules: {
-                        toolbar: [
-                            [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-                            ['bold', 'italic', 'underline', 'strike'],
-                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                            [{ 'align': [] }],
-                            [{ 'color': [] }, { 'background': [] }],
-                            ['link'], // Image handled by custom button
-                            ['clean']
-                        ]
-                    }
-                });
-                quill.enable(false); // Start with Quill disabled until a page is loaded
+                // Initialize Quill Editor if available
+                if (typeof Quill !== 'undefined') {
+                    quill = new Quill('#quillEditorContainer', {
+                        theme: 'snow',
+                        modules: {
+                            toolbar: [
+                                [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                                ['bold', 'italic', 'underline', 'strike'],
+                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                [{ 'align': [] }],
+                                [{ 'color': [] }, { 'background': [] }],
+                                ['link'], // Image handled by custom button
+                                ['clean']
+                            ]
+                        }
+                    });
+                    quill.enable(false); // Start with Quill disabled until a page is loaded
+                } else {
+                    console.error('Quill failed to load. Editor disabled.');
+                }
+
 
                 // Attach general event listeners
                 attachGlobalEventListeners();
