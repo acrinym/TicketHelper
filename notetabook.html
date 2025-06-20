@@ -112,6 +112,7 @@
             border: 2px solid var(--hermes-border);
             overflow: hidden; /* Ensure content doesn't spill */
             display: flex; /* Flexbox for sidebar and main content */
+            flex-direction: column; /* Main panel should be column to stack tabs on top of workspace */
             transition: all 0.3s ease-out;
             transform: scale(0.95); /* Slightly scale down when hidden */
             opacity: 0;
@@ -127,6 +128,7 @@
         #tabBar {
             display: flex;
             border-bottom: 1px solid var(--hermes-panel-border);
+            flex-shrink: 0; /* Prevent tab bar from shrinking */
         }
         .tab-button {
             flex: 1;
@@ -146,10 +148,10 @@
         }
 
         /* Code Workspace specific styles */
-        #codeWorkspace {
-            flex: 1;
-            display: flex;
-            height: 100%;
+        #codeWorkspace, #notesWorkspace {
+            flex: 1; /* Both workspaces take remaining vertical space */
+            display: flex; /* They are also flex containers for their internal layout (sidebar + editor) */
+            min-height: 0; /* Crucial for nested flex containers to allow scrolling children */
         }
         #codeSidebar {
             width: 200px;
@@ -157,13 +159,15 @@
             color: var(--hermes-panel-text);
             border-right: 1px solid var(--hermes-panel-border);
             padding: 10px;
-            overflow-y: auto;
+            overflow-y: auto; /* Enable vertical scrolling */
+            flex-shrink: 0;
+            min-height: 0; /* Important for flex item with overflow */
         }
         #codeEditorContainer {
             flex: 1;
             /* Monaco Editor requires its container to have a defined height,
                which `flex: 1` here should provide within a flex column parent */
-            min-height: 0; /* Important for flex items within a column to shrink */
+            min-height: 0; /* Important for flex items within a column to shrink and allow scrolling */
         }
 
         /* Media query for smaller screens */
@@ -196,10 +200,11 @@
             width: 280px; /* Wider sidebar for better readability */
             background: var(--hermes-panel-bg);
             color: var(--hermes-panel-text);
-            overflow-y: auto;
+            overflow-y: auto; /* Enable vertical scrolling */
             border-right: 1px solid var(--hermes-panel-border);
             padding: 15px;
             flex-shrink: 0; /* Prevent sidebar from shrinking */
+            min-height: 0; /* Important for flex item with overflow */
         }
         #sidebar h3 {
             font-size: 1.2em;
@@ -245,10 +250,14 @@
             font-weight: bold;
             color: var(--hermes-text);
             border-bottom: 1px solid var(--hermes-panel-border);
+            gap: 5px; /* Added: Gap between elements in the header */
         }
         .section-header span {
             flex-grow: 1;
             cursor: pointer; /* For toggling pages */
+            white-space: nowrap; /* Added: Prevent text wrapping */
+            overflow: hidden; /* Added: Hide overflow text */
+            text-overflow: ellipsis; /* Added: Add ellipsis for hidden text */
         }
         .pages-container { /* Renamed from .pages */
             margin: 0; /* Remove default margin */
@@ -268,6 +277,7 @@
             padding: 5px 8px;
             cursor: pointer;
             transition: background 0.15s ease;
+            gap: 5px; /* Added: Gap between elements in the page item */
         }
         .page-title-item:hover {
             background: var(--hermes-button-hover-bg); /* Subtle hover */
@@ -278,28 +288,64 @@
             border-color: var(--hermes-highlight-bg);
         }
         .page-title-item.selected .page-name-span,
-        .page-title-item.selected .lock-icon {
+        .page-title-item.selected .lock-icon,
+        .page-title-item.selected .editable-page-title-input { /* Ensure input text also changes color */
             color: var(--hermes-highlight-text);
         }
         .page-title-item span.page-name-span { /* Specific span for page name to target text color */
-            flex: 1;
+            flex: 1; /* Allow the name to take available space */
             padding: 3px 0;
             color: var(--hermes-text);
+            white-space: nowrap; /* Added: Prevent text wrapping */
+            overflow: hidden; /* Added: Hide overflow text */
+            text-overflow: ellipsis; /* Added: Add ellipsis for hidden text */
         }
+
+        /* NEW: Styles for the editable page title input */
+        .editable-page-title-input {
+            flex: 1; /* Allow input to take available space */
+            background: transparent; /* Make background blend with parent */
+            border: 1px solid transparent; /* Transparent border by default */
+            border-radius: 4px;
+            padding: 3px 5px; /* Match the padding of the span */
+            margin: 0; /* Remove default margin */
+            outline: none; /* Remove default outline */
+            font-size: 1em; /* Ensure font size is consistent */
+            box-sizing: border-box; /* Include padding and border in element's total width and height */
+        }
+        .editable-page-title-input:focus {
+            border: 1px solid var(--hermes-accent); /* Highlight on focus */
+            background: var(--hermes-bg2); /* Slightly darker background on edit */
+        }
+
+
         .lock-icon {
             color: var(--hermes-lock);
             margin-left: 5px;
             font-size: 0.9em;
         }
-        .delete-icon-btn { /* Specific style for small delete icons */
+        .delete-icon-btn,
+        .hermes-btn.lock-toggle-btn { /* Target both types of buttons within the page item */
+            padding: 4px 8px; /* Smaller padding */
+            font-size: 0.8em; /* Smaller font size for icons/text */
+            min-width: 40px; /* Ensure a minimum width for the button */
+            flex-shrink: 0; /* Prevent these buttons from shrinking */
+        }
+        /* Specific style for small delete icons */
+        .delete-icon-btn {
             background: none;
             border: none;
             color: var(--hermes-error-text);
             cursor: pointer;
-            padding: 0 5px;
-            font-size: 1.2em; /* Bigger icon */
+            padding: 0 5px; /* Smaller padding for true icon-only button */
+            font-size: 1.2em; /* Bigger icon but not button padding */
             line-height: 1;
             transition: color 0.2s ease;
+            width: 28px; /* Fixed width for consistency */
+            height: 28px; /* Fixed height for consistency */
+            display: flex; /* Use flex to center icon */
+            justify-content: center;
+            align-items: center;
         }
         .delete-icon-btn:hover {
             color: #d00;
@@ -310,6 +356,7 @@
             flex: 1;
             display: flex;
             flex-direction: column;
+            min-height: 0; /* Crucial for nested flex containers to allow scrolling children */
         }
         #toolbar {
             padding: 10px;
@@ -319,6 +366,7 @@
             gap: 10px; /* Increased gap for better spacing */
             align-items: center;
             flex-wrap: wrap;
+            flex-shrink: 0; /* Prevent toolbar from shrinking */
         }
         #toolbar span {
             font-weight: bold;
@@ -341,6 +389,7 @@
             flex-direction: column;
             overflow: hidden; /* Prevent overflow issues */
             padding: 10px; /* Padding around the editor/preview */
+            min-height: 0; /* Crucial for flex item */
         }
         #quillEditorContainer {
             flex: 1;
@@ -352,16 +401,18 @@
             display: flex; /* Flex container for Quill's toolbar and editor */
             flex-direction: column;
             margin-bottom: 10px; /* Space between editor and preview if both visible */
+            min-height: 0; /* Crucial for flex item */
         }
         #quillEditorContainer .ql-toolbar {
             border: none; /* Removed Quill's default border for toolbar */
             background: var(--hermes-accent-bar-bg);
             border-bottom: 1px solid var(--hermes-panel-border); /* Add our border */
             padding: 8px 10px;
+            flex-shrink: 0; /* Prevent Quill toolbar from shrinking */
         }
         #quillEditorContainer .ql-container {
             flex: 1; /* Quill content fills remaining space */
-            overflow-y: auto;
+            overflow-y: auto; /* Make Quill editor content scrollable */
             border: none;
             padding: 10px; /* Padding inside the editor content area */
             color: var(--hermes-input-text); /* Ensure text color is applied */
@@ -372,9 +423,10 @@
             color: var(--hermes-input-text);
             border: 1px solid var(--hermes-input-border);
             border-radius: 8px;
-            overflow: auto;
+            overflow: auto; /* Make preview content scrollable */
             padding: 15px;
             line-height: 1.6;
+            min-height: 0; /* Crucial for flex item */
         }
         /* Style for rendered markdown elements in preview */
         #preview h1, #preview h2, #preview h3, #preview h4, #preview h5, #preview h6 { color: var(--hermes-primary); margin-top: 1em; margin-bottom: 0.5em; }
@@ -523,7 +575,7 @@
         // ==UserScript==
         // @name        Ultimate Note Overlay – Hermes Edition
         // @namespace   http://tampermonkey.net/
-        // @version     1.0
+        // @version     1.1 // Updated version to reflect changes
         // @description A floating, full-featured note-taking app with Hermes themes, Quill editor, and Markdown support.
         // @author      Justin & Gemini
         // @match       *://*/*
@@ -639,7 +691,7 @@
             const quillEditorContainer = document.getElementById('quillEditorContainer');
             const preview = document.getElementById('preview');
 
-            // Code workspace elements (deduplicated)
+            // Code workspace elements
             const notesTab = document.getElementById('notesTab');
             const codeTab = document.getElementById('codeTab');
             const notesWorkspace = document.getElementById('notesWorkspace');
@@ -745,14 +797,14 @@
                     header.className = "section-header";
                     header.innerHTML = `
                         <span class="section-name-span">${secName}</span>
-                        <button class="hermes-btn delete delete-section-btn">🗑️</button>
+                        <button class="hermes-btn delete delete-icon-btn">🗑️</button>
                     `;
                     secDiv.appendChild(header);
 
                     const sectionNameSpan = header.querySelector('.section-name-span');
                     sectionNameSpan.onclick = () => togglePagesVisibility(secDiv);
 
-                    const deleteSectionBtn = header.querySelector('.delete-section-btn');
+                    const deleteSectionBtn = header.querySelector('.delete-icon-btn'); // Adjusted selector
                     deleteSectionBtn.onclick = (e) => {
                         e.stopPropagation(); // Prevent toggling pages
                         showModal(
@@ -783,16 +835,81 @@
                         pgDiv.dataset.pageIndex = idx; // Store index for reordering
                         pgDiv.dataset.sectionName = secName; // Store section name for loadPage
 
-                        pgDiv.innerHTML = `
-                            <span class="page-name-span">${p.name}</span>
-                            ${p.locked ? '<span class="lock-icon">🔒</span>' : ''}
-                            <button class="hermes-btn delete delete-page-btn" data-sec-name="${secName}" data-page-idx="${idx}">🗑️</button>
-                            <button class="hermes-btn lock-toggle-btn" data-sec-name="${secName}" data-page-idx="${idx}">${p.locked ? 'Unlock' : 'Lock'}</button>
-                        `;
+                        const pageNameSpan = document.createElement("span");
+                        pageNameSpan.className = "page-name-span";
+                        pageNameSpan.textContent = p.name;
+                        pageNameSpan.title = p.name; // Add title for tooltip on hover if text is truncated
+
+                        const pageNameInput = document.createElement("input");
+                        pageNameInput.type = "text";
+                        pageNameInput.className = "editable-page-title-input hidden"; // Hidden by default
+                        pageNameInput.value = p.name;
+                        pageNameInput.spellcheck = false; // Disable spellcheck for filenames/titles
+
+                        const lockIconSpan = document.createElement("span");
+                        lockIconSpan.className = "lock-icon";
+                        lockIconSpan.innerHTML = "🔒";
+                        if (!p.locked) lockIconSpan.classList.add('hidden'); // Hide if not locked
+
+                        const deletePageBtn = document.createElement("button");
+                        deletePageBtn.className = "hermes-btn delete delete-icon-btn";
+                        deletePageBtn.innerHTML = "🗑️";
+                        deletePageBtn.dataset.secName = secName;
+                        deletePageBtn.dataset.pageIdx = idx;
+
+                        const lockToggleBtn = document.createElement("button");
+                        lockToggleBtn.className = "hermes-btn lock-toggle-btn";
+                        lockToggleBtn.textContent = p.locked ? 'Unlock' : 'Lock';
+                        lockToggleBtn.dataset.secName = secName;
+                        lockToggleBtn.dataset.pageIdx = idx;
+
+
+                        pgDiv.appendChild(pageNameSpan);
+                        pgDiv.appendChild(pageNameInput); // Add input to the div
+                        pgDiv.appendChild(lockIconSpan);
+                        pgDiv.appendChild(deletePageBtn);
+                        pgDiv.appendChild(lockToggleBtn);
+
                         pageList.appendChild(pgDiv);
 
-                        pgDiv.querySelector('.page-name-span').onclick = () => loadPage(secName, idx);
-                        pgDiv.querySelector('.delete-page-btn').onclick = (e) => {
+                        // Event Listeners for the new editable title
+                        pageNameSpan.ondblclick = () => { // Double-click to edit
+                            if (!sections[secName][idx].locked) { // Only allow editing if not locked
+                                pageNameSpan.classList.add('hidden');
+                                pageNameInput.classList.remove('hidden');
+                                pageNameInput.focus();
+                            } else {
+                                showModal('Locked Page', 'This page is locked and its title cannot be edited. Unlock it first.');
+                            }
+                        };
+
+                        pageNameInput.onblur = () => { // Save on blur
+                            const oldName = sections[secName][idx].name;
+                            const newName = pageNameInput.value.trim();
+                            if (newName && newName !== oldName) {
+                                sections[secName][idx].name = newName;
+                                // If this is the current page, update the main title too
+                                if (currentSectionName === secName && currentPageIndex === idx) {
+                                    currentPageNameSpan.textContent = `${secName} > ${newName} ${sections[secName][idx].locked ? '🔒' : ''}`;
+                                }
+                                saveSections();
+                                renderSectionsAndPages(); // Re-render to update the list, ensuring correct sorting/display
+                            } else {
+                                pageNameInput.value = oldName; // Revert if empty or unchanged
+                                pageNameInput.classList.add('hidden');
+                                pageNameSpan.classList.remove('hidden');
+                            }
+                        };
+                        pageNameInput.onkeypress = (e) => {
+                            if (e.key === 'Enter') {
+                                pageNameInput.blur(); // Trigger blur to save
+                            }
+                        };
+
+
+                        // EXISTING EVENT LISTENERS FOR LOAD, DELETE, LOCK/UNLOCK (adjust the selector for loadPage)
+                        pageNameSpan.onclick = () => loadPage(secName, idx); // Now only the span loads the page
+                        deletePageBtn.onclick = (e) => {
                             e.stopPropagation(); // Prevent loading page
                             const targetSecName = e.target.dataset.secName;
                             const targetPageIdx = parseInt(e.target.dataset.pageIdx);
@@ -813,7 +930,7 @@
                                 hideModal
                             );
                         };
-                        pgDiv.querySelector('.lock-toggle-btn').onclick = (e) => {
+                        lockToggleBtn.onclick = (e) => {
                             e.stopPropagation(); // Prevent loading page
                             const targetSecName = e.target.dataset.secName;
                             const targetPageIdx = parseInt(e.target.dataset.pageIdx);
@@ -825,6 +942,8 @@
                             if (currentSectionName === targetSecName && currentPageIndex === targetPageIdx) {
                                 quill.enable(!page.locked); // Enable/disable quill
                                 currentPageNameSpan.textContent = `${targetSecName} > ${page.name} ${page.locked ? '🔒' : ''}`;
+                                // Update the lock/unlock button text on the detail view
+                                // No direct button on main content, it's on the sidebar list item, handled by re-render
                             }
                         };
                     });
@@ -866,9 +985,15 @@
                     onEnd: (evt) => {
                         // Reorder sections object based on new DOM order
                         const newSectionsOrder = {};
+                        // Create a new ordered object from the DOM elements
                         evt.to.querySelectorAll('.section-container').forEach(secDiv => {
                             const secName = secDiv.dataset.sectionName;
-                            newSectionsOrder[secName] = sections[secName]; // Keep existing content
+                            // Ensure the pages within this section are also correctly ordered based on the DOM
+                            const reorderedPages = Array.from(secDiv.querySelector('.pages-container').children).map(pageDiv => {
+                                const pageIdx = parseInt(pageDiv.dataset.pageIndex);
+                                return sections[secName][pageIdx]; // Get the original page object by its stored index
+                            });
+                            newSectionsOrder[secName] = reorderedPages;
                         });
                         sections = newSectionsOrder;
                         saveSections();
@@ -911,9 +1036,11 @@
                 // Remove 'selected' class from all pages
                 document.querySelectorAll('.page-title-item.selected').forEach(el => el.classList.remove('selected'));
                 // Add 'selected' class to the clicked page
-                const selectedPgDiv = sectionsContainer.querySelector(`[data-section-name="${secName}"] .pages-container div:nth-child(${pageIdx + 1})`);
-                if (selectedPgDiv) {
-                    selectedPgDiv.classList.add('selected');
+                // We use querySelectorAll here and then iterate because the direct nth-child selector might be brittle
+                // if sortableJS reorders things in a way that affects static CSS selection
+                const allPagesInSec = sectionsContainer.querySelectorAll(`[data-section-name="${secName}"] .page-title-item`);
+                if (allPagesInSec.length > pageIdx && allPagesInSec[pageIdx]) {
+                    allPagesInSec[pageIdx].classList.add('selected');
                 }
 
                 const htmlContent = marked.parse(page.markdown || "");
@@ -937,7 +1064,7 @@
                 document.querySelectorAll('.page-title-item.selected').forEach(el => el.classList.remove('selected'));
                 quillEditorContainer.classList.add('hidden'); // Hide Quill
                 preview.classList.remove('hidden'); // Show generic preview message
-                preview.innerHTML = "<p>Select a page or create a new one to start writing.</p>";
+                preview.innerHTML = "<p style='text-align: center; padding-top: 50px;'>Select a page or create a new one to start writing.</p>";
             }
 
             // --- Editor/Preview Functions ---
@@ -955,7 +1082,7 @@
                     const raw = sections[currentSectionName][currentPageIndex].markdown || "";
                     preview.innerHTML = marked.parse(raw);
                 } else {
-                    preview.innerHTML = "<p>Select a page to see its preview.</p>";
+                    preview.innerHTML = "<p style='text-align: center; padding-top: 50px;'>Select a page to see its preview.</p>";
                 }
             }
 
@@ -1042,7 +1169,7 @@
                 fr.readAsText(file);
             }
 
-            // --- Code Workspace Functions (deduplicated) ---
+            // --- Code Workspace Functions ---
             function saveCurrentFileContent() {
                 if (currentFileName && monacoEditor) {
                     codeFiles[currentFileName].content = monacoEditor.getValue();
@@ -1052,26 +1179,87 @@
 
             function renderFileList() {
                 fileList.innerHTML = '';
+                // Ensure SortableJS for fileList is destroyed before re-creating
+                if (fileList._sortable) {
+                    fileList._sortable.destroy();
+                }
+
                 Object.keys(codeFiles).forEach(name => {
                     const li = document.createElement('li');
+                    li.className = 'file-list-item'; // Add class for styling
+                    li.dataset.fileName = name; // Store filename for SortableJS
+
                     const btn = document.createElement('button');
                     btn.textContent = name;
-                    btn.className = 'hermes-btn w-full text-left';
+                    btn.className = 'hermes-btn file-name-button'; // Adjusted class for styling
                     btn.onclick = () => openFile(name);
+
+                    const deleteFileBtn = document.createElement('button');
+                    deleteFileBtn.textContent = '🗑️'; // Use trash icon
+                    deleteFileBtn.className = 'hermes-btn delete delete-file-btn';
+                    deleteFileBtn.title = `Delete ${name}`;
+                    deleteFileBtn.onclick = (e) => {
+                        e.stopPropagation(); // Prevent opening file when clicking delete
+                        showModal(
+                            'Delete File',
+                            `Are you sure you want to delete the file "${name}"?`,
+                            true, // showConfirm
+                            () => {
+                                delete codeFiles[name];
+                                GM_setValue('ultimate-note-code-files', codeFiles);
+                                renderFileList(); // Re-render the list
+                                if (currentFileName === name) { // If the current file was deleted, clear editor
+                                    monacoEditor?.setValue('');
+                                    monaco.editor.setModelLanguage(monacoEditor?.getModel(), 'plaintext');
+                                    currentFileName = null;
+                                    // Also update initial message in editor if no files left
+                                    if (Object.keys(codeFiles).length === 0) {
+                                        codeEditorContainer.innerHTML = '<p style="text-align: center; padding-top: 50px;">Select a file or add a new one to start coding.</p>';
+                                    }
+                                }
+                                hideModal();
+                            },
+                            hideModal
+                        );
+                    };
+
                     li.appendChild(btn);
+                    li.appendChild(deleteFileBtn); // Add the delete button
                     fileList.appendChild(li);
                 });
+
+                // Initialize SortableJS for fileList
+                const fileSortable = Sortable.create(fileList, {
+                    animation: 150,
+                    handle: ".file-name-button", // Allow dragging by the file name button
+                    onEnd: (evt) => {
+                        // Reorder codeFiles object based on new DOM order
+                        const newCodeFilesOrder = {};
+                        evt.to.querySelectorAll('.file-list-item').forEach(li => {
+                            const fileName = li.dataset.fileName;
+                            newCodeFilesOrder[fileName] = codeFiles[fileName]; // Keep existing content
+                        });
+                        codeFiles = newCodeFilesOrder;
+                        GM_setValue('ultimate-note-code-files', codeFiles); // Save the new order
+                    }
+                });
+                fileList._sortable = fileSortable; // Store for destruction
             }
 
             function getLanguageFromFilename(fname) {
                 const ext = fname.split('.').pop();
-                const map = { js: 'javascript', py: 'python', html: 'html', css: 'css' }; // Added common code file extensions
+                const map = { js: 'javascript', py: 'python', html: 'html', css: 'css', json: 'json', xml: 'xml', sh: 'shell', bat: 'bat', ps1: 'powershell', md: 'markdown', ts: 'typescript', vue: 'vue', yaml: 'yaml', yml: 'yaml', c: 'c', cpp: 'cpp', cs: 'csharp', java: 'java', go: 'go', rb: 'ruby', php: 'php', swift: 'swift', kt: 'kotlin', rs: 'rust' }; // Expanded
                 return map[ext] || 'plaintext';
             }
 
             function loadMonaco() {
                 return new Promise(resolve => {
-                    if (monacoLoaded) { resolve(); return; }
+                    if (monacoLoaded) {
+                        // Ensure layout is re-evaluated when the container becomes visible
+                        monacoEditor?.layout();
+                        resolve();
+                        return;
+                    }
                     const loader = document.createElement('script');
                     loader.src = 'https://cdn.jsdelivr.net/npm/monaco-editor@0.34.1/min/vs/loader.js';
                     loader.onload = () => {
@@ -1080,9 +1268,13 @@
                             monacoLoaded = true;
                             monacoEditor = monaco.editor.create(codeEditorContainer, {
                                 value: '',
-                                language: 'javascript', // Default language for new editor
-                                theme: 'vs-dark', // Default theme for Monaco
-                                automaticLayout: true // Crucial for responsive resizing
+                                language: 'javascript',
+                                theme: 'vs-dark',
+                                automaticLayout: true
+                            });
+                            // Attach save listener immediately after creation
+                            monacoEditor.onDidChangeModelContent(() => {
+                                saveCurrentFileContent();
                             });
                             resolve();
                         });
@@ -1092,38 +1284,41 @@
             }
 
             function openFile(name) {
-                saveCurrentFileContent(); // Save content of the *currently open* file before switching
+                saveCurrentFileContent(); // Save current file before opening new one
                 currentFileName = name;
+                // Clear any existing placeholder message in code editor container
+                codeEditorContainer.innerHTML = '';
                 loadMonaco().then(() => {
                     if (!codeFiles[name]) codeFiles[name] = { content: '' };
                     monacoEditor.setValue(codeFiles[name].content || '');
                     monaco.editor.setModelLanguage(monacoEditor.getModel(), getLanguageFromFilename(name));
+                    monacoEditor.focus(); // Set focus to the editor
                 });
             }
 
             function switchTab(tab) {
-                // Ensure current content is saved before switching
-                if (notesWorkspace.classList.contains('hidden') && currentFileName) { // Currently on code tab, and a file is open
-                    saveCurrentFileContent();
-                } else if (!notesWorkspace.classList.contains('hidden') && currentSectionName !== null) { // Currently on notes tab, and a page is open
+                // Save content of the *currently active* editor before switching
+                if (!notesWorkspace.classList.contains('hidden') && currentSectionName !== null && currentPageIndex !== null) { // Currently on notes tab, and a page is open
                     saveCurrentPageContent();
+                } else if (!codeWorkspace.classList.contains('hidden') && currentFileName) { // Currently on code tab, and a file is open
+                    saveCurrentFileContent();
                 }
-
 
                 if (tab === 'code') {
                     notesWorkspace.classList.add('hidden');
                     codeWorkspace.classList.remove('hidden');
                     notesTab.classList.remove('active');
                     codeTab.classList.add('active');
-                    loadMonaco().then(() => {
+                    loadMonaco().then(() => { // Ensure Monaco is loaded
                         if (currentFileName) { // If a file was previously open, load it
                              openFile(currentFileName);
                         } else if (Object.keys(codeFiles).length > 0) { // Else, open the first available file
                             openFile(Object.keys(codeFiles)[0]);
-                        } else { // No files exist, clear editor
+                        } else { // No files exist, clear editor and show prompt
                             monacoEditor?.setValue('');
-                            monaco.editor.setModelLanguage(monacoEditor?.getModel(), 'plaintext'); // Default to plaintext
+                            monaco.editor.setModelLanguage(monacoEditor?.getModel(), 'plaintext');
                             currentFileName = null;
+                            codeEditorContainer.innerHTML = '<p style="text-align: center; padding-top: 50px;">Select a file or add a new one to start coding.</p>';
                         }
                     });
                 } else { // Switch to notes tab
@@ -1131,7 +1326,7 @@
                     notesWorkspace.classList.remove('hidden');
                     codeTab.classList.remove('active');
                     notesTab.classList.add('active');
-                    // Re-enable Quill if a page is selected and not locked
+                    // Re-enable Quill if a page is selected and not locked, or clear editor if no page is selected
                     if (currentSectionName !== null && currentPageIndex !== null) {
                         loadPage(currentSectionName, currentPageIndex);
                     } else {
@@ -1146,8 +1341,7 @@
                     mainAppPanel.classList.toggle('open');
                     mainAppPanel.classList.toggle('hidden', !mainAppPanel.classList.contains('open'));
                     if (mainAppPanel.classList.contains('open')) {
-                        // Ensure a blank page is shown if no page is selected when app opens
-                        // or re-load the currently selected page/file to update editor state
+                        // Ensure correct editor state on open based on active tab
                         if (notesTab.classList.contains('active')) { // Notes tab is active
                             if (currentSectionName === null || currentPageIndex === null) {
                                 clearEditor();
@@ -1155,7 +1349,7 @@
                                 loadPage(currentSectionName, currentPageIndex);
                             }
                         } else if (codeTab.classList.contains('active')) { // Code tab is active
-                            loadMonaco().then(() => { // Ensure Monaco is loaded before trying to set value
+                            loadMonaco().then(() => {
                                 if (currentFileName) {
                                     openFile(currentFileName);
                                 } else if (Object.keys(codeFiles).length > 0) {
@@ -1164,6 +1358,7 @@
                                     monacoEditor?.setValue('');
                                     monaco.editor.setModelLanguage(monacoEditor?.getModel(), 'plaintext');
                                     currentFileName = null;
+                                    codeEditorContainer.innerHTML = '<p style="text-align: center; padding-top: 50px;">Select a file or add a new one to start coding.</p>';
                                 }
                             });
                         }
@@ -1239,15 +1434,20 @@
                     }
                 };
 
-                // Click outside handlers
+                // Refined Click outside handlers
                 document.addEventListener('mousedown', (e) => {
-                    // Check if the click is outside the main app panel and the floating icon
-                    if (mainAppPanel.classList.contains('open') && !rootHost.contains(e.target) && !customModal.contains(e.target)) {
+                    // Check if the click is outside the main app panel AND the floating icon
+                    if (mainAppPanel.classList.contains('open') &&
+                        !mainAppPanel.contains(e.target) && // Click is not inside the app panel
+                        !hermesFloatIcon.contains(e.target)) // Click is not on the float icon
+                    {
                         mainAppPanel.classList.remove('open');
-                        mainAppPanel.classList.add('hidden'); // Ensure it's hidden
+                        mainAppPanel.classList.add('hidden'); // Ensure it's hidden for correct transition
                     }
-                    // Hide modal if click is outside modal itself (but not if click is on the app panel triggering it)
-                    if (!customModal.classList.contains('hidden') && !customModal.contains(e.target) && !rootHost.contains(e.target)) {
+                    // Hide modal if click is outside modal itself and not on a modal trigger within the main app panel
+                    if (!customModal.classList.contains('hidden') && !customModal.contains(e.target) &&
+                        !mainAppPanel.contains(e.target) && !hermesFloatIcon.contains(e.target) // Ensure click isn't from within the app panel
+                        ) {
                         hideModal();
                     }
                 });
@@ -1283,6 +1483,8 @@
                         }
                     });
                     quill.enable(false); // Start with Quill disabled until a page is loaded
+                    // Attach content change listener for Quill to auto-save
+                    quill.on('text-change', saveCurrentPageContent);
                 } else {
                     console.error('Quill failed to load. Editor disabled.');
                 }
@@ -1295,7 +1497,7 @@
                 renderFileList(); // Initial render of files in Code tab
 
                 // Set initial preview message for Notes tab
-                preview.innerHTML = "<p>Select a page or create a new one to start writing.</p>";
+                preview.innerHTML = "<p style='text-align: center; padding-top: 50px;'>Select a page or create a new one to start writing.</p>";
                 quillEditorContainer.classList.add('hidden'); // Hide Quill until a page is selected
                 preview.classList.remove('hidden'); // Show initial preview message
 
