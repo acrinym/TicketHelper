@@ -147,12 +147,14 @@
             color: var(--hermes-button-text);
         }
 
-        /* Code Workspace specific styles */
-        #codeWorkspace, #notesWorkspace {
+        /* Workspaces (Notes and Code) */
+        #notesWorkspace, #codeWorkspace {
             flex: 1; /* Both workspaces take remaining vertical space */
             display: flex; /* They are also flex containers for their internal layout (sidebar + editor) */
             min-height: 0; /* Crucial for nested flex containers to allow scrolling children */
         }
+
+        /* Code Workspace specific styles */
         #codeSidebar {
             width: 200px;
             background: var(--hermes-panel-bg);
@@ -165,8 +167,6 @@
         }
         #codeEditorContainer {
             flex: 1;
-            /* Monaco Editor requires its container to have a defined height,
-               which `flex: 1` here should provide within a flex column parent */
             min-height: 0; /* Important for flex items within a column to shrink and allow scrolling */
         }
 
@@ -301,7 +301,7 @@
             text-overflow: ellipsis; /* Added: Add ellipsis for hidden text */
         }
 
-        /* NEW: Styles for the editable page title input */
+        /* Styles for the editable page title input */
         .editable-page-title-input {
             flex: 1; /* Allow input to take available space */
             background: transparent; /* Make background blend with parent */
@@ -324,14 +324,22 @@
             margin-left: 5px;
             font-size: 0.9em;
         }
+        /* Combined styles for the small action buttons within list items */
         .delete-icon-btn,
-        .hermes-btn.lock-toggle-btn { /* Target both types of buttons within the page item */
+        .hermes-btn.lock-toggle-btn {
             padding: 4px 8px; /* Smaller padding */
-            font-size: 0.8em; /* Smaller font size for icons/text */
-            min-width: 40px; /* Ensure a minimum width for the button */
+            font-size: 0.8em; /* Smaller font size for text/icons */
+            min-width: 40px; /* Ensure a minimum width */
             flex-shrink: 0; /* Prevent these buttons from shrinking */
+            box-shadow: none; /* Remove shadow for these small buttons */
+            transform: none; /* Remove transform on hover for these small buttons */
         }
-        /* Specific style for small delete icons */
+        .delete-icon-btn:hover,
+        .hermes-btn.lock-toggle-btn:hover {
+            transform: scale(1.0); /* Remove scale on hover for these small buttons */
+        }
+
+        /* Specific style for small delete icons (trash can) */
         .delete-icon-btn {
             background: none;
             border: none;
@@ -498,6 +506,88 @@
             justify-content: flex-end;
             gap: 12px;
         }
+
+        /* NEW: Styles for the file list items in code sidebar */
+        .file-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px; /* Adjust spacing */
+            gap: 5px; /* Spacing between button and delete icon */
+        }
+        .file-list-item button.file-name-button {
+            flex-grow: 1; /* Allow the file name button to take available space */
+            text-align: left; /* Align text left */
+            white-space: nowrap; /* Prevent text wrapping */
+            overflow: hidden; /* Hide overflow text */
+            text-overflow: ellipsis; /* Add ellipsis */
+            padding: 5px 8px; /* Consistent padding with other list items */
+            font-size: 0.9em; /* Slightly smaller font for file names */
+            box-shadow: none; /* No shadow for small list buttons */
+            transform: none; /* No transform on hover */
+            background: var(--hermes-input-bg); /* Match input background */
+            color: var(--hermes-input-text); /* Match input text color */
+            border: 1px solid var(--hermes-input-border); /* Match input border */
+        }
+        .file-list-item button.file-name-button:hover {
+            background: var(--hermes-button-hover-bg); /* Hover effect */
+        }
+        .file-list-item .delete-file-btn {
+            padding: 4px 8px; /* Smaller padding */
+            font-size: 0.8em; /* Smaller font size for text */
+            min-width: 30px; /* Ensure a minimum width */
+            flex-shrink: 0; /* Prevent from shrinking */
+            margin-left: 5px; /* Space from file name */
+            box-shadow: none; /* No shadow for small buttons */
+            transform: none; /* No transform on hover */
+        }
+        .file-list-item .delete-file-btn:hover {
+            transform: scale(1.0); /* No scale on hover */
+        }
+
+        /* Override Quill's default toolbar styling to fit themes */
+        .ql-toolbar.ql-snow {
+            border: none; /* Remove Quill's default border */
+            background: var(--hermes-accent-bar-bg); /* Use theme's accent bar background */
+            border-bottom: 1px solid var(--hermes-panel-border); /* Add our border */
+            padding: 8px 10px; /* Match toolbar padding */
+        }
+        .ql-container.ql-snow {
+            border: none; /* Remove Quill's default container border */
+        }
+        /* Adjust Quill icons/buttons for theme colors */
+        .ql-snow .ql-stroke {
+            stroke: var(--hermes-text); /* Icon color */
+        }
+        .ql-snow .ql-fill {
+            fill: var(--hermes-text); /* Icon color */
+        }
+        .ql-snow .ql-picker {
+            color: var(--hermes-text); /* Dropdown text color */
+        }
+        .ql-snow .ql-picker-label {
+            color: var(--hermes-text); /* Dropdown label text color */
+        }
+        .ql-snow .ql-picker.ql-expanded .ql-picker-label {
+            background: var(--hermes-button-hover-bg);
+            color: var(--hermes-highlight-text);
+        }
+        .ql-snow .ql-picker-options {
+            background: var(--hermes-input-bg);
+            border: 1px solid var(--hermes-input-border);
+        }
+        .ql-snow .ql-active .ql-stroke,
+        .ql-snow .ql-active .ql-fill,
+        .ql-snow .ql-active .ql-picker-label .ql-stroke,
+        .ql-snow .ql-active .ql-picker-label .ql-fill {
+            stroke: var(--hermes-highlight-text);
+            fill: var(--hermes-highlight-text);
+        }
+        .ql-snow .ql-active {
+            background: var(--hermes-highlight-bg); /* Active button background */
+            border-radius: 4px;
+        }
+
     </style>
 </head>
 <body>
@@ -575,7 +665,7 @@
         // ==UserScript==
         // @name        Ultimate Note Overlay – Hermes Edition
         // @namespace   http://tampermonkey.net/
-        // @version     1.1 // Updated version to reflect changes
+        // @version     1.2 // Updated version to reflect changes
         // @description A floating, full-featured note-taking app with Hermes themes, Quill editor, and Markdown support.
         // @author      Justin & Gemini
         // @match       *://*/*
@@ -990,8 +1080,10 @@
                             const secName = secDiv.dataset.sectionName;
                             // Ensure the pages within this section are also correctly ordered based on the DOM
                             const reorderedPages = Array.from(secDiv.querySelector('.pages-container').children).map(pageDiv => {
-                                const pageIdx = parseInt(pageDiv.dataset.pageIndex);
-                                return sections[secName][pageIdx]; // Get the original page object by its stored index
+                                // Get the original page object by its stored index
+                                const originalPageSectionName = pageDiv.dataset.sectionName; // Use original section name
+                                const originalPageIndex = parseInt(pageDiv.dataset.pageIndex); // Use original page index
+                                return sections[originalPageSectionName][originalPageIndex];
                             });
                             newSectionsOrder[secName] = reorderedPages;
                         });
@@ -1036,8 +1128,6 @@
                 // Remove 'selected' class from all pages
                 document.querySelectorAll('.page-title-item.selected').forEach(el => el.classList.remove('selected'));
                 // Add 'selected' class to the clicked page
-                // We use querySelectorAll here and then iterate because the direct nth-child selector might be brittle
-                // if sortableJS reorders things in a way that affects static CSS selection
                 const allPagesInSec = sectionsContainer.querySelectorAll(`[data-section-name="${secName}"] .page-title-item`);
                 if (allPagesInSec.length > pageIdx && allPagesInSec[pageIdx]) {
                     allPagesInSec[pageIdx].classList.add('selected');
@@ -1184,7 +1274,8 @@
                     fileList._sortable.destroy();
                 }
 
-                Object.keys(codeFiles).forEach(name => {
+                const fileNames = Object.keys(codeFiles).sort((a,b) => a.localeCompare(b)); // Sort files alphabetically
+                fileNames.forEach(name => {
                     const li = document.createElement('li');
                     li.className = 'file-list-item'; // Add class for styling
                     li.dataset.fileName = name; // Store filename for SortableJS
@@ -1235,20 +1326,30 @@
                     onEnd: (evt) => {
                         // Reorder codeFiles object based on new DOM order
                         const newCodeFilesOrder = {};
-                        evt.to.querySelectorAll('.file-list-item').forEach(li => {
+                        // Iterate through the DOM to get the new order
+                        Array.from(evt.to.children).forEach(li => {
                             const fileName = li.dataset.fileName;
                             newCodeFilesOrder[fileName] = codeFiles[fileName]; // Keep existing content
                         });
                         codeFiles = newCodeFilesOrder;
                         GM_setValue('ultimate-note-code-files', codeFiles); // Save the new order
+                        // No need to re-render renderFileList here, as SortableJS updates the DOM.
+                        // However, if your actual data structure is an array rather than an object,
+                        // you'd need to re-create the array based on the new order.
+                        // For an object, the property order isn't guaranteed in JS, but for display it's fine.
+                        // If strict order is needed beyond display, convert to array and sort.
                     }
                 });
                 fileList._sortable = fileSortable; // Store for destruction
             }
 
             function getLanguageFromFilename(fname) {
-                const ext = fname.split('.').pop();
-                const map = { js: 'javascript', py: 'python', html: 'html', css: 'css', json: 'json', xml: 'xml', sh: 'shell', bat: 'bat', ps1: 'powershell', md: 'markdown', ts: 'typescript', vue: 'vue', yaml: 'yaml', yml: 'yaml', c: 'c', cpp: 'cpp', cs: 'csharp', java: 'java', go: 'go', rb: 'ruby', php: 'php', swift: 'swift', kt: 'kotlin', rs: 'rust' }; // Expanded
+                const ext = fname.split('.').pop().toLowerCase(); // Convert to lowercase
+                const map = {
+                    js: 'javascript', py: 'python', html: 'html', css: 'css', json: 'json', xml: 'xml', sh: 'shell', bat: 'bat', ps1: 'powershell',
+                    md: 'markdown', ts: 'typescript', vue: 'vue', yaml: 'yaml', yml: 'yaml', c: 'c', cpp: 'cpp', cs: 'csharp', java: 'java',
+                    go: 'go', rb: 'ruby', php: 'php', swift: 'swift', kt: 'kotlin', rs: 'rust', sql: 'sql', jsx: 'javascript', tsx: 'typescript'
+                }; // Expanded with more common extensions
                 return map[ext] || 'plaintext';
             }
 
@@ -1268,8 +1369,8 @@
                             monacoLoaded = true;
                             monacoEditor = monaco.editor.create(codeEditorContainer, {
                                 value: '',
-                                language: 'javascript',
-                                theme: 'vs-dark',
+                                language: 'javascript', // Default language for new editor
+                                theme: 'vs-dark', // Default theme for Monaco
                                 automaticLayout: true
                             });
                             // Attach save listener immediately after creation
@@ -1288,11 +1389,21 @@
                 currentFileName = name;
                 // Clear any existing placeholder message in code editor container
                 codeEditorContainer.innerHTML = '';
+                
                 loadMonaco().then(() => {
-                    if (!codeFiles[name]) codeFiles[name] = { content: '' };
+                    // Check if file exists, if not, create it
+                    if (!codeFiles[name]) {
+                        codeFiles[name] = { content: '' };
+                        GM_setValue('ultimate-note-code-files', codeFiles); // Save new empty file
+                        renderFileList(); // Re-render file list to show the new file
+                    }
+
                     monacoEditor.setValue(codeFiles[name].content || '');
                     monaco.editor.setModelLanguage(monacoEditor.getModel(), getLanguageFromFilename(name));
                     monacoEditor.focus(); // Set focus to the editor
+                }).catch(error => {
+                    console.error("Error loading Monaco or opening file:", error);
+                    showModal('Error', 'Could not load code editor or file. Check console for details.');
                 });
             }
 
@@ -1313,7 +1424,7 @@
                         if (currentFileName) { // If a file was previously open, load it
                              openFile(currentFileName);
                         } else if (Object.keys(codeFiles).length > 0) { // Else, open the first available file
-                            openFile(Object.keys(codeFiles)[0]);
+                            openFile(Object.keys(codeFiles).sort((a,b) => a.localeCompare(b))[0]); // Open first file alphabetically
                         } else { // No files exist, clear editor and show prompt
                             monacoEditor?.setValue('');
                             monaco.editor.setModelLanguage(monacoEditor?.getModel(), 'plaintext');
@@ -1353,7 +1464,7 @@
                                 if (currentFileName) {
                                     openFile(currentFileName);
                                 } else if (Object.keys(codeFiles).length > 0) {
-                                    openFile(Object.keys(codeFiles)[0]);
+                                    openFile(Object.keys(codeFiles).sort((a,b) => a.localeCompare(b))[0]);
                                 } else {
                                     monacoEditor?.setValue('');
                                     monaco.editor.setModelLanguage(monacoEditor?.getModel(), 'plaintext');
@@ -1403,9 +1514,8 @@
                 addFileBtn.onclick = () => {
                     showModal('New File', 'Enter file name:', true, (name) => {
                         if (name && name.trim() !== '') {
-                            if (!codeFiles[name]) codeFiles[name] = { content: '' };
-                            renderFileList();
-                            openFile(name); // Open newly created file
+                            // The `openFile` function now handles creation if file doesn't exist
+                            openFile(name);
                             hideModal();
                         } else {
                             showModal('Error', 'File name cannot be empty.');
@@ -1437,17 +1547,21 @@
                 // Refined Click outside handlers
                 document.addEventListener('mousedown', (e) => {
                     // Check if the click is outside the main app panel AND the floating icon
+                    // And not inside a modal
                     if (mainAppPanel.classList.contains('open') &&
-                        !mainAppPanel.contains(e.target) && // Click is not inside the app panel
-                        !hermesFloatIcon.contains(e.target)) // Click is not on the float icon
+                        !mainAppPanel.contains(e.target) &&
+                        !hermesFloatIcon.contains(e.target) &&
+                        customModal.classList.contains('hidden')) // Only close if modal is not open
                     {
                         mainAppPanel.classList.remove('open');
-                        mainAppPanel.classList.add('hidden'); // Ensure it's hidden for correct transition
+                        mainAppPanel.classList.add('hidden');
                     }
                     // Hide modal if click is outside modal itself and not on a modal trigger within the main app panel
-                    if (!customModal.classList.contains('hidden') && !customModal.contains(e.target) &&
-                        !mainAppPanel.contains(e.target) && !hermesFloatIcon.contains(e.target) // Ensure click isn't from within the app panel
-                        ) {
+                    if (!customModal.classList.contains('hidden') &&
+                        !customModal.contains(e.target) &&
+                        !mainAppPanel.contains(e.target) && // Prevent modal closing if click is *inside* app panel, but outside modal
+                        !hermesFloatIcon.contains(e.target))
+                        {
                         hideModal();
                     }
                 });
