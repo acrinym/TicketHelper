@@ -125,6 +125,45 @@
             opacity: 1;
             pointer-events: auto; /* Enable interaction when open */
         }
+
+        /* Top tab bar */
+        #tabBar {
+            display: flex;
+            border-bottom: 1px solid var(--hermes-panel-border);
+        }
+        .tab-button {
+            flex: 1;
+            padding: 8px;
+            cursor: pointer;
+            text-align: center;
+            background: var(--hermes-panel-bg);
+            color: var(--hermes-panel-text);
+            border-right: 1px solid var(--hermes-panel-border);
+        }
+        .tab-button:last-child {
+            border-right: none;
+        }
+        .tab-button.active {
+            background: var(--hermes-button-bg);
+            color: var(--hermes-button-text);
+        }
+
+        #codeWorkspace {
+            flex: 1;
+            display: flex;
+            height: 100%;
+        }
+        #codeSidebar {
+            width: 200px;
+            background: var(--hermes-panel-bg);
+            color: var(--hermes-panel-text);
+            border-right: 1px solid var(--hermes-panel-border);
+            padding: 10px;
+            overflow-y: auto;
+        }
+        #codeEditorContainer {
+            flex: 1;
+        }
         
         /* Media query for smaller screens */
         @media (max-width: 768px) {
@@ -420,36 +459,49 @@
             title="Open Notes"
         />
 
-        <!-- The Main Application Panel (contains sidebar and editor) -->
-        <div id="mainAppPanel" class="hidden">
-            <!-- Sidebar -->
-            <div id="sidebar">
-                <h3>Notebook</h3>
-                <input id="newSectionInput" placeholder="New Section Name"/>
-                <button id="addSectionBtn" class="hermes-btn">+ Add Section</button>
-                <hr/>
-                <div id="sectionsContainer"></div>
+        <!-- The Main Application Panel (contains tabs for notes and code) -->
+        <div id="mainAppPanel" class="hidden flex flex-col">
+            <div id="tabBar">
+                <div id="notesTab" class="tab-button active">Notes</div>
+                <div id="codeTab" class="tab-button">Code</div>
             </div>
+            <div id="notesWorkspace" class="flex flex-1">
+                <!-- Sidebar -->
+                <div id="sidebar">
+                    <h3>Notebook</h3>
+                    <input id="newSectionInput" placeholder="New Section Name"/>
+                    <button id="addSectionBtn" class="hermes-btn">+ Add Section</button>
+                    <hr/>
+                    <div id="sectionsContainer"></div>
+                </div>
 
-            <!-- Main Content Area (Toolbar + Editor/Preview) -->
-            <div id="mainContentArea">
-                <div id="toolbar">
-                    <span id="currentPageName">No Page Selected</span>
-                    <button id="savePageBtn" class="hermes-btn">💾 Save</button>
-                    <button id="togglePreviewBtn" class="hermes-btn">📄 Preview</button>
-                    <button id="insertImageBtn" class="hermes-btn">🏞️ Image</button>
-                    <input type="file" id="imgInput" accept="image/*" style="display:none"/>
-                    <button id="exportMarkdownBtn" class="hermes-btn">⬇️ Export MD</button>
-                    <input type="file" id="importMarkdownInput" style="display:none"/>
-                    <button id="importMarkdownBtn" class="hermes-btn">⬆️ Import MD</button>
-                    <div class="theme-select-container">
-                        <select id="themeSelect" class="hermes-btn"></select>
+                <!-- Main Content Area (Toolbar + Editor/Preview) -->
+                <div id="mainContentArea" class="flex-1">
+                    <div id="toolbar">
+                        <span id="currentPageName">No Page Selected</span>
+                        <button id="savePageBtn" class="hermes-btn">💾 Save</button>
+                        <button id="togglePreviewBtn" class="hermes-btn">📄 Preview</button>
+                        <button id="insertImageBtn" class="hermes-btn">🏞️ Image</button>
+                        <input type="file" id="imgInput" accept="image/*" style="display:none"/>
+                        <button id="exportMarkdownBtn" class="hermes-btn">⬇️ Export MD</button>
+                        <input type="file" id="importMarkdownInput" style="display:none"/>
+                        <button id="importMarkdownBtn" class="hermes-btn">⬆️ Import MD</button>
+                        <div class="theme-select-container">
+                            <select id="themeSelect" class="hermes-btn"></select>
+                        </div>
+                    </div>
+                    <div id="editorArea">
+                        <div id="quillEditorContainer"></div>
+                        <div id="preview" class="hidden"></div>
                     </div>
                 </div>
-                <div id="editorArea">
-                    <div id="quillEditorContainer"></div>
-                    <div id="preview" class="hidden"></div>
+            </div>
+            <div id="codeWorkspace" class="hidden flex-1">
+                <div id="codeSidebar">
+                    <button id="addFileBtn" class="hermes-btn w-full mb-2">+ Add File</button>
+                    <ul id="fileList" class="space-y-1"></ul>
                 </div>
+                <div id="codeEditorContainer"></div>
             </div>
         </div>
 
@@ -549,9 +601,15 @@
 
             let sections = loadSections(); // Use a new key for this version of data
 
-            let currentSectionName = null;
-            let currentPageIndex = null;
-            let quill; // Global Quill instance
+           let currentSectionName = null;
+           let currentPageIndex = null;
+           let quill; // Global Quill instance
+
+            // Code editor state
+            let codeFiles = GM_getValue('ultimate-note-code-files', {});
+            let currentFileName = null;
+            let monacoEditor = null;
+            let monacoLoaded = false;
 
             // --- DOM Elements ---
             const rootHost = document.getElementById('rootHost');
@@ -572,6 +630,15 @@
             const importMarkdownBtn = document.getElementById('importMarkdownBtn');
             const quillEditorContainer = document.getElementById('quillEditorContainer');
             const preview = document.getElementById('preview');
+
+            // Code workspace elements
+            const notesTab = document.getElementById('notesTab');
+            const codeTab = document.getElementById('codeTab');
+            const notesWorkspace = document.getElementById('notesWorkspace');
+            const codeWorkspace = document.getElementById('codeWorkspace');
+            const addFileBtn = document.getElementById('addFileBtn');
+            const fileList = document.getElementById('fileList');
+            const codeEditorContainer = document.getElementById('codeEditorContainer');
 
             // Modal Elements
             const customModal = document.getElementById('customModal');
@@ -936,7 +1003,8 @@
                 const md = sections[currentSectionName][currentPageIndex].markdown;
                 const blob = new Blob([md], { type: "text/markdown" });
                 const a = document.createElement("a");
-                a.href = URL.createObjectURL(blob);
+                const url = URL.createObjectURL(blob);
+                a.href = url;
                 a.download = sections[currentSectionName][currentPageIndex].name.replace(/\s+/g, "_") + ".md";
                 document.body.appendChild(a); // Append to body to make it clickable in all browsers
                 a.click();
@@ -964,6 +1032,81 @@
                     showModal('Import Successful', `Markdown imported into "${sections[currentSectionName][currentPageIndex].name}".`);
                 };
                 fr.readAsText(file);
+            }
+
+            // --- Code Workspace Functions ---
+            function saveCurrentFileContent() {
+                if (currentFileName && monacoEditor) {
+                    codeFiles[currentFileName].content = monacoEditor.getValue();
+                    GM_setValue('ultimate-note-code-files', codeFiles);
+                }
+            }
+
+            function renderFileList() {
+                fileList.innerHTML = '';
+                Object.keys(codeFiles).forEach(name => {
+                    const li = document.createElement('li');
+                    const btn = document.createElement('button');
+                    btn.textContent = name;
+                    btn.className = 'hermes-btn w-full text-left';
+                    btn.onclick = () => openFile(name);
+                    li.appendChild(btn);
+                    fileList.appendChild(li);
+                });
+            }
+
+            function getLanguageFromFilename(fname) {
+                const ext = fname.split('.').pop();
+                const map = { js: 'javascript', py: 'python', html: 'html', css: 'css' };
+                return map[ext] || 'plaintext';
+            }
+
+            function loadMonaco() {
+                return new Promise(resolve => {
+                    if (monacoLoaded) { resolve(); return; }
+                    const loader = document.createElement('script');
+                    loader.src = 'https://cdn.jsdelivr.net/npm/monaco-editor@0.34.1/min/vs/loader.js';
+                    loader.onload = () => {
+                        require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.34.1/min/vs' }});
+                        require(['vs/editor/editor.main'], () => {
+                            monacoLoaded = true;
+                            monacoEditor = monaco.editor.create(codeEditorContainer, {
+                                value: '',
+                                language: 'javascript',
+                                theme: 'vs-dark',
+                                automaticLayout: true
+                            });
+                            resolve();
+                        });
+                    };
+                    document.body.appendChild(loader);
+                });
+            }
+
+            function openFile(name) {
+                saveCurrentFileContent();
+                currentFileName = name;
+                loadMonaco().then(() => {
+                    if (!codeFiles[name]) codeFiles[name] = { content: '' };
+                    monacoEditor.setValue(codeFiles[name].content || '');
+                    monaco.editor.setModelLanguage(monacoEditor.getModel(), getLanguageFromFilename(name));
+                });
+            }
+
+            function switchTab(tab) {
+                if (tab === 'code') {
+                    notesWorkspace.classList.add('hidden');
+                    codeWorkspace.classList.remove('hidden');
+                    notesTab.classList.remove('active');
+                    codeTab.classList.add('active');
+                    loadMonaco();
+                } else {
+                    saveCurrentFileContent();
+                    codeWorkspace.classList.add('hidden');
+                    notesWorkspace.classList.remove('hidden');
+                    codeTab.classList.remove('active');
+                    notesTab.classList.add('active');
+                }
             }
 
             // --- Event Listeners Setup ---
@@ -1015,6 +1158,21 @@
                 importMarkdownBtn.onclick = () => importMarkdownInput.click();
                 importMarkdownInput.onchange = importMarkdownFile;
 
+                notesTab.onclick = () => switchTab('notes');
+                codeTab.onclick = () => switchTab('code');
+                addFileBtn.onclick = () => {
+                    showModal('New File', 'Enter file name:', true, (name) => {
+                        if (name && name.trim() !== '') {
+                            if (!codeFiles[name]) codeFiles[name] = { content: '' };
+                            renderFileList();
+                            openFile(name);
+                            hideModal();
+                        } else {
+                            showModal('Error', 'File name cannot be empty.');
+                        }
+                    }, hideModal, true);
+                };
+
                 themeSelect.onchange = (e) => {
                     currentTheme = e.target.value;
                     applyTheme();
@@ -1063,25 +1221,31 @@
                 });
                 themeSelect.value = currentTheme; // Set initial selected theme
 
-                // Initialize Quill Editor
-                quill = new Quill('#quillEditorContainer', {
-                    theme: 'snow',
-                    modules: {
-                        toolbar: [
-                            [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-                            ['bold', 'italic', 'underline', 'strike'],
-                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                            [{ 'align': [] }],
-                            [{ 'color': [] }, { 'background': [] }],
-                            ['link'], // Image handled by custom button
-                            ['clean']
-                        ]
-                    }
-                });
-                quill.enable(false); // Start with Quill disabled until a page is loaded
+                // Initialize Quill Editor if available
+                if (typeof Quill !== 'undefined') {
+                    quill = new Quill('#quillEditorContainer', {
+                        theme: 'snow',
+                        modules: {
+                            toolbar: [
+                                [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                                ['bold', 'italic', 'underline', 'strike'],
+                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                [{ 'align': [] }],
+                                [{ 'color': [] }, { 'background': [] }],
+                                ['link'], // Image handled by custom button
+                                ['clean']
+                            ]
+                        }
+                    });
+                    quill.enable(false); // Start with Quill disabled until a page is loaded
+                } else {
+                    console.error('Quill failed to load. Editor disabled.');
+                }
 
                 // Attach general event listeners
                 attachGlobalEventListeners();
+
+                renderFileList();
 
                 // Initial render of sections and pages
                 renderSectionsAndPages();
