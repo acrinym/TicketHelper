@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FS & CEC Toolkit</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body { display: flex; flex-direction: column; min-height: 100vh; }
+    main { flex: 1 0 auto; padding: 24px; }
+    .tabs .indicator { background-color: #42a5f5; }
+    .tool-card { margin-top: 24px; }
+    textarea { font-family: monospace; }
+  </style>
+</head>
+<body>
+  <nav class="blue lighten-1">
+    <div class="nav-wrapper container">
+      <a href="#" class="brand-logo">Toolkit</a>
+      <ul id="nav-mobile" class="right">
+        <li><a href="#fs-tab">FS</a></li>
+        <li><a href="#cec-tab">CEC</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="container">
+    <ul id="tabs-swipe-demo" class="tabs">
+      <li class="tab col s3"><a href="#fs-tab">FS</a></li>
+      <li class="tab col s3"><a href="#cec-tab">CEC</a></li>
+    </ul>
+
+    <div id="fs-tab" class="col s12">
+      <div class="section"><h5>FS Tools</h5></div>
+    </div>
+
+    <div id="cec-tab" class="col s12">
+      <div class="section"><h5>CEC Tools</h5>
+        <ul class="collapsible">
+          <li>
+            <div class="collapsible-header"><i class="material-icons">phone_in_talk</i>Teams + Phone Issues</div>
+            <div class="collapsible-body">
+              <div class="tool-card card">
+                <div class="card-content">
+                  <span class="card-title">Extract Fields Tool</span>
+                  <div class="input-field">
+                    <textarea id="inputArea" class="materialize-textarea" rows="10" placeholder="Paste raw ticket text here..."></textarea>
+                    <label for="inputArea">Ticket Input</label>
+                  </div>
+                  <div class="center-align">
+                    <button class="btn waves-effect waves-light blue" onclick="processInput()">
+                      <i class="material-icons left">play_arrow</i>Extract Fields
+                    </button>
+                  </div>
+                  <div class="input-field" style="margin-top: 24px;">
+                    <textarea id="outputArea" class="materialize-textarea" rows="8" readonly></textarea>
+                    <label for="outputArea">Extracted Information</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </li>
+
+          <li>
+            <div class="collapsible-header"><i class="material-icons">report_problem</i>CEC/CHD Escalation Notes Tool</div>
+            <div class="collapsible-body">
+              <div class="tool-card card">
+                <div class="card-content">
+                  <span class="card-title">Escalation Extractor</span>
+                  
+                  <div class="input-field">
+                    <textarea id="peopleRecordInput" class="materialize-textarea" rows="8" placeholder="Paste People Record (customer info from BMC Remedy) here..."></textarea>
+                    <label for="peopleRecordInput">People Record Input</label>
+                  </div>
+                  
+                  <div class="input-field" style="margin-top: 24px;">
+                    <textarea id="notesInput" class="materialize-textarea" rows="12" placeholder="Paste Notes field (issue details, computer info, troubleshooting) here..."></textarea>
+                    <label for="notesInput">Notes Input</label>
+                  </div>
+
+                  <div class="center-align">
+                    <button class="btn waves-effect waves-light red darken-1" onclick="extractCECEscalation()">
+                      <i class="material-icons left">play_circle</i>Generate Escalation Template
+                    </button>
+                  </div>
+                  <div class="input-field" style="margin-top: 24px;">
+                    <textarea id="cecEscalationOutput" class="materialize-textarea" rows="12" readonly></textarea>
+                    <label for="cecEscalationOutput">Escalation Output</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </main>
+
+  <footer class="page-footer blue lighten-1">
+    <div class="container">
+      <div class="center-align"><span class="white-text">© 2025 FS & CEC Toolkit</span></div>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js" defer></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      var tabs = document.querySelectorAll(".tabs");
+      M.Tabs.init(tabs);
+      var collapsibles = document.querySelectorAll(".collapsible");
+      M.Collapsible.init(collapsibles);
+    });
+
+    function processInput() {
+      const text = document.getElementById("inputArea").value;
+      const outputLines = [];
+
+      const extractSingle = (regex) => {
+        const match = text.match(regex);
+        return match ? match[1].trim() : "";
+      };
+
+      const phoneDisplayName = extractSingle(/^\s*Name:\s*(.+)$/m);
+      const phoneMatches = text.match(/^\s*Phone:\s*([\d\s\-]+)/gm);
+      const phoneAffected = phoneMatches && phoneMatches.length > 0 ? phoneMatches[0].split(":")[1].trim() : "";
+      const locationField = extractSingle(/^\s*Address:\s*(.+)$/m);
+      const phoneTroubleshoot = extractSingle(/Provide the best phone number to reach you:\s*([\d\s\-]+)/i);
+      const emailAddress = extractSingle(/^\s*Email:\s*([\w.\-]+@[\w.\-]+)/m);
+      let agencyField = extractSingle(/^\s*Account Agency:\s*(.+)$/m);
+      if (!agencyField) agencyField = extractSingle(/^\s*Agency:\s*(.+)/m);
+      const issueDescription = extractSingle(/^\s*Detailed description of the issue.*?:\s*(.+)$/im);
+      const troubleshootingSteps = extractSingle(/^\s*Describe any troubleshooting steps.*?:\s*(.+)$/im);
+      const usersAffected = extractSingle(/^\s*Number of users affected:\s*(\d+)/im);
+
+      outputLines.push("Phone display name (affected phone): " + phoneDisplayName);
+      outputLines.push("Phone number (affected phone): " + phoneAffected);
+      outputLines.push("Location (Building, floor, room, cube): " + locationField);
+      outputLines.push("Phone number to reach user for troubleshooting: " + phoneTroubleshoot);
+      outputLines.push("Email address: " + emailAddress);
+      outputLines.push("Agency: " + agencyField);
+      outputLines.push("Detailed description of issue: " + issueDescription);
+      outputLines.push("Detailed troubleshooting steps: " + troubleshootingSteps);
+      outputLines.push("Number of users affected: " + usersAffected);
+
+      document.getElementById("outputArea").value = outputLines.join("\n");
+      M.textareaAutoResize(document.getElementById("outputArea"));
+    }
+
+    function extractCECEscalation() {
+      const peopleRecordText = document.getElementById("peopleRecordInput").value;
+      const notesText = document.getElementById("notesInput").value;
+      
+      const USER_NOT_PROVIDED = "User did not provide"; 
+
+      const extract = (regex, sourceText) => { 
+        const match = sourceText.match(regex);
+        return match ? match[1].trim() : "";
+      };
+
+      const output = [];
+
+      // Name: Improved extraction to handle various formats and prioritize full name.
+      let name = "";
+      // Try to get "Lastname, Firstname" from People Record first
+      const nameCommaMatch = peopleRecordText.match(/^Name:\s*([^,]+),\s*([^P]+?)(?:Preferred Name:|Corporate ID:|$)/im);
+      if (nameCommaMatch && nameCommaMatch.length >= 3) {
+          name = nameCommaMatch[2].trim() + ' ' + nameCommaMatch[1].trim(); // Reorder to "Firstname Lastname"
+      } else {
+          // If no comma, try to get anything after "Name:" until the next field, assuming it's already "Firstname Lastname"
+          const nameNoCommaMatch = peopleRecordText.match(/^Name:\s*(.+?)(?:Preferred Name:|Corporate ID:|$)/im);
+          if (nameNoCommaMatch) {
+              name = nameNoCommaMatch[1].trim();
+          }
+      }
+      
+      // Fallback to Account Name from notes if not found in people record
+      if (!name) {
+          name = extract(/Account Name:\s*USDA\\([\w\s.]+)/i, notesText); 
+      }
+      output.push("Name: " + (name || USER_NOT_PROVIDED)); 
+
+      // Phone: Prioritize "Phone:" from people record, then "Provide the best phone number..." from notes
+      let phone = extract(/^Phone:\s*([\d\s\-()]+)/im, peopleRecordText); 
+      if (!phone) phone = extract(/Provide the best phone number to reach you:\s*([\d\s\-()]+)/i, notesText);
+      output.push("Phone: " + (phone || USER_NOT_PROVIDED));
+
+      // Email: Prioritize "Email:" from people record
+      let email = extract(/^Email:\s*([\w\-.]+@[\w\-.]+)/im, peopleRecordText); 
+      output.push("Email: " + (email || USER_NOT_PROVIDED));
+
+      // Agency: Prioritize "Account Agency:" or "Agency:" from notes, then try "Site:" from people record
+      let agency = extract(/Account Agency:\s*(.+)/i, notesText);
+      if (!agency) agency = extract(/Agency:\s*(.+)/i, notesText);
+      if (!agency) {
+          const siteMatch = peopleRecordText.match(/^Site:\s*(\w+)/im); 
+          if (siteMatch) {
+              const siteValue = siteMatch[1].trim();
+              if (siteValue.length <= 5 && siteValue.match(/^[A-Z0-9]+$/)) { 
+                  agency = siteValue;
+              }
+          }
+      }
+      output.push("Agency: " + (agency || USER_NOT_PROVIDED));
+
+      // Work Hours: Captured from notesText
+      const workHoursMatch = notesText.match(/Provide your duty days and hours.*?:\s*((?:.|\n)*?)(?=\s*\d+\.\s*|\s*Please Note:|---------------------------------------------------------------)/i);
+      const workHours = workHoursMatch ? workHoursMatch[1].trim() : "";
+      output.push("Work Hours (HH:MM EST/HH:MM EST D-D): " + (workHours || USER_NOT_PROVIDED));
+      
+      // Building: Prioritize "Address:" from people record, then from notes. Handle "Working from home" explicitly.
+      let building = extract(/^Address:\s*(.+)/im, peopleRecordText); 
+      if (building && building.toLowerCase().includes("home office")) { 
+        const workingFromHomeNote = extract(/Are you working from home.*?:\s*(.+)$/im, notesText);
+        if (workingFromHomeNote && workingFromHomeNote.toLowerCase().includes("working from home")) {
+          building = "Working from home"; 
+        }
+      } else if (extract(/Are you working from home.*?:\s*(working from home)/im, notesText)) {
+          building = "Working from home"; 
+      }
+      if (!building) building = extract(/Address:\s*(.+)$/im, notesText); 
+      output.push("Building: " + (building || USER_NOT_PROVIDED));
+      
+      // Room/cube: Captured from notesText
+      output.push("Room/cube: " + (extract(/Room\/cube:\s*(.+)/i, notesText) || USER_NOT_PROVIDED));
+      
+      // Computer Name: Captured from notesText
+      output.push("Computer Name: " + (extract(/Computer Name:\s*(.+)/i, notesText) || USER_NOT_PROVIDED));
+      
+      // IP Address: Captured from notesText
+      output.push("IP Address: " + (extract(/IP Address:\s*(.+)/i, notesText) || USER_NOT_PROVIDED));
+
+      // Critical Deadline Impact
+      const criticalDeadlineMatch = notesText.match(/Is this issue impacting your ability to meet a critical deadline for your Agency\?[\s\r\n]*(.+?)(?=\s*\d+\.\s*Preferred contact method|\s*\d+\.\s*Provide the best phone number|\s*Please Note:|---------------------------------------------------------------)/i);
+      const criticalDeadline = criticalDeadlineMatch ? criticalDeadlineMatch[1].trim() : "";
+      output.push("Is this issue impacting critical deadline?: " + (criticalDeadline || USER_NOT_PROVIDED));
+
+      // Exact Problem Details (Error Message): Corrected regex for robust capture
+      const problemDetailsMatch = notesText.match(/Detailed description of the issue\s*\/ error, and any relevant screenshot\(s\) as attachments.*?:\s*((?:.|\n)*?)(?=\s*\d+\.\s*Describe any troubleshooting steps|\s*Please Note:|---------------------------------------------------------------)/i);
+      const problemDetails = problemDetailsMatch ? problemDetailsMatch[1].trim() : "";
+      output.push("Exact Problem Details (Error Message): " + (problemDetails || USER_NOT_PROVIDED)); 
+
+      // Troubleshooting steps: Captured from notesText
+      const troubleshootingSteps = extract(/Describe any troubleshooting steps.*?:\s*(.+)$/im, notesText); 
+      output.push("Troubleshooting steps: " + (troubleshootingSteps || USER_NOT_PROVIDED));
+
+      // Reason for escalating to tier 2.0 (Logic for inference or explicit text with new fallback)
+      let escalationReason = extract(/Reason for escalating to tier 2.0:\s*(.+)$/im, notesText); 
+      
+      if (!escalationReason || escalationReason === USER_NOT_PROVIDED) {
+          const currentProblemDetails = output.find(line => line.startsWith("Exact Problem Details")).split(": ")[1];
+          const currentTroubleshootingSteps = output.find(line => line.startsWith("Troubleshooting steps")).split(": ")[1];
+
+          // Specific keyword checks
+          if (currentProblemDetails && (currentProblemDetails.toLowerCase().includes("admin privileges") || currentProblemDetails.toLowerCase().includes("software install") || currentProblemDetails.toLowerCase().includes("install software"))) {
+              escalationReason = "User requires administrative privileges or software installation.";
+          } else if (currentTroubleshootingSteps.toLowerCase().includes("no troubleshooting steps were performed") || currentTroubleshootingSteps.toLowerCase().includes("informed my supervisor and he recommended i submit a cec help ticket")) {
+              escalationReason = "User informed supervisor and was advised to submit a ticket; implies issue beyond user's troubleshooting capability.";
+          } else if (currentProblemDetails.toLowerCase().includes("spam calls")) {
+              escalationReason = "Recurring spam call issue requires higher-level investigation or network/phone system intervention.";
+          } else if (currentProblemDetails && (currentProblemDetails.toLowerCase().includes("does not disconnect") || currentProblemDetails.toLowerCase().includes("will hang") || currentProblemDetails.toLowerCase().includes("end the process") || currentProblemDetails.toLowerCase().includes("crashes") || currentProblemDetails.toLowerCase().includes("not responding") || currentProblemDetails.toLowerCase().includes("freezes"))) {
+              escalationReason = "Application instability (e.g., hanging, crashing) requires Tier 2.0 investigation.";
+          }
+      }
+      
+      // NEW FALLBACK: If still no specific reason, use the detailed problem description
+      if (!escalationReason || escalationReason === USER_NOT_PROVIDED) {
+          const fallbackProblemDetails = output.find(line => line.startsWith("Exact Problem Details")).split(": ")[1];
+          if (fallbackProblemDetails && fallbackProblemDetails !== USER_NOT_PROVIDED) {
+              escalationReason = "Escalated due to: " + fallbackProblemDetails; 
+          } else {
+              escalationReason = "Not explicitly stated or inferred. Requires manual review."; 
+          }
+      }
+      output.push("Reason for escalating to tier 2.0: " + escalationReason);
+
+
+      document.getElementById("cecEscalationOutput").value = output.join("\n");
+      M.textareaAutoResize(document.getElementById("cecEscalationOutput"));
+    }
+  </script>
+</body>
+</html>

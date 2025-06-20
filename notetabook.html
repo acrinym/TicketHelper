@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Note Overlay</title>
+    <!-- 
+        FOR STANDALONE HTML: Keep these CSS links uncommented.
+        FOR TAMPERMONKEY USERSCRIPT: You might need to adjust or comment these out
+        if the target website interferes or if you want to bundle/inject CSS differently.
+    -->
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Quill.js CSS -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <style>
+        /* Define custom CSS variables for themes and global styles */
+        :root {
+            /* Default theme variables - will be overridden by JS */
+            --hermes-bg:#242e29;
+            --hermes-bg2:#304039;
+            --hermes-primary:#97e6b0;
+            --hermes-accent:#29dc91;
+            --hermes-card:#304039;
+            --hermes-text:#f4fff8;
+            --hermes-border:#2dcfa5;
+            --hermes-lock:#83c6ae; /* Lock icon color */
+            --hermes-error-text: #ff5c5c; /* Error red for delete buttons/text */
+            --hermes-button-bg: var(--hermes-accent); /* Standard button background */
+            --hermes-button-text: var(--hermes-bg); /* Standard button text color */
+            --hermes-button-hover-bg: var(--hermes-primary); /* Standard button hover background */
+            --hermes-panel-bg: var(--hermes-bg2); /* Background for sidebar/toolbar in NextNote context */
+            --hermes-panel-text: var(--hermes-text); /* Text color for sidebar/toolbar */
+            --hermes-panel-border: var(--hermes-border); /* Border for panels */
+            --hermes-input-bg: var(--hermes-bg); /* Background for input fields */
+            --hermes-input-text: var(--hermes-text); /* Text for input fields */
+            --hermes-input-border: var(--hermes-accent); /* Border for input fields */
+            --hermes-accent-bar-bg: var(--hermes-bg); /* Accent bar background for Quill toolbar */
+            --hermes-highlight-bg: var(--hermes-primary); /* Highlight color */
+            --hermes-highlight-text: var(--hermes-bg); /* Highlight text color */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* Optional: Background for standalone HTML */
+        }
+
+        /* General Button Styling (Replaces gpt-btn for a more integrated look) */
+        .hermes-btn {
+            background: var(--hermes-button-bg);
+            color: var(--hermes-button-text);
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            padding: 8px 16px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+        .hermes-btn:hover {
+            background: var(--hermes-button-hover-bg);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+            transform: scale(1.05);
+        }
+        .hermes-btn:focus {
+            outline: none;
+            box-shadow: 0 0 0 4px var(--hermes-primary);
+        }
+        /* Specific delete button style */
+        .hermes-btn.delete {
+            background: var(--hermes-error-text);
+            color: white;
+        }
+        .hermes-btn.delete:hover {
+            background: #e04444; /* Slightly darker red on hover */
+        }
+
+        /* Floating Icon specific styles */
+        .hermes-float-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            display: block; /* Ensure the icon is displayed by default */
+            position: absolute; /* Positioned within minigpt-root-host */
+            bottom: 0;
+            right: 0;
+        }
+        .hermes-float-icon:hover {
+            transform: scale(1.1);
+        }
+        .hermes-float-icon:focus {
+            outline: none;
+            box-shadow: 0 0 0 4px var(--hermes-primary);
+        }
+
+        /* Main Panel for the entire App (sidebar + main content) */
+        #mainAppPanel {
+            position: fixed; /* Keep it fixed to the viewport */
+            bottom: 6px; /* A small gap from the bottom of the viewport */
+            right: 6px; /* A small gap from the right of the viewport */
+            z-index: 999998; /* Below the floating icon */
+            width: calc(100vw - 12px); /* Full width minus side gaps */
+            height: calc(100vh - 12px); /* Full height minus top/bottom gaps */
+            max-width: 900px; /* Max width for readability */
+            max-height: 600px; /* Max height */
+            background: var(--hermes-bg);
+            border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            border: 2px solid var(--hermes-border);
+            overflow: hidden; /* Ensure content doesn't spill */
+            display: flex; /* Flexbox for sidebar and main content */
+            transition: all 0.3s ease-out;
+            transform: scale(0.95); /* Slightly scale down when hidden */
+            opacity: 0;
+            pointer-events: none; /* Disable interaction when hidden */
+        }
+        #mainAppPanel.open {
+            transform: scale(1);
+            opacity: 1;
+            pointer-events: auto; /* Enable interaction when open */
+        }
+        
+        /* Media query for smaller screens */
+        @media (max-width: 768px) {
+            #mainAppPanel {
+                flex-direction: column; /* Stack sidebar and main content vertically */
+                width: calc(100vw - 20px);
+                height: calc(100vh - 20px);
+                max-width: none; /* No max width for small screens */
+                max-height: none; /* No max height for small screens */
+                bottom: 10px;
+                right: 10px;
+                left: 10px; /* Center horizontally */
+                top: 10px;
+            }
+            #sidebar {
+                width: 100%;
+                max-height: 40%; /* Allow sidebar to take some vertical space */
+                border-right: none;
+                border-bottom: 1px solid var(--hermes-panel-border);
+            }
+            #mainContentArea {
+                flex: 1; /* Main content takes remaining space */
+            }
+        }
+
+
+        /* Sidebar Styling (from NextNote) */
+        #sidebar {
+            width: 280px; /* Wider sidebar for better readability */
+            background: var(--hermes-panel-bg);
+            color: var(--hermes-panel-text);
+            overflow-y: auto;
+            border-right: 1px solid var(--hermes-panel-border);
+            padding: 15px;
+            flex-shrink: 0; /* Prevent sidebar from shrinking */
+        }
+        #sidebar h3 {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--hermes-primary);
+            margin-bottom: 10px;
+        }
+        #sidebar input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            border: 1px solid var(--hermes-input-border);
+            background: var(--hermes-input-bg);
+            color: var(--hermes-input-text);
+        }
+        #sidebar hr {
+            border: none;
+            border-top: 1px solid var(--hermes-panel-border);
+            margin: 15px 0;
+        }
+        #sidebar button.hermes-btn {
+            width: 100%;
+            margin-bottom: 5px;
+            padding: 8px;
+        }
+
+        /* Section and Page Styling (from NextNote) */
+        .section-container { /* Renamed from .section to avoid conflict */
+            margin-bottom: 10px;
+            border: 1px solid var(--hermes-panel-border);
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--hermes-card); /* Lighter background for sections */
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--hermes-accent-bar-bg);
+            padding: 8px 10px;
+            cursor: grab; /* Indicates draggable */
+            font-weight: bold;
+            color: var(--hermes-text);
+            border-bottom: 1px solid var(--hermes-panel-border);
+        }
+        .section-header span {
+            flex-grow: 1;
+            cursor: pointer; /* For toggling pages */
+        }
+        .pages-container { /* Renamed from .pages */
+            margin: 0; /* Remove default margin */
+            padding: 5px 0 5px 15px; /* Indent pages */
+            min-height: 20px;
+            background: var(--hermes-input-bg); /* Use input bg for pages area */
+            border-top: 1px solid var(--hermes-panel-border);
+        }
+        .page-title-item { /* Renamed from .page-title */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--hermes-input-bg);
+            border: 1px solid var(--hermes-input-border);
+            border-radius: 6px;
+            margin-bottom: 4px;
+            padding: 5px 8px;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+        .page-title-item:hover {
+            background: var(--hermes-button-hover-bg); /* Subtle hover */
+        }
+        .page-title-item.selected {
+            background: var(--hermes-highlight-bg); /* Highlight selected page */
+            color: var(--hermes-highlight-text);
+            border-color: var(--hermes-highlight-bg);
+        }
+        .page-title-item.selected .page-name-span,
+        .page-title-item.selected .lock-icon {
+            color: var(--hermes-highlight-text);
+        }
+        .page-title-item span.page-name-span { /* Specific span for page name to target text color */
+            flex: 1;
+            padding: 3px 0;
+            color: var(--hermes-text);
+        }
+        .lock-icon {
+            color: var(--hermes-lock);
+            margin-left: 5px;
+            font-size: 0.9em;
+        }
+        .delete-icon-btn { /* Specific style for small delete icons */
+            background: none;
+            border: none;
+            color: var(--hermes-error-text);
+            cursor: pointer;
+            padding: 0 5px;
+            font-size: 1.2em; /* Bigger icon */
+            line-height: 1;
+            transition: color 0.2s ease;
+        }
+        .delete-icon-btn:hover {
+            color: #d00;
+        }
+
+        /* Main Content Area (from NextNote) */
+        #mainContentArea {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        #toolbar {
+            padding: 10px;
+            background: var(--hermes-panel-bg);
+            border-bottom: 1px solid var(--hermes-panel-border);
+            display: flex;
+            gap: 10px; /* Increased gap for better spacing */
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        #toolbar span {
+            font-weight: bold;
+            color: var(--hermes-primary);
+        }
+        #toolbar .theme-select-container { /* Encapsulate theme select */
+            margin-left: auto;
+        }
+        #toolbar select {
+            background: var(--hermes-input-bg);
+            color: var(--hermes-input-text);
+            border: 1px solid var(--hermes-input-border);
+            padding: 5px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        #editorArea { /* Container for Quill and Preview */
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Prevent overflow issues */
+            padding: 10px; /* Padding around the editor/preview */
+        }
+        #quillEditorContainer {
+            flex: 1;
+            background: var(--hermes-input-bg);
+            color: var(--hermes-input-text);
+            border: 1px solid var(--hermes-input-border);
+            border-radius: 8px;
+            overflow: hidden; /* Contains Quill's own overflow */
+            display: flex; /* Flex container for Quill's toolbar and editor */
+            flex-direction: column;
+            margin-bottom: 10px; /* Space between editor and preview if both visible */
+        }
+        #quillEditorContainer .ql-toolbar {
+            border: none; /* Removed Quill's default border for toolbar */
+            background: var(--hermes-accent-bar-bg);
+            border-bottom: 1px solid var(--hermes-panel-border); /* Add our border */
+            padding: 8px 10px;
+        }
+        #quillEditorContainer .ql-container {
+            flex: 1; /* Quill content fills remaining space */
+            overflow-y: auto;
+            border: none;
+            padding: 10px; /* Padding inside the editor content area */
+            color: var(--hermes-input-text); /* Ensure text color is applied */
+        }
+        #preview {
+            flex: 1;
+            background: var(--hermes-input-bg);
+            color: var(--hermes-input-text);
+            border: 1px solid var(--hermes-input-border);
+            border-radius: 8px;
+            overflow: auto;
+            padding: 15px;
+            line-height: 1.6;
+        }
+        /* Style for rendered markdown elements in preview */
+        #preview h1, #preview h2, #preview h3, #preview h4, #preview h5, #preview h6 { color: var(--hermes-primary); margin-top: 1em; margin-bottom: 0.5em; }
+        #preview p { margin-bottom: 0.5em; }
+        #preview a { color: var(--hermes-accent); text-decoration: underline; }
+        #preview ul, #preview ol { margin-left: 20px; margin-bottom: 0.5em; }
+        #preview pre { background: var(--hermes-bg2); padding: 10px; border-radius: 6px; overflow-x: auto; }
+        #preview code { font-family: monospace; background: var(--hermes-bg2); padding: 2px 4px; border-radius: 4px; }
+        #preview blockquote { border-left: 4px solid var(--hermes-border); padding-left: 10px; margin: 10px 0; font-style: italic; color: var(--hermes-text); }
+        #preview table { width: 100%; border-collapse: collapse; margin-bottom: 1em; }
+        #preview th, #preview td { border: 1px solid var(--hermes-border); padding: 8px; text-align: left; }
+        #preview th { background: var(--hermes-accent-bar-bg); }
+        #preview img { max-width: 100%; height: auto; display: block; margin: 10px 0; border-radius: 8px; }
+
+
+        /* Custom Modal Styling */
+        #customModal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999999;
+            transition: opacity 0.3s ease; /* Fade effect for modal */
+            opacity: 0;
+            pointer-events: none;
+        }
+        #customModal.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #customModal > div { /* The modal content box */
+            background: var(--hermes-card);
+            color: var(--hermes-text);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            border: 2px solid var(--hermes-border);
+            max-width: 400px;
+            width: 90%;
+            margin: 0 16px;
+        }
+        #modalTitle {
+            font-size: 1.25em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--hermes-primary);
+        }
+        #modalMessage {
+            margin-bottom: 16px;
+        }
+        #modalPromptInput {
+            margin-bottom: 16px;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid var(--hermes-input-border);
+            background: var(--hermes-input-bg);
+            color: var(--hermes-input-text);
+            width: 100%;
+        }
+        #modalPromptInput:focus {
+            outline: none;
+            border-color: var(--hermes-accent);
+            box-shadow: 0 0 0 2px var(--hermes-primary);
+        }
+        #modalButtons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+    </style>
+</head>
+<body>
+    <!-- The Root Host for the Floating Icon and the Main App Panel -->
+    <div id="rootHost" class="fixed bottom-6 right-6 z-[999999]">
+        <!-- The Floating Icon -->
+        <img
+            id="hermesFloatIcon"
+            class="hermes-float-icon"
+            src="https://cdn.oaistatic.com/assets/chatgpt-share-og-u7j5uyao.webp"
+            alt="Notes"
+            title="Open Notes"
+        />
+
+        <!-- The Main Application Panel (contains sidebar and editor) -->
+        <div id="mainAppPanel" class="hidden">
+            <!-- Sidebar -->
+            <div id="sidebar">
+                <h3>Notebook</h3>
+                <input id="newSectionInput" placeholder="New Section Name"/>
+                <button id="addSectionBtn" class="hermes-btn">+ Add Section</button>
+                <hr/>
+                <div id="sectionsContainer"></div>
+            </div>
+
+            <!-- Main Content Area (Toolbar + Editor/Preview) -->
+            <div id="mainContentArea">
+                <div id="toolbar">
+                    <span id="currentPageName">No Page Selected</span>
+                    <button id="savePageBtn" class="hermes-btn">💾 Save</button>
+                    <button id="togglePreviewBtn" class="hermes-btn">📄 Preview</button>
+                    <button id="insertImageBtn" class="hermes-btn">🏞️ Image</button>
+                    <input type="file" id="imgInput" accept="image/*" style="display:none"/>
+                    <button id="exportMarkdownBtn" class="hermes-btn">⬇️ Export MD</button>
+                    <input type="file" id="importMarkdownInput" style="display:none"/>
+                    <button id="importMarkdownBtn" class="hermes-btn">⬆️ Import MD</button>
+                    <div class="theme-select-container">
+                        <select id="themeSelect" class="hermes-btn"></select>
+                    </div>
+                </div>
+                <div id="editorArea">
+                    <div id="quillEditorContainer"></div>
+                    <div id="preview" class="hidden"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Modal -->
+        <div id="customModal" class="hidden">
+            <div>
+                <h3 id="modalTitle"></h3>
+                <p id="modalMessage"></p>
+                <input type="text" id="modalPromptInput" class="hidden" />
+                <div id="modalButtons">
+                    <button id="modalConfirmBtn" class="hermes-btn delete hidden">Confirm</button>
+                    <button id="modalCloseBtn" class="hermes-btn">OK</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- External Libraries (Quill, Marked, Turndown, Sortable) -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/turndown/dist/turndown.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <script>
+        // ==UserScript==
+        // @name        Ultimate Note Overlay – Hermes Edition
+        // @namespace   http://tampermonkey.net/
+        // @version     1.0
+        // @description A floating, full-featured note-taking app with Hermes themes, Quill editor, and Markdown support.
+        // @author      Justin & Gemini
+        // @match       *://*/*
+        // @grant       GM_getValue
+        // @grant       GM_setValue
+        // ==/UserScript==
+
+        // Wrap the entire script in an IIFE (Immediately Invoked Function Expression)
+        // This helps keep variables scoped and prevents conflicts with the page's existing JavaScript.
+        (function() {
+            'use strict';
+
+            // IMPORTANT NOTE FOR TAMPERMONKEY USERS:
+            // The `GM_getValue` and `GM_setValue` functions below are included as polyfills (fallbacks)
+            // for when this code is run as a standalone HTML file, using `localStorage`.
+            //
+            // If you use this script in Tampermonkey, and you have `@grant GM_getValue` and `@grant GM_setValue`
+            // in your userscript header (as shown above), Tampermonkey will automatically provide its
+            // native, more secure, and isolated `GM_getValue` and `GM_setValue` functions.
+            // These native functions will *override* the ones defined here, ensuring your data is stored
+            // in Tampermonkey's specific storage, not the browser's global localStorage.
+            // You do NOT need to delete these polyfills for Tampermonkey to work correctly.
+            const GM_getValue = (key, defaultValue) => {
+                try {
+                    const value = localStorage.getItem(key);
+                    return value !== null ? JSON.parse(value) : defaultValue;
+                } catch (e) {
+                    console.error("Error reading from localStorage for GM_getValue:", e);
+                    return defaultValue;
+                }
+            };
+
+            const GM_setValue = (key, value) => {
+                try {
+                    localStorage.setItem(key, JSON.stringify(value));
+                } catch (e) {
+                    console.error("Error writing to localStorage for GM_setValue:", e);
+                }
+            };
+
+            // --- Hermes Themes ---
+            const hermesThemes = {
+                'hermes-dark': `--hermes-bg:#181a1f; --hermes-bg2:#23262d; --hermes-primary:#29e5eb; --hermes-accent:#8f6cff; --hermes-card:#23262d; --hermes-text:#e0e2ea; --hermes-border:#394356; --hermes-lock:#bdb8ff; --hermes-error-text:#ff5c5c; --hermes-button-bg:#8f6cff; --hermes-button-text:#181a1f; --hermes-button-hover-bg:#29e5eb; --hermes-panel-bg:#23262d; --hermes-panel-text:#e0e2ea; --hermes-panel-border:#394356; --hermes-input-bg:#181a1f; --hermes-input-text:#e0e2ea; --hermes-input-border:#8f6cff; --hermes-accent-bar-bg:#181a1f; --hermes-highlight-bg:#29e5eb; --hermes-highlight-text:#181a1f;`,
+                'mint': `--hermes-bg:#242e29; --hermes-bg2:#304039; --hermes-primary:#97e6b0; --hermes-accent:#29dc91; --hermes-card:#304039; --hermes-text:#f4fff8; --hermes-border:#2dcfa5; --hermes-lock:#83c6ae; --hermes-error-text:#ff5c5c; --hermes-button-bg:#29dc91; --hermes-button-text:#242e29; --hermes-button-hover-bg:#97e6b0; --hermes-panel-bg:#304039; --hermes-panel-text:#f4fff8; --hermes-panel-border:#2dcfa5; --hermes-input-bg:#242e29; --hermes-input-text:#f4fff8; --hermes-input-border:#29dc91; --hermes-accent-bar-bg:#242e29; --hermes-highlight-bg:#97e6b0; --hermes-highlight-text:#242e29;`,
+                'brick': `--hermes-bg:#2c1c1c; --hermes-bg2:#3e2826; --hermes-primary:#e87e6d; --hermes-accent:#b82d1a; --hermes-card:#3e2826; --hermes-text:#ffe5de; --hermes-border:#a65040; --hermes-lock:#ffb6a1; --hermes-error-text:#ff5c5c; --hermes-button-bg:#b82d1a; --hermes-button-text:#2c1c1c; --hermes-button-hover-bg:#e87e6d; --hermes-panel-bg:#3e2826; --hermes-panel-text:#ffe5de; --hermes-panel-border:#a65040; --hermes-input-bg:#2c1c1c; --hermes-input-text:#ffe5de; --hermes-input-border:#b82d1a; --hermes-accent-bar-bg:#2c1c1c; --hermes-highlight-bg:#e87e6d; --hermes-highlight-text:#2c1c1c;`,
+                'desert': `--hermes-bg:#322a1f; --hermes-bg2:#594934; --hermes-primary:#edc08c; --hermes-accent:#ca943f; --hermes-card:#594934; --hermes-text:#fff7e6; --hermes-border:#a98e60; --hermes-lock:#f2d099; --hermes-error-text:#ff5c5c; --hermes-button-bg:#ca943f; --hermes-button-text:#322a1f; --hermes-button-hover-bg:#edc08c; --hermes-panel-bg:#594934; --hermes-panel-text:#fff7e6; --hermes-panel-border:#a98e60; --hermes-input-bg:#322a1f; --hermes-input-text:#fff7e6; --hermes-input-border:#ca943f; --hermes-accent-bar-bg:#322a1f; --hermes-highlight-bg:#edc08c; --hermes-highlight-text:#322a1f;`,
+                'phoenix': `--hermes-bg:#27140c; --hermes-bg2:#36211a; --hermes-primary:#ff9a2a; --hermes-accent:#e93f26; --hermes-card:#36211a; --hermes-text:#ffe2c8; --hermes-border:#ff6e2a; --hermes-lock:#ffc988; --hermes-error-text:#ff5c5c; --hermes-button-bg:#e93f26; --hermes-button-text:#27140c; --hermes-button-hover-bg:#ff9a2a; --hermes-panel-bg:#36211a; --hermes-panel-text:#ffe2c8; --hermes-panel-border:#ff6e2a; --hermes-input-bg:#27140c; --hermes-input-text:#ffe2c8; --hermes-input-border:#e93f26; --hermes-accent-bar-bg:#27140c; --hermes-highlight-bg:#ff9a2a; --hermes-highlight-text:#27140c;`,
+                'light': `--hermes-bg:#f0f0f0; --hermes-bg2:#f9f9fd; --hermes-primary:#2299ff; --hermes-accent:#53daff; --hermes-card:#e8eaf3; --hermes-text:#20232a; --hermes-border:#c3c4d6; --hermes-lock:#7cc7e4; --hermes-error-text:#dc3545; --hermes-button-bg:#53daff; --hermes-button-text:#20232a; --hermes-button-hover-bg:#2299ff; --hermes-panel-bg:#f9f9fd; --hermes-panel-text:#20232a; --hermes-panel-border:#c3c4d6; --hermes-input-bg:#f0f0f0; --hermes-input-text:#20232a; --hermes-input-border:#53daff; --hermes-accent-bar-bg:#f0f0f0; --hermes-highlight-bg:#2299ff; --hermes-highlight-text:#f9f9fd;`,
+                'sky': `--hermes-bg:#18263a; --hermes-bg2:#223c58; --hermes-primary:#a1e9fe; --hermes-accent:#69b7f0; --hermes-card:#233750; --hermes-text:#eaf6fb; --hermes-border:#2fa1df; --hermes-lock:#ace2fb; --hermes-error-text:#ff5c5c; --hermes-button-bg:#69b7f0; --hermes-button-text:#18263a; --hermes-button-hover-bg:#a1e9fe; --hermes-panel-bg:#223c58; --hermes-panel-text:#eaf6fb; --hermes-panel-border:#2fa1df; --hermes-input-bg:#18263a; --hermes-input-text:#eaf6fb; --hermes-input-border:#69b7f0; --hermes-accent-bar-bg:#18263a; --hermes-highlight-bg:#a1e9fe; --hermes-highlight-text:#18263a;`,
+                'pastel': `--hermes-bg:#ede7f6; --hermes-bg2:#d1c4e9; --hermes-primary:#7e57c2; --hermes-accent:#ce93d8; --hermes-card:#d1c4e9; --hermes-text:#23212b; --hermes-border:#b39ddb; --hermes-lock:#ce93d8; --hermes-error-text:#ff5c5c; --hermes-button-bg:#ce93d8; --hermes-button-text:#23212b; --hermes-button-hover-bg:#7e57c2; --hermes-panel-bg:#d1c4e9; --hermes-panel-text:#23212b; --hermes-panel-border:#b39ddb; --hermes-input-bg:#ede7f6; --hermes-input-text:#23212b; --hermes-input-border:#ce93d8; --hermes-accent-bar-bg:#ede7f6; --hermes-highlight-bg:#7e57c2; --hermes-highlight-text:#ede7f6;`,
+                'ice': `--hermes-bg:#e4f7fa; --hermes-bg2:#a0ced9; --hermes-primary:#00bcd4; --hermes-accent:#62e7f0; --hermes-card:#a0ced9; --hermes-text:#123146; --hermes-border:#00bcd4; --hermes-lock:#62e7f0; --hermes-error-text:#ff5c5c; --hermes-button-bg:#62e7f0; --hermes-button-text:#123146; --hermes-button-hover-bg:#00bcd4; --hermes-panel-bg:#a0ced9; --hermes-panel-text:#123146; --hermes-panel-border:#00bcd4; --hermes-input-bg:#e4f7fa; --hermes-input-text:#123146; --hermes-input-border:#62e7f0; --hermes-accent-bar-bg:#e4f7fa; --hermes-highlight-bg:#00bcd4; --hermes-highlight-text:#e4f7fa;`,
+                'rose': `--hermes-bg:#32202e; --hermes-bg2:#614051; --hermes-primary:#fd6187; --hermes-accent:#e87ea1; --hermes-card:#614051; --hermes-text:#fff3fa; --hermes-border:#e87ea1; --hermes-lock:#fd6187; --hermes-error-text:#ff5c5c; --hermes-button-bg:#e87ea1; --hermes-button-text:#32202e; --hermes-button-hover-bg:#fd6187; --hermes-panel-bg:#614051; --hermes-panel-text:#fff3fa; --hermes-panel-border:#e87ea1; --hermes-input-bg:#32202e; --hermes-input-text:#fff3fa; --hermes-input-border:#e87ea1; --hermes-accent-bar-bg:#32202e; --hermes-highlight-bg:#fd6187; --hermes-highlight-text:#32202e;`,
+                'terminal': `--hermes-bg:#181a1f; --hermes-bg2:#222; --hermes-primary:#6df06d; --hermes-accent:#f0f06d; --hermes-card:#222; --hermes-text:#f8fff8; --hermes-border:#6df06d; --hermes-lock:#f0f06d; --hermes-error-text:#ff5c5c; --hermes-button-bg:#f0f06d; --hermes-button-text:#181a1f; --hermes-button-hover-bg:#6df06d; --hermes-panel-bg:#222; --hermes-panel-text:#f8fff8; --hermes-panel-border:#6df06d; --hermes-input-bg:#181a1f; --hermes-input-text:#f8fff8; --hermes-input-border:#f0f06d; --hermes-accent-bar-bg:#181a1f; --hermes-highlight-bg:#6df06d; --hermes-highlight-text:#181a1f;`
+            };
+            const themeKeys = Object.keys(hermesThemes);
+
+            let currentTheme = GM_getValue('ultimate-note-theme', 'mint');
+
+            // --- Initial Data Structure (from NextNote, enhanced with 'locked' status) ---
+            const defaultSections = {
+                "Getting Started": [
+                    { name: "Welcome!", markdown: "# Welcome to Ultimate Notes!\n\nThis is your personal, floating notepad.\n\n## Features:\n- Rich text editing with **Quill.js**\n- Markdown import/export\n- Organize notes in _Sections_ and _Pages_\n- Drag & drop to reorder sections and pages\n- Instant theme switching\n- Notes can be **locked** to prevent accidental edits\n\n## How to use:\n1. Click the floating icon to open/close the app.\n2. Add new sections and pages from the sidebar.\n3. Click on a page to load it into the editor.\n4. Use the toolbar at the top to format text, save, preview, and import/export.\n5. Click the lock icon on a note in the sidebar or in the detail view to lock/unlock it.\n\nEnjoy your note-taking!", locked: false },
+                    { name: "Locked Page Example", markdown: "This page is locked! You cannot edit its title or content until you unlock it. This is useful for important information you don't want to accidentally change.", locked: true }
+                ],
+                "Ideas": [
+                    { name: "New Project Idea", markdown: "Brainstorming notes for a new side project...", locked: false }
+                ]
+            };
+
+            let sections = loadSections(); // Use a new key for this version of data
+
+            let currentSectionName = null;
+            let currentPageIndex = null;
+            let quill; // Global Quill instance
+
+            // --- DOM Elements ---
+            const rootHost = document.getElementById('rootHost');
+            const hermesFloatIcon = document.getElementById('hermesFloatIcon');
+            const mainAppPanel = document.getElementById('mainAppPanel');
+            const sidebar = document.getElementById('sidebar');
+            const sectionsContainer = document.getElementById('sectionsContainer');
+            const newSectionInput = document.getElementById('newSectionInput');
+            const addSectionBtn = document.getElementById('addSectionBtn');
+            const themeSelect = document.getElementById('themeSelect');
+            const currentPageNameSpan = document.getElementById('currentPageName');
+            const savePageBtn = document.getElementById('savePageBtn');
+            const togglePreviewBtn = document.getElementById('togglePreviewBtn');
+            const insertImageBtn = document.getElementById('insertImageBtn');
+            const imgInput = document.getElementById('imgInput');
+            const exportMarkdownBtn = document.getElementById('exportMarkdownBtn');
+            const importMarkdownInput = document.getElementById('importMarkdownInput');
+            const importMarkdownBtn = document.getElementById('importMarkdownBtn');
+            const quillEditorContainer = document.getElementById('quillEditorContainer');
+            const preview = document.getElementById('preview');
+
+            // Modal Elements
+            const customModal = document.getElementById('customModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalMessage = document.getElementById('modalMessage');
+            const modalPromptInput = document.getElementById('modalPromptInput');
+            const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+            const modalCloseBtn = document.getElementById('modalCloseBtn');
+
+            let currentModalOnConfirm = null;
+            let currentModalOnClose = null;
+
+
+            // --- Data Management Functions ---
+            function saveSections() {
+                GM_setValue('ultimate-note-sections', JSON.stringify(sections));
+                console.log("Sections data saved.");
+            }
+
+            function loadSections() {
+                try {
+                    const loaded = GM_getValue('ultimate-note-sections');
+                    if (loaded) return JSON.parse(loaded);
+                    return defaultSections;
+                } catch (e) {
+                    console.error("Error parsing stored sections data, reverting to default.", e);
+                    return defaultSections;
+                }
+            }
+
+            // --- Theme Management ---
+            function applyTheme() {
+                const themeVars = hermesThemes[currentTheme] || hermesThemes['mint'];
+                document.documentElement.style.cssText = themeVars;
+                GM_setValue('ultimate-note-theme', currentTheme);
+            }
+
+            // --- Modal Functions ---
+            function showModal(title, message, showConfirm = false, onConfirmCallback = null, onCloseCallback = null, isPrompt = false) {
+                modalTitle.textContent = title;
+                modalMessage.textContent = message;
+
+                if (isPrompt) {
+                    modalPromptInput.value = ''; // Clear previous input
+                    modalPromptInput.classList.remove('hidden');
+                } else {
+                    modalPromptInput.classList.add('hidden');
+                }
+
+                if (showConfirm) {
+                    modalConfirmBtn.classList.remove('hidden');
+                    modalCloseBtn.textContent = 'Cancel';
+                } else {
+                    modalConfirmBtn.classList.add('hidden');
+                    modalCloseBtn.textContent = 'OK';
+                }
+
+                currentModalOnConfirm = onConfirmCallback;
+                currentModalOnClose = onCloseCallback;
+
+                customModal.classList.remove('hidden');
+                customModal.classList.add('open'); // Use 'open' class for transition
+            }
+
+            function hideModal() {
+                customModal.classList.add('hidden');
+                customModal.classList.remove('open');
+                currentModalOnConfirm = null;
+                currentModalOnClose = null;
+            }
+
+            // --- Render UI Functions ---
+            function renderSectionsAndPages() {
+                const container = sectionsContainer;
+                container.innerHTML = "";
+                
+                // Keep track of active Sortable instances to destroy them before re-creating
+                const existingSortables = [];
+                if (container._sortable) { // Check if main container itself has a Sortable instance
+                    existingSortables.push(container._sortable);
+                }
+                document.querySelectorAll('.pages-container').forEach(pc => {
+                    if (pc._sortable) {
+                        existingSortables.push(pc._sortable);
+                    }
+                });
+
+                existingSortables.forEach(s => s.destroy()); // Destroy existing instances
+
+                Object.keys(sections).forEach(secName => {
+                    const secDiv = document.createElement("div");
+                    secDiv.className = "section-container";
+                    secDiv.dataset.sectionName = secName; // Store section name for reordering
+
+                    const header = document.createElement("div");
+                    header.className = "section-header";
+                    header.innerHTML = `
+                        <span class="section-name-span">${secName}</span>
+                        <button class="hermes-btn delete delete-section-btn">🗑️</button>
+                    `;
+                    secDiv.appendChild(header);
+
+                    const sectionNameSpan = header.querySelector('.section-name-span');
+                    sectionNameSpan.onclick = () => togglePagesVisibility(secDiv);
+                    
+                    const deleteSectionBtn = header.querySelector('.delete-section-btn');
+                    deleteSectionBtn.onclick = (e) => {
+                        e.stopPropagation(); // Prevent toggling pages
+                        showModal(
+                            "Delete Section",
+                            `Are you sure you want to delete the section "${secName}" and all its pages?`,
+                            true, // showConfirm
+                            () => {
+                                delete sections[secName];
+                                saveSections();
+                                renderSectionsAndPages();
+                                // If current page was in this section, clear editor
+                                if (currentSectionName === secName) {
+                                    clearEditor();
+                                }
+                                hideModal();
+                            },
+                            hideModal
+                        );
+                    };
+
+                    const pageList = document.createElement("div");
+                    pageList.className = "pages-container";
+                    secDiv.appendChild(pageList);
+
+                    sections[secName].forEach((p, idx) => {
+                        const pgDiv = document.createElement("div");
+                        pgDiv.className = `page-title-item ${currentSectionName === secName && currentPageIndex === idx ? 'selected' : ''}`;
+                        pgDiv.dataset.pageIndex = idx; // Store index for reordering
+                        pgDiv.dataset.sectionName = secName; // Store section name for loadPage
+
+                        pgDiv.innerHTML = `
+                            <span class="page-name-span">${p.name}</span>
+                            ${p.locked ? '<span class="lock-icon">🔒</span>' : ''}
+                            <button class="hermes-btn delete delete-page-btn" data-sec-name="${secName}" data-page-idx="${idx}">🗑️</button>
+                            <button class="hermes-btn lock-toggle-btn" data-sec-name="${secName}" data-page-idx="${idx}">${p.locked ? 'Unlock' : 'Lock'}</button>
+                        `;
+                        pageList.appendChild(pgDiv);
+
+                        pgDiv.querySelector('.page-name-span').onclick = () => loadPage(secName, idx);
+                        pgDiv.querySelector('.delete-page-btn').onclick = (e) => {
+                            e.stopPropagation(); // Prevent loading page
+                            const targetSecName = e.target.dataset.secName;
+                            const targetPageIdx = parseInt(e.target.dataset.pageIdx);
+                            showModal(
+                                "Delete Page",
+                                `Are you sure you want to delete the page "${sections[targetSecName][targetPageIdx].name}"?`,
+                                true, // showConfirm
+                                () => {
+                                    sections[targetSecName].splice(targetPageIdx, 1);
+                                    saveSections();
+                                    renderSectionsAndPages();
+                                    // If current page was deleted, clear editor
+                                    if (currentSectionName === targetSecName && currentPageIndex === targetPageIdx) {
+                                        clearEditor();
+                                    }
+                                    hideModal();
+                                },
+                                hideModal
+                            );
+                        };
+                        pgDiv.querySelector('.lock-toggle-btn').onclick = (e) => {
+                            e.stopPropagation(); // Prevent loading page
+                            const targetSecName = e.target.dataset.secName;
+                            const targetPageIdx = parseInt(e.target.dataset.pageIdx);
+                            const page = sections[targetSecName][targetPageIdx];
+                            page.locked = !page.locked;
+                            saveSections();
+                            renderSectionsAndPages();
+                            // If this is the current page, update editor state
+                            if (currentSectionName === targetSecName && currentPageIndex === targetPageIdx) {
+                                quill.enable(!page.locked); // Enable/disable quill
+                                currentPageNameSpan.textContent = `${targetSecName} > ${page.name} ${page.locked ? '🔒' : ''}`;
+                            }
+                        };
+                    });
+
+                    const addPgBtn = document.createElement("button");
+                    addPgBtn.className = "hermes-btn add-page-btn";
+                    addPgBtn.textContent = "+ Add Page";
+                    addPgBtn.dataset.sectionName = secName;
+                    secDiv.appendChild(addPgBtn);
+                    addPgBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        const targetSecName = e.target.dataset.sectionName;
+                        showModal(
+                            "New Page Name",
+                            "Enter the name for the new page:",
+                            true, // showConfirm
+                            (name) => {
+                                if (name && name.trim() !== '') {
+                                    sections[targetSecName].push({ name: name.trim(), markdown: "", locked: false });
+                                    saveSections();
+                                    renderSectionsAndPages();
+                                    hideModal();
+                                } else {
+                                    showModal('Error', 'Page name cannot be empty.');
+                                }
+                            },
+                            hideModal,
+                            true // isPrompt
+                        );
+                    };
+                    container.appendChild(secDiv);
+                });
+
+                // --- Initialize SortableJS ---
+                // Sortable for sections
+                const sectionSortable = Sortable.create(container, {
+                    animation: 150,
+                    handle: ".section-header",
+                    onEnd: (evt) => {
+                        // Reorder sections object based on new DOM order
+                        const newSectionsOrder = {};
+                        evt.to.querySelectorAll('.section-container').forEach(secDiv => {
+                            const secName = secDiv.dataset.sectionName;
+                            newSectionsOrder[secName] = sections[secName]; // Keep existing content
+                        });
+                        sections = newSectionsOrder;
+                        saveSections();
+                        renderSectionsAndPages(); // Re-render to ensure data integrity and re-attach listeners
+                    }
+                });
+                container._sortable = sectionSortable; // Store for destruction
+
+                // Sortable for pages within each section
+                document.querySelectorAll(".pages-container").forEach(pageList => {
+                    const pageSortable = Sortable.create(pageList, {
+                        animation: 150,
+                        onEnd: (evt) => {
+                            const currentSecName = evt.from.closest('.section-container').dataset.sectionName;
+                            const oldIndex = evt.oldIndex;
+                            const newIndex = evt.newIndex;
+                            // Move the page within its section array
+                            const [movedPage] = sections[currentSecName].splice(oldIndex, 1);
+                            sections[currentSecName].splice(newIndex, 0, movedPage);
+                            saveSections();
+                            // No need to re-render all sections, just ensure internal data is correct
+                        }
+                    });
+                    pageList._sortable = pageSortable; // Store for destruction
+                });
+            }
+
+            function togglePagesVisibility(secDiv) {
+                const pages = secDiv.querySelector(".pages-container");
+                if (pages) {
+                    pages.classList.toggle('hidden');
+                }
+            }
+
+            function loadPage(secName, pageIdx) {
+                currentSectionName = secName;
+                currentPageIndex = pageIdx;
+                const page = sections[secName][pageIdx];
+
+                // Remove 'selected' class from all pages
+                document.querySelectorAll('.page-title-item.selected').forEach(el => el.classList.remove('selected'));
+                // Add 'selected' class to the clicked page
+                const selectedPgDiv = sectionsContainer.querySelector(`[data-section-name="${secName}"] .pages-container div:nth-child(${pageIdx + 1})`);
+                if (selectedPgDiv) {
+                    selectedPgDiv.classList.add('selected');
+                }
+                
+                const htmlContent = marked.parse(page.markdown || "");
+                quill.clipboard.dangerouslyPasteHTML(htmlContent);
+                quill.setSelection(quill.getLength(), 0); // Move cursor to end of document
+                currentPageNameSpan.textContent = `${secName} > ${page.name} ${page.locked ? '🔒' : ''}`;
+
+                // Show editor, hide preview, enable/disable Quill based on lock status
+                quillEditorContainer.classList.remove('hidden');
+                preview.classList.add('hidden');
+                quill.enable(!page.locked); // Enable if not locked
+                togglePreviewBtn.textContent = '📄 Preview'; // Reset button text
+            }
+
+            function clearEditor() {
+                currentSectionName = null;
+                currentPageIndex = null;
+                quill.setContents([]); // Clear Quill editor
+                quill.enable(false); // Disable Quill
+                currentPageNameSpan.textContent = "No Page Selected";
+                document.querySelectorAll('.page-title-item.selected').forEach(el => el.classList.remove('selected'));
+                quillEditorContainer.classList.add('hidden'); // Hide Quill
+                preview.classList.remove('hidden'); // Show generic preview message
+                preview.innerHTML = "<p>Select a page or create a new one to start writing.</p>";
+            }
+
+            // --- Editor/Preview Functions ---
+            function saveCurrentPageContent() {
+                if (currentSectionName !== null && currentPageIndex !== null) {
+                    const turndownService = new TurndownService();
+                    const html = quill.root.innerHTML;
+                    sections[currentSectionName][currentPageIndex].markdown = turndownService.turndown(html);
+                    saveSections();
+                }
+            }
+
+            function renderMarkdownPreview() {
+                if (currentSectionName !== null && currentPageIndex !== null) {
+                    const raw = sections[currentSectionName][currentPageIndex].markdown || "";
+                    preview.innerHTML = marked.parse(raw);
+                } else {
+                    preview.innerHTML = "<p>Select a page to see its preview.</p>";
+                }
+            }
+
+            function toggleEditorPreview() {
+                if (preview.classList.contains('hidden')) { // Currently showing editor, switch to preview
+                    saveCurrentPageContent(); // Save current Quill content before preview
+                    renderMarkdownPreview();
+                    preview.classList.remove('hidden');
+                    quillEditorContainer.classList.add('hidden');
+                    quill.enable(false); // Disable Quill editor when preview is active
+                    togglePreviewBtn.textContent = '✏️ Edit';
+                } else { // Currently showing preview, switch to editor
+                    preview.classList.add('hidden');
+                    quillEditorContainer.classList.remove('hidden');
+                    // Only enable if the current page is NOT locked
+                    if (currentSectionName !== null && currentPageIndex !== null) {
+                        const page = sections[currentSectionName][currentPageIndex];
+                        quill.enable(!page.locked); 
+                    } else {
+                        quill.enable(false); // No page selected, keep disabled
+                    }
+                    togglePreviewBtn.textContent = '📄 Preview';
+                }
+            }
+
+            function insertImage(ev) {
+                const file = ev.target.files[0];
+                if (!file || !quill.isEnabled()) { // Check if Quill is enabled
+                    showModal('Error', 'Please select a page and ensure it is unlocked to insert an image.');
+                    return;
+                }
+                const fr = new FileReader();
+                fr.onload = e => {
+                    const range = quill.getSelection(true); // Get current cursor position (true for focus)
+                    if (range) {
+                        quill.insertEmbed(range.index, 'image', e.target.result);
+                        quill.setSelection(range.index + 1); // Move cursor after the image
+                    } else {
+                        quill.insertEmbed(quill.getLength(), 'image', e.target.result); // Insert at end if no selection
+                        quill.setSelection(quill.getLength());
+                    }
+                    saveCurrentPageContent(); // Save after image insert
+                };
+                fr.readAsDataURL(file);
+            }
+
+            function exportMarkdownFile() {
+                if (currentSectionName === null || currentPageIndex === null) {
+                    showModal('Export Error', 'Please select a page to export.');
+                    return;
+                }
+                saveCurrentPageContent(); // Ensure latest content is saved before export
+                const md = sections[currentSectionName][currentPageIndex].markdown;
+                const blob = new Blob([md], { type: "text/markdown" });
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(blob);
+                a.download = sections[currentSectionName][currentPageIndex].name.replace(/\s+/g, "_") + ".md";
+                document.body.appendChild(a); // Append to body to make it clickable in all browsers
+                a.click();
+                document.body.removeChild(a); // Clean up
+                URL.revokeObjectURL(url);
+                showModal('Export Complete', `Markdown exported for "${sections[currentSectionName][currentPageIndex].name}".`);
+            }
+
+            function importMarkdownFile(event) {
+                const file = event.target.files[0];
+                if (!file || currentSectionName === null || currentPageIndex === null) {
+                    showModal('Import Error', 'Please select a page to import markdown into, and choose a file.');
+                    return;
+                }
+                if (!quill.isEnabled()) {
+                    showModal('Error', 'Please unlock the current page to import markdown into it.');
+                    return;
+                }
+
+                const fr = new FileReader();
+                fr.onload = e => {
+                    sections[currentSectionName][currentPageIndex].markdown = e.target.result;
+                    saveSections();
+                    loadPage(currentSectionName, currentPageIndex); // Re-load page to update Quill
+                    showModal('Import Successful', `Markdown imported into "${sections[currentSectionName][currentPageIndex].name}".`);
+                };
+                fr.readAsText(file);
+            }
+
+            // --- Event Listeners Setup ---
+            function attachGlobalEventListeners() {
+                hermesFloatIcon.onclick = () => {
+                    mainAppPanel.classList.toggle('open');
+                    mainAppPanel.classList.toggle('hidden', !mainAppPanel.classList.contains('open'));
+                    if (mainAppPanel.classList.contains('open')) {
+                        // Ensure a blank page is shown if no page is selected when app opens
+                        if (currentSectionName === null || currentPageIndex === null) {
+                             clearEditor();
+                        } else {
+                            // If a page was selected, re-load it to correctly set Quill's state (enabled/disabled)
+                            loadPage(currentSectionName, currentPageIndex);
+                        }
+                    }
+                };
+
+                addSectionBtn.onclick = () => {
+                    showModal(
+                        "New Section Name",
+                        "Enter the name for the new section:",
+                        true, // showConfirm
+                        (name) => {
+                            if (name && name.trim() !== '') {
+                                if (!sections[name.trim()]) {
+                                    sections[name.trim()] = [];
+                                    saveSections();
+                                    renderSectionsAndPages();
+                                    newSectionInput.value = ""; // Clear input
+                                    hideModal();
+                                } else {
+                                    showModal('Error', 'Section with this name already exists!');
+                                }
+                            } else {
+                                showModal('Error', 'Section name cannot be empty.');
+                            }
+                        },
+                        hideModal,
+                        true // isPrompt
+                    );
+                };
+
+                savePageBtn.onclick = saveCurrentPageContent;
+                togglePreviewBtn.onclick = toggleEditorPreview;
+                insertImageBtn.onclick = () => imgInput.click();
+                imgInput.onchange = insertImage;
+                exportMarkdownBtn.onclick = exportMarkdownFile;
+                importMarkdownBtn.onclick = () => importMarkdownInput.click();
+                importMarkdownInput.onchange = importMarkdownFile;
+
+                themeSelect.onchange = (e) => {
+                    currentTheme = e.target.value;
+                    applyTheme();
+                };
+
+                // Modal button handlers
+                modalConfirmBtn.onclick = () => {
+                    if (currentModalOnConfirm) {
+                        currentModalOnConfirm(modalPromptInput.value); // Pass prompt value if any
+                    } else {
+                        hideModal();
+                    }
+                };
+                modalCloseBtn.onclick = () => {
+                    if (currentModalOnClose) {
+                        currentModalOnClose();
+                    } else {
+                        hideModal();
+                    }
+                };
+
+                // Click outside handlers
+                document.addEventListener('mousedown', (e) => {
+                    // Check if the click is outside the main app panel and the floating icon
+                    if (mainAppPanel.classList.contains('open') && !rootHost.contains(e.target) && !customModal.contains(e.target)) {
+                        mainAppPanel.classList.remove('open');
+                        mainAppPanel.classList.add('hidden'); // Ensure it's hidden
+                    }
+                    // Hide modal if click is outside modal itself (but not if click is on the app panel triggering it)
+                    if (!customModal.classList.contains('hidden') && !customModal.contains(e.target) && !rootHost.contains(e.target)) {
+                        hideModal();
+                    }
+                });
+            }
+
+            // --- Initialization ---
+            window.onload = function() {
+                applyTheme(); // Apply saved theme
+                
+                // Populate theme select dropdown
+                themeKeys.forEach(name => {
+                    const opt = document.createElement("option");
+                    opt.value = name;
+                    opt.textContent = name.charAt(0).toUpperCase() + name.slice(1); // Capitalize first letter
+                    themeSelect.appendChild(opt);
+                });
+                themeSelect.value = currentTheme; // Set initial selected theme
+
+                // Initialize Quill Editor
+                quill = new Quill('#quillEditorContainer', {
+                    theme: 'snow',
+                    modules: {
+                        toolbar: [
+                            [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                            ['bold', 'italic', 'underline', 'strike'],
+                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                            [{ 'align': [] }],
+                            [{ 'color': [] }, { 'background': [] }],
+                            ['link'], // Image handled by custom button
+                            ['clean']
+                        ]
+                    }
+                });
+                quill.enable(false); // Start with Quill disabled until a page is loaded
+
+                // Attach general event listeners
+                attachGlobalEventListeners();
+
+                // Initial render of sections and pages
+                renderSectionsAndPages();
+                
+                // Set initial preview message
+                preview.innerHTML = "<p>Select a page or create a new one to start writing.</p>";
+                quillEditorContainer.classList.add('hidden'); // Hide Quill until a page is selected
+                preview.classList.remove('hidden'); // Show initial preview message
+            };
+
+        })();
+    </script>
+</body>
+</html>
