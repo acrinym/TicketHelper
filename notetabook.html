@@ -4,16 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ultimate Note Overlay</title>
-    <!-- 
-        FOR STANDALONE HTML: Keep these CSS links uncommented.
-        FOR TAMPERMONKEY USERSCRIPT: You might need to adjust or comment these out
-        if the target website interferes or if you want to bundle/inject CSS differently.
-    -->
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Quill.js CSS -->
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <style>
         /* Define custom CSS variables for themes and global styles */
@@ -153,6 +145,7 @@
             color: var(--hermes-button-text);
         }
 
+        /* Code Workspace specific styles */
         #codeWorkspace {
             flex: 1;
             display: flex;
@@ -168,8 +161,11 @@
         }
         #codeEditorContainer {
             flex: 1;
+            /* Monaco Editor requires its container to have a defined height,
+               which `flex: 1` here should provide within a flex column parent */
+            min-height: 0; /* Important for flex items within a column to shrink */
         }
-        
+
         /* Media query for smaller screens */
         @media (max-width: 768px) {
             #mainAppPanel {
@@ -453,9 +449,7 @@
     </style>
 </head>
 <body>
-    <!-- The Root Host for the Floating Icon and the Main App Panel -->
     <div id="rootHost" class="fixed bottom-6 right-6 z-[999999]">
-        <!-- The Floating Icon -->
         <img
             id="hermesFloatIcon"
             class="hermes-float-icon"
@@ -464,14 +458,12 @@
             title="Open Notes"
         />
 
-        <!-- The Main Application Panel (contains tabs for notes and code) -->
         <div id="mainAppPanel" class="hidden flex flex-col">
             <div id="tabBar">
                 <div id="notesTab" class="tab-button active">Notes</div>
                 <div id="codeTab" class="tab-button">Code</div>
             </div>
             <div id="notesWorkspace" class="flex flex-1">
-                <!-- Sidebar -->
                 <div id="sidebar">
                     <h3>Notebook</h3>
                     <input id="newSectionInput" placeholder="New Section Name"/>
@@ -480,7 +472,6 @@
                     <div id="sectionsContainer"></div>
                 </div>
 
-                <!-- Main Content Area (Toolbar + Editor/Preview) -->
                 <div id="mainContentArea" class="flex-1">
                     <div id="toolbar">
                         <span id="currentPageName">No Page Selected</span>
@@ -510,7 +501,6 @@
             </div>
         </div>
 
-        <!-- Custom Modal -->
         <div id="customModal" class="hidden">
             <div>
                 <h3 id="modalTitle"></h3>
@@ -525,7 +515,6 @@
 
     </div>
 
-    <!-- External Libraries (Quill, Marked, Turndown, Sortable) -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/turndown/dist/turndown.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -620,9 +609,9 @@
 
             let sections = loadSections(); // Use a new key for this version of data
 
-           let currentSectionName = null;
-           let currentPageIndex = null;
-           let quill; // Global Quill instance
+            let currentSectionName = null;
+            let currentPageIndex = null;
+            let quill; // Global Quill instance
 
             // Code editor state
             let codeFiles = GM_getValue('ultimate-note-code-files', {});
@@ -650,7 +639,7 @@
             const quillEditorContainer = document.getElementById('quillEditorContainer');
             const preview = document.getElementById('preview');
 
-            // Code workspace elements
+            // Code workspace elements (deduplicated)
             const notesTab = document.getElementById('notesTab');
             const codeTab = document.getElementById('codeTab');
             const notesWorkspace = document.getElementById('notesWorkspace');
@@ -733,7 +722,7 @@
             function renderSectionsAndPages() {
                 const container = sectionsContainer;
                 container.innerHTML = "";
-                
+
                 // Keep track of active Sortable instances to destroy them before re-creating
                 const existingSortables = [];
                 if (container._sortable) { // Check if main container itself has a Sortable instance
@@ -762,7 +751,7 @@
 
                     const sectionNameSpan = header.querySelector('.section-name-span');
                     sectionNameSpan.onclick = () => togglePagesVisibility(secDiv);
-                    
+
                     const deleteSectionBtn = header.querySelector('.delete-section-btn');
                     deleteSectionBtn.onclick = (e) => {
                         e.stopPropagation(); // Prevent toggling pages
@@ -926,7 +915,7 @@
                 if (selectedPgDiv) {
                     selectedPgDiv.classList.add('selected');
                 }
-                
+
                 const htmlContent = marked.parse(page.markdown || "");
                 quill.clipboard.dangerouslyPasteHTML(htmlContent);
                 quill.setSelection(quill.getLength(), 0); // Move cursor to end of document
@@ -984,7 +973,7 @@
                     // Only enable if the current page is NOT locked
                     if (currentSectionName !== null && currentPageIndex !== null) {
                         const page = sections[currentSectionName][currentPageIndex];
-                        quill.enable(!page.locked); 
+                        quill.enable(!page.locked);
                     } else {
                         quill.enable(false); // No page selected, keep disabled
                     }
@@ -1053,7 +1042,7 @@
                 fr.readAsText(file);
             }
 
-            // --- Code Workspace Functions ---
+            // --- Code Workspace Functions (deduplicated) ---
             function saveCurrentFileContent() {
                 if (currentFileName && monacoEditor) {
                     codeFiles[currentFileName].content = monacoEditor.getValue();
@@ -1076,7 +1065,7 @@
 
             function getLanguageFromFilename(fname) {
                 const ext = fname.split('.').pop();
-                const map = { js: 'javascript', py: 'python', html: 'html', css: 'css' };
+                const map = { js: 'javascript', py: 'python', html: 'html', css: 'css' }; // Added common code file extensions
                 return map[ext] || 'plaintext';
             }
 
@@ -1091,9 +1080,9 @@
                             monacoLoaded = true;
                             monacoEditor = monaco.editor.create(codeEditorContainer, {
                                 value: '',
-                                language: 'javascript',
-                                theme: 'vs-dark',
-                                automaticLayout: true
+                                language: 'javascript', // Default language for new editor
+                                theme: 'vs-dark', // Default theme for Monaco
+                                automaticLayout: true // Crucial for responsive resizing
                             });
                             resolve();
                         });
@@ -1103,7 +1092,7 @@
             }
 
             function openFile(name) {
-                saveCurrentFileContent();
+                saveCurrentFileContent(); // Save content of the *currently open* file before switching
                 currentFileName = name;
                 loadMonaco().then(() => {
                     if (!codeFiles[name]) codeFiles[name] = { content: '' };
@@ -1113,18 +1102,41 @@
             }
 
             function switchTab(tab) {
+                // Ensure current content is saved before switching
+                if (notesWorkspace.classList.contains('hidden') && currentFileName) { // Currently on code tab, and a file is open
+                    saveCurrentFileContent();
+                } else if (!notesWorkspace.classList.contains('hidden') && currentSectionName !== null) { // Currently on notes tab, and a page is open
+                    saveCurrentPageContent();
+                }
+
+
                 if (tab === 'code') {
                     notesWorkspace.classList.add('hidden');
                     codeWorkspace.classList.remove('hidden');
                     notesTab.classList.remove('active');
                     codeTab.classList.add('active');
-                    loadMonaco();
-                } else {
-                    saveCurrentFileContent();
+                    loadMonaco().then(() => {
+                        if (currentFileName) { // If a file was previously open, load it
+                             openFile(currentFileName);
+                        } else if (Object.keys(codeFiles).length > 0) { // Else, open the first available file
+                            openFile(Object.keys(codeFiles)[0]);
+                        } else { // No files exist, clear editor
+                            monacoEditor?.setValue('');
+                            monaco.editor.setModelLanguage(monacoEditor?.getModel(), 'plaintext'); // Default to plaintext
+                            currentFileName = null;
+                        }
+                    });
+                } else { // Switch to notes tab
                     codeWorkspace.classList.add('hidden');
                     notesWorkspace.classList.remove('hidden');
                     codeTab.classList.remove('active');
                     notesTab.classList.add('active');
+                    // Re-enable Quill if a page is selected and not locked
+                    if (currentSectionName !== null && currentPageIndex !== null) {
+                        loadPage(currentSectionName, currentPageIndex);
+                    } else {
+                        clearEditor(); // Ensure editor is cleared if no page is selected
+                    }
                 }
             }
 
@@ -1135,11 +1147,25 @@
                     mainAppPanel.classList.toggle('hidden', !mainAppPanel.classList.contains('open'));
                     if (mainAppPanel.classList.contains('open')) {
                         // Ensure a blank page is shown if no page is selected when app opens
-                        if (currentSectionName === null || currentPageIndex === null) {
-                             clearEditor();
-                        } else {
-                            // If a page was selected, re-load it to correctly set Quill's state (enabled/disabled)
-                            loadPage(currentSectionName, currentPageIndex);
+                        // or re-load the currently selected page/file to update editor state
+                        if (notesTab.classList.contains('active')) { // Notes tab is active
+                            if (currentSectionName === null || currentPageIndex === null) {
+                                clearEditor();
+                            } else {
+                                loadPage(currentSectionName, currentPageIndex);
+                            }
+                        } else if (codeTab.classList.contains('active')) { // Code tab is active
+                            loadMonaco().then(() => { // Ensure Monaco is loaded before trying to set value
+                                if (currentFileName) {
+                                    openFile(currentFileName);
+                                } else if (Object.keys(codeFiles).length > 0) {
+                                    openFile(Object.keys(codeFiles)[0]);
+                                } else {
+                                    monacoEditor?.setValue('');
+                                    monaco.editor.setModelLanguage(monacoEditor?.getModel(), 'plaintext');
+                                    currentFileName = null;
+                                }
+                            });
                         }
                     }
                 };
@@ -1184,7 +1210,7 @@
                         if (name && name.trim() !== '') {
                             if (!codeFiles[name]) codeFiles[name] = { content: '' };
                             renderFileList();
-                            openFile(name);
+                            openFile(name); // Open newly created file
                             hideModal();
                         } else {
                             showModal('Error', 'File name cannot be empty.');
@@ -1230,7 +1256,7 @@
             // --- Initialization ---
             window.onload = function() {
                 applyTheme(); // Apply saved theme
-                
+
                 // Populate theme select dropdown
                 themeKeys.forEach(name => {
                     const opt = document.createElement("option");
@@ -1264,15 +1290,17 @@
                 // Attach general event listeners
                 attachGlobalEventListeners();
 
-                renderFileList();
-
-                // Initial render of sections and pages
+                // Initial render of sections and pages in Notes tab
                 renderSectionsAndPages();
-                
-                // Set initial preview message
+                renderFileList(); // Initial render of files in Code tab
+
+                // Set initial preview message for Notes tab
                 preview.innerHTML = "<p>Select a page or create a new one to start writing.</p>";
                 quillEditorContainer.classList.add('hidden'); // Hide Quill until a page is selected
                 preview.classList.remove('hidden'); // Show initial preview message
+
+                // Set initial state for Code tab (Monaco will be loaded on demand)
+                codeEditorContainer.innerHTML = '<p style="text-align: center; padding-top: 50px;">Select a file or add a new one to start coding.</p>';
             };
 
         })();
