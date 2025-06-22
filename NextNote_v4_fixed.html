@@ -484,7 +484,7 @@
       resDiv.style.display=results.length?'block':'none';
     }
 
-    function toggleAttachments(){
+function toggleAttachments(){
       const panel=document.getElementById('attachmentsPanel');
       panel.style.display=panel.style.display==='block'?'none':'block';
       if(panel.style.display==='block') renderAttachments();
@@ -539,7 +539,6 @@
       }
       toggleAttachments();
     }
-
     // Theme setup
     const themeSelect=document.getElementById("themeSelect");
     Object.keys(hermesThemes).forEach(name=>{
