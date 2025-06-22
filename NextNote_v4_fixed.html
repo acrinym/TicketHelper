@@ -134,6 +134,7 @@
   <div id="main">
     <div id="toolbar">
       <span id="currentPageName">No Page Selected</span>
+      <span id="pageMeta" style="margin-left:10px;color:var(--hermes-disabled-text);"></span>
       <button onclick="saveCurrentPage()">沈 Save</button>
       <button onclick="togglePreview()">早 Preview</button>
       <button onclick="document.getElementById('imgInput').click()">名 Image</button>
@@ -231,6 +232,18 @@
       // Add more themes as needed...
     };
     let sections = JSON.parse(localStorage.getItem("sections_v4")) || {};
+    function migratePages(){
+      const now = new Date().toISOString();
+      Object.keys(sections).forEach(sec=>{
+        sections[sec] = sections[sec].map(p=>({
+          name: p.name,
+          markdown: p.markdown||"",
+          id: p.id || (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2)),
+          created: p.created || now,
+          modified: p.modified || now
+        }));
+      });
+    }
     let currentSection = null;
     let currentPage = null;
     let quill; // Declared global quill instance
@@ -278,7 +291,13 @@
         addPgBtn.textContent="+ Page";
         addPgBtn.onclick=()=>{
           const name=prompt("Page Name?");
-          if(name){ sections[sec].push({name,markdown:""}); saveToStorage(); renderSections(); }
+          if(name){
+            const now = new Date().toISOString();
+            sections[sec].push({name,markdown:"",id:crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2),created:now,modified:now});
+            saveToStorage();
+            renderSections();
+            loadPage(sec, sections[sec].length - 1);
+          }
         };
         secDiv.appendChild(addPgBtn);
         container.appendChild(secDiv);
@@ -309,6 +328,7 @@
       const htmlContent=marked.parse(page.markdown||"");
       quill.clipboard.dangerouslyPasteHTML(htmlContent); // Load HTML into Quill
       document.getElementById("currentPageName").textContent=sec+" > "+page.name;
+      document.getElementById("pageMeta").textContent = `id: ${page.id} created: ${page.created} modified: ${page.modified}`;
       document.getElementById("preview").style.display="none";
       document.getElementById("quillEditorContainer").style.display="block"; // Show Quill editor
       quill.enable(true); // Ensure Quill is enabled
@@ -319,8 +339,11 @@
         const td=new TurndownService();
         // Get HTML content from Quill's editor root
         const html=quill.root.innerHTML;
-        sections[currentSection][currentPage].markdown=td.turndown(html);
+        const page = sections[currentSection][currentPage];
+        page.markdown = td.turndown(html);
+        page.modified = new Date().toISOString();
         saveToStorage();
+        document.getElementById("pageMeta").textContent = `id: ${page.id} created: ${page.created} modified: ${page.modified}`;
         renderMarkdown();
       }
     }
@@ -400,9 +423,14 @@
         const newPagesOrder = [];
         secDiv.querySelectorAll(".page-title span").forEach(pgSpan => {
             const pageName = pgSpan.textContent;
-            // Find the original page data (name and markdown)
+            // Find the original page data with metadata
             const originalPage = existingSectionPages.find(p => p.name === pageName);
-            newPagesOrder.push(originalPage || {name: pageName, markdown: ""}); // Add original data or default
+            if(originalPage){
+              newPagesOrder.push(originalPage);
+            } else {
+              const now = new Date().toISOString();
+              newPagesOrder.push({name: pageName, markdown: "", id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2), created: now, modified: now});
+            }
         });
         data[title] = newPagesOrder;
       });
@@ -420,6 +448,7 @@
     };
     // Load
     window.onload=function(){
+      migratePages();
       renderSections();
       // load theme
       const savedTheme=localStorage.getItem("nextnote-theme")||"light";
