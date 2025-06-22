@@ -42,13 +42,20 @@
       border-right:1px solid var(--hermes-panel-border); padding:10px;
     }
     #main {
-      flex:1; display:flex; flex-direction:column;
+      flex:1; display:flex; flex-direction:column; position:relative;
     }
     #toolbar {
       padding:10px; background:var(--hermes-panel-bg);
       border-bottom:1px solid var(--hermes-panel-border);
       display:flex; gap:5px; align-items:center; flex-wrap:wrap;
     }
+    #searchResults {
+      position:absolute; right:10px; top:50px;
+      background:var(--hermes-panel-bg); border:1px solid var(--hermes-border);
+      max-height:200px; overflow-y:auto; z-index:1000; display:none;
+    }
+    .search-result { padding:2px 5px; cursor:pointer; }
+    .search-result:hover { background:var(--hermes-accent-bar-bg); }
     #editor { flex:1; display:flex; flex-direction: column; /* Changed to column for Quill toolbar/editor layout */ }
     /* Quill specific styling adjustments */
     #quillEditorContainer {
@@ -134,6 +141,7 @@
   <div id="main">
     <div id="toolbar">
       <span id="currentPageName">No Page Selected</span>
+      <span id="pageMeta" style="margin-left:10px;color:var(--hermes-disabled-text);"></span>
       <button onclick="saveCurrentPage()">沈 Save</button>
       <button onclick="togglePreview()">早 Preview</button>
       <button onclick="document.getElementById('imgInput').click()">名 Image</button>
@@ -141,9 +149,11 @@
       <button onclick="exportMarkdown()">豆 Export MD</button>
       <input type="file" id="importFile" style="display:none" onchange="importMarkdown(event)"/>
       <button onclick="document.getElementById('importFile').click()">踏 Import MD</button>
+      <input id="searchInput" placeholder="Search..." oninput="updateSearch()" style="margin-left:auto;">
       <div class="theme-select">
         <select id="themeSelect"></select>
       </div>
+      <div id="searchResults"></div>
     </div>
     <div id="editor">
       <div id="quillEditorContainer"></div>
@@ -154,6 +164,7 @@
   <script src="https://cdn.jsdelivr.net/npm/turndown/dist/turndown.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
   <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
   <script>
     const hermesThemes = {
       light: `
@@ -231,6 +242,18 @@
       // Add more themes as needed...
     };
     let sections = JSON.parse(localStorage.getItem("sections_v4")) || {};
+    function migratePages(){
+      const now = new Date().toISOString();
+      Object.keys(sections).forEach(sec=>{
+        sections[sec] = sections[sec].map(p=>({
+          name: p.name,
+          markdown: p.markdown||"",
+          id: p.id || (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2)),
+          created: p.created || now,
+          modified: p.modified || now
+        }));
+      });
+    }
     let currentSection = null;
     let currentPage = null;
     let quill; // Declared global quill instance
@@ -278,7 +301,13 @@
         addPgBtn.textContent="+ Page";
         addPgBtn.onclick=()=>{
           const name=prompt("Page Name?");
-          if(name){ sections[sec].push({name,markdown:""}); saveToStorage(); renderSections(); }
+          if(name){
+            const now = new Date().toISOString();
+            sections[sec].push({name,markdown:"",id:crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2),created:now,modified:now});
+            saveToStorage();
+            renderSections();
+            loadPage(sec, sections[sec].length - 1);
+          }
         };
         secDiv.appendChild(addPgBtn);
         container.appendChild(secDiv);
@@ -309,6 +338,7 @@
       const htmlContent=marked.parse(page.markdown||"");
       quill.clipboard.dangerouslyPasteHTML(htmlContent); // Load HTML into Quill
       document.getElementById("currentPageName").textContent=sec+" > "+page.name;
+      document.getElementById("pageMeta").textContent = `id: ${page.id} created: ${page.created} modified: ${page.modified}`;
       document.getElementById("preview").style.display="none";
       document.getElementById("quillEditorContainer").style.display="block"; // Show Quill editor
       quill.enable(true); // Ensure Quill is enabled
@@ -319,8 +349,11 @@
         const td=new TurndownService();
         // Get HTML content from Quill's editor root
         const html=quill.root.innerHTML;
-        sections[currentSection][currentPage].markdown=td.turndown(html);
+        const page = sections[currentSection][currentPage];
+        page.markdown = td.turndown(html);
+        page.modified = new Date().toISOString();
         saveToStorage();
+        document.getElementById("pageMeta").textContent = `id: ${page.id} created: ${page.created} modified: ${page.modified}`;
         renderMarkdown();
       }
     }
@@ -400,13 +433,41 @@
         const newPagesOrder = [];
         secDiv.querySelectorAll(".page-title span").forEach(pgSpan => {
             const pageName = pgSpan.textContent;
-            // Find the original page data (name and markdown)
+            // Find the original page data with metadata
             const originalPage = existingSectionPages.find(p => p.name === pageName);
-            newPagesOrder.push(originalPage || {name: pageName, markdown: ""}); // Add original data or default
+            if(originalPage){
+              newPagesOrder.push(originalPage);
+            } else {
+              const now = new Date().toISOString();
+              newPagesOrder.push({name: pageName, markdown: "", id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2), created: now, modified: now});
+            }
         });
         data[title] = newPagesOrder;
       });
       sections=data; saveToStorage();
+    }
+
+    function updateSearch(){
+      const term=document.getElementById('searchInput').value.trim();
+      const resDiv=document.getElementById('searchResults');
+      resDiv.innerHTML='';
+      if(!term){ resDiv.style.display='none'; return; }
+      const pages=[];
+      Object.keys(sections).forEach(sec=>{
+        sections[sec].forEach((p,idx)=>{
+          pages.push({section:sec,index:idx,name:p.name,markdown:p.markdown});
+        });
+      });
+      const fuse=new Fuse(pages,{keys:['name','markdown'],threshold:0.4});
+      const results=fuse.search(term).slice(0,10);
+      results.forEach(r=>{
+        const div=document.createElement('div');
+        div.className='search-result';
+        div.textContent=`${r.item.section} > ${r.item.name}`;
+        div.onclick=()=>{ loadPage(r.item.section,r.item.index); resDiv.style.display='none'; document.getElementById('searchInput').value=''; };
+        resDiv.appendChild(div);
+      });
+      resDiv.style.display=results.length?'block':'none';
     }
 
     // Theme setup
@@ -420,6 +481,7 @@
     };
     // Load
     window.onload=function(){
+      migratePages();
       renderSections();
       // load theme
       const savedTheme=localStorage.getItem("nextnote-theme")||"light";
