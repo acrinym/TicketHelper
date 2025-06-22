@@ -54,6 +54,13 @@
       background:var(--hermes-panel-bg); border:1px solid var(--hermes-border);
       max-height:200px; overflow-y:auto; z-index:1000; display:none;
     }
+    #attachmentsPanel {
+      position:absolute; right:10px; top:80px;
+      background:var(--hermes-panel-bg); border:1px solid var(--hermes-border);
+      max-height:200px; overflow-y:auto; z-index:1000; display:none;
+      padding:5px;
+    }
+    .attachment-item { display:flex; justify-content:space-between; align-items:center; margin-bottom:3px; }
     .search-result { padding:2px 5px; cursor:pointer; }
     .search-result:hover { background:var(--hermes-accent-bar-bg); }
     #editor { flex:1; display:flex; flex-direction: column; /* Changed to column for Quill toolbar/editor layout */ }
@@ -153,6 +160,9 @@
       <div class="theme-select">
         <select id="themeSelect"></select>
       </div>
+      <button onclick="toggleAttachments()">📎 Attachments</button>
+      <input type="file" id="attachmentInput" style="display:none" multiple onchange="addAttachments(event)"/>
+      <div id="attachmentsPanel"></div>
       <div id="searchResults"></div>
     </div>
     <div id="editor">
@@ -242,6 +252,10 @@
       // Add more themes as needed...
     };
     let sections = JSON.parse(localStorage.getItem("sections_v4")) || {};
+    let attachments = JSON.parse(localStorage.getItem("attachments_v1")) || [];
+    function saveAttachments(){
+      localStorage.setItem("attachments_v1", JSON.stringify(attachments));
+    }
     function migratePages(){
       const now = new Date().toISOString();
       Object.keys(sections).forEach(sec=>{
@@ -340,7 +354,7 @@
       document.getElementById("currentPageName").textContent=sec+" > "+page.name;
       document.getElementById("pageMeta").textContent = `id: ${page.id} created: ${page.created} modified: ${page.modified}`;
       document.getElementById("preview").style.display="none";
-      document.getElementById("quillEditorContainer").style.display="block"; // Show Quill editor
+      document.getElementById("quillEditorContainer").style.display="flex"; // Show Quill editor
       quill.enable(true); // Ensure Quill is enabled
     }
 
@@ -378,7 +392,7 @@
         quill.enable(false); // Disable Quill editor when preview is active
       } else {
         pv.style.display="none";
-        ed.style.display="block";
+        ed.style.display="flex";
         quill.enable(true); // Enable Quill editor when switching back
       }
     }
@@ -470,6 +484,61 @@
       resDiv.style.display=results.length?'block':'none';
     }
 
+function toggleAttachments(){
+      const panel=document.getElementById('attachmentsPanel');
+      panel.style.display=panel.style.display==='block'?'none':'block';
+      if(panel.style.display==='block') renderAttachments();
+    }
+
+    function renderAttachments(){
+      const panel=document.getElementById('attachmentsPanel');
+      panel.innerHTML='';
+      const addBtn=document.createElement('button');
+      addBtn.textContent='+ Add';
+      addBtn.onclick=()=>document.getElementById('attachmentInput').click();
+      panel.appendChild(addBtn);
+      attachments.forEach((att,idx)=>{
+        const div=document.createElement('div');
+        div.className='attachment-item';
+        const name=document.createElement('span');
+        name.textContent=att.name;
+        const insert=document.createElement('button');
+        insert.textContent='Insert';
+        insert.onclick=()=>insertAttachment(idx);
+        const del=document.createElement('button');
+        del.textContent='Delete';
+        del.onclick=()=>{attachments.splice(idx,1); saveAttachments(); renderAttachments();};
+        div.appendChild(name);
+        div.appendChild(insert);
+        div.appendChild(del);
+        panel.appendChild(div);
+      });
+    }
+
+    function addAttachments(ev){
+      const files=Array.from(ev.target.files);
+      files.forEach(file=>{
+        const fr=new FileReader();
+        fr.onload=e=>{attachments.push({name:file.name,data:e.target.result}); saveAttachments(); renderAttachments();};
+        fr.readAsDataURL(file);
+      });
+      ev.target.value='';
+    }
+
+    function insertAttachment(idx){
+      const att=attachments[idx];
+      const range=quill.getSelection();
+      if(att.data.startsWith('data:image/')){
+        if(range){ quill.insertEmbed(range.index,'image',att.data); }
+        else { quill.insertEmbed(quill.getLength(),'image',att.data); }
+      } else {
+        const linkText=att.name;
+        const link=`[${linkText}](${att.data})`;
+        if(range){ quill.insertText(range.index, link); }
+        else { quill.insertText(quill.getLength(), link); }
+      }
+      toggleAttachments();
+    }
     // Theme setup
     const themeSelect=document.getElementById("themeSelect");
     Object.keys(hermesThemes).forEach(name=>{
@@ -496,16 +565,18 @@
             [{ 'header': [1, 2, 3, 4, 5, 6, false] }], // Headings
             ['bold', 'italic', 'underline', 'strike'],        // Basic formatting
             [{ 'list': 'ordered'}, { 'list': 'bullet' }],    // Lists
-            [{ 'align': [] }],                               // Text alignment
+            [{ 'align': [] }],                              // Text alignment
             [{ 'color': [] }, { 'background': [] }],          // Text/background color
-            ['link', 'image'],                       // Links, images (video is also available if needed)
+            ['link', 'image'],                            // Links, images (video is also available if needed)
             ['clean']                                         // Remove formatting
           ]
         }
       });
 
       // Initially, hide Quill until a page is selected
+      // Use display 'none' for quill container, and 'block' for preview
       document.getElementById("quillEditorContainer").style.display = "none";
+      document.getElementById("preview").style.display = "block"; 
       document.getElementById("preview").innerHTML = "<p>Select a page or create a new one to start writing.</p>";
 
       // Ensure that when saveData is called after drag/drop, markdown content is preserved.

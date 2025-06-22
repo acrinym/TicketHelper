@@ -12,7 +12,7 @@
 </Done>
 
 // [UP NEXT - HIGH PRIORITY]
-// [ ] Attachment/resource manager (store images, files, blobs per notebook)
+// [x] Attachment/resource manager (store images, files, blobs per notebook)
 // [ ] Section & page color/icon customization
 // [x] Per-page creation/modification time, GUID
 // [ ] Multi-notebook support (open/switch, import/export .json or .zip)
