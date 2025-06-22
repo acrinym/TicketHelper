@@ -162,8 +162,8 @@
       </div>
       <button onclick="toggleAttachments()">📎 Attachments</button>
       <input type="file" id="attachmentInput" style="display:none" multiple onchange="addAttachments(event)"/>
-      <div id="searchResults"></div>
       <div id="attachmentsPanel"></div>
+      <div id="searchResults"></div>
     </div>
     <div id="editor">
       <div id="quillEditorContainer"></div>
@@ -354,7 +354,7 @@
       document.getElementById("currentPageName").textContent=sec+" > "+page.name;
       document.getElementById("pageMeta").textContent = `id: ${page.id} created: ${page.created} modified: ${page.modified}`;
       document.getElementById("preview").style.display="none";
-      document.getElementById("quillEditorContainer").style.display="block"; // Show Quill editor
+      document.getElementById("quillEditorContainer").style.display="flex"; // Show Quill editor
       quill.enable(true); // Ensure Quill is enabled
     }
 
@@ -392,7 +392,7 @@
         quill.enable(false); // Disable Quill editor when preview is active
       } else {
         pv.style.display="none";
-        ed.style.display="block";
+        ed.style.display="flex";
         quill.enable(true); // Enable Quill editor when switching back
       }
     }
@@ -566,16 +566,18 @@
             [{ 'header': [1, 2, 3, 4, 5, 6, false] }], // Headings
             ['bold', 'italic', 'underline', 'strike'],        // Basic formatting
             [{ 'list': 'ordered'}, { 'list': 'bullet' }],    // Lists
-            [{ 'align': [] }],                               // Text alignment
+            [{ 'align': [] }],                              // Text alignment
             [{ 'color': [] }, { 'background': [] }],          // Text/background color
-            ['link', 'image'],                       // Links, images (video is also available if needed)
+            ['link', 'image'],                            // Links, images (video is also available if needed)
             ['clean']                                         // Remove formatting
           ]
         }
       });
 
       // Initially, hide Quill until a page is selected
+      // Use display 'none' for quill container, and 'block' for preview
       document.getElementById("quillEditorContainer").style.display = "none";
+      document.getElementById("preview").style.display = "block"; 
       document.getElementById("preview").innerHTML = "<p>Select a page or create a new one to start writing.</p>";
 
       // Ensure that when saveData is called after drag/drop, markdown content is preserved.
