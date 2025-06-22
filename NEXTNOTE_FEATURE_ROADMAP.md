@@ -14,10 +14,10 @@
 // [UP NEXT - HIGH PRIORITY]
 // [ ] Attachment/resource manager (store images, files, blobs per notebook)
 // [ ] Section & page color/icon customization
-// [ ] Per-page creation/modification time, GUID
+// [x] Per-page creation/modification time, GUID
 // [ ] Multi-notebook support (open/switch, import/export .json or .zip)
 // [ ] Export/Import: notebook as .json or .zip (all sections/pages/resources/settings)
-// [ ] Fuzzy search across all content/pages (Fuse.js etc.)
+// [x] Fuzzy search across all content/pages (Fuse.js etc.)
 // [ ] Quick Actions: Hotkeys, command palette (ex: Ctrl+K, jump to page/template)
 
 // [ADVANCED/PLUGINS]

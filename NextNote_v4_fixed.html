@@ -42,13 +42,20 @@
       border-right:1px solid var(--hermes-panel-border); padding:10px;
     }
     #main {
-      flex:1; display:flex; flex-direction:column;
+      flex:1; display:flex; flex-direction:column; position:relative;
     }
     #toolbar {
       padding:10px; background:var(--hermes-panel-bg);
       border-bottom:1px solid var(--hermes-panel-border);
       display:flex; gap:5px; align-items:center; flex-wrap:wrap;
     }
+    #searchResults {
+      position:absolute; right:10px; top:50px;
+      background:var(--hermes-panel-bg); border:1px solid var(--hermes-border);
+      max-height:200px; overflow-y:auto; z-index:1000; display:none;
+    }
+    .search-result { padding:2px 5px; cursor:pointer; }
+    .search-result:hover { background:var(--hermes-accent-bar-bg); }
     #editor { flex:1; display:flex; flex-direction: column; /* Changed to column for Quill toolbar/editor layout */ }
     /* Quill specific styling adjustments */
     #quillEditorContainer {
@@ -142,9 +149,11 @@
       <button onclick="exportMarkdown()">豆 Export MD</button>
       <input type="file" id="importFile" style="display:none" onchange="importMarkdown(event)"/>
       <button onclick="document.getElementById('importFile').click()">踏 Import MD</button>
+      <input id="searchInput" placeholder="Search..." oninput="updateSearch()" style="margin-left:auto;">
       <div class="theme-select">
         <select id="themeSelect"></select>
       </div>
+      <div id="searchResults"></div>
     </div>
     <div id="editor">
       <div id="quillEditorContainer"></div>
@@ -155,6 +164,7 @@
   <script src="https://cdn.jsdelivr.net/npm/turndown/dist/turndown.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
   <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
   <script>
     const hermesThemes = {
       light: `
@@ -435,6 +445,29 @@
         data[title] = newPagesOrder;
       });
       sections=data; saveToStorage();
+    }
+
+    function updateSearch(){
+      const term=document.getElementById('searchInput').value.trim();
+      const resDiv=document.getElementById('searchResults');
+      resDiv.innerHTML='';
+      if(!term){ resDiv.style.display='none'; return; }
+      const pages=[];
+      Object.keys(sections).forEach(sec=>{
+        sections[sec].forEach((p,idx)=>{
+          pages.push({section:sec,index:idx,name:p.name,markdown:p.markdown});
+        });
+      });
+      const fuse=new Fuse(pages,{keys:['name','markdown'],threshold:0.4});
+      const results=fuse.search(term).slice(0,10);
+      results.forEach(r=>{
+        const div=document.createElement('div');
+        div.className='search-result';
+        div.textContent=`${r.item.section} > ${r.item.name}`;
+        div.onclick=()=>{ loadPage(r.item.section,r.item.index); resDiv.style.display='none'; document.getElementById('searchInput').value=''; };
+        resDiv.appendChild(div);
+      });
+      resDiv.style.display=results.length?'block':'none';
     }
 
     // Theme setup
