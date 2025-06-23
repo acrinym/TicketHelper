@@ -213,21 +213,10 @@
       const workHours = workHoursMatch ? workHoursMatch[1].trim() : "";
       output.push("Work Hours (HH:MM EST/HH:MM EST D-D): " + (workHours || USER_NOT_PROVIDED));
       
-// Assume 'output' is an array where results are pushed, and 'extract' is a function.
-// Assume 'USER_NOT_PROVIDED' is a defined constant (e.g., "N/A" or "User Not Provided").
+      // Building: derive from 'working from home' question or address fields
+      const ipRegex = /^\d{1,3}(?:\.\d{1,3}){3}$/; // Regex to check if a string is an IP address
 
-// Function to extract a value using a regex from text
-function extract(regex, text) {
-    const match = text.match(regex);
-    return match ? match[1].trim() : null;
-}
-
-// Assume peopleRecordText and notesText are available strings.
-
-// Building: derive from 'working from home' question or address fields
-const ipRegex = /^\d{1,3}(?:\.\d{1,3}){3}$/; // Regex to check if a string is an IP address
-
-let building = "";
+      let building = "";
 
 // 1. Try to derive from 'Working from home' question in notes
 const wfhMatch = notesText.match(/Are you working from home.*?:\s*(.+)$/im);
