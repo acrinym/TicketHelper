@@ -84,6 +84,11 @@
                       <i class="material-icons left">play_circle</i>Generate Escalation Template
                     </button>
                   </div>
+                  <div class="center-align" style="margin-top: 12px;">
+                    <button class="btn grey lighten-1 black-text" onclick="clearEscalationFields()">
+                      <i class="material-icons left">clear</i>Clear Fields
+                    </button>
+                  </div>
                   <div class="input-field" style="margin-top: 24px;">
                     <textarea id="cecEscalationOutput" class="materialize-textarea" rows="12" readonly></textarea>
                     <label for="cecEscalationOutput">Escalation Output</label>
@@ -209,8 +214,8 @@
       output.push("Work Hours (HH:MM EST/HH:MM EST D-D): " + (workHours || USER_NOT_PROVIDED));
       
       // Building: Prioritize "Address:" from people record, then from notes. Handle "Working from home" explicitly.
-      let building = extract(/^Address:\s*(.+)/im, peopleRecordText); 
-      if (building && building.toLowerCase().includes("home office")) { 
+      let building = extract(/^\s*Address:\s*(.+)$/im, peopleRecordText);
+      if (building && building.toLowerCase().includes("home office")) {
         const workingFromHomeNote = extract(/Are you working from home.*?:\s*(.+)$/im, notesText);
         if (workingFromHomeNote && workingFromHomeNote.toLowerCase().includes("working from home")) {
           building = "Working from home"; 
@@ -218,7 +223,7 @@
       } else if (extract(/Are you working from home.*?:\s*(working from home)/im, notesText)) {
           building = "Working from home"; 
       }
-      if (!building) building = extract(/Address:\s*(.+)$/im, notesText); 
+      if (!building) building = extract(/^\s*Address:\s*(.+)$/im, notesText);
       output.push("Building: " + (building || USER_NOT_PROVIDED));
       
       // Room/cube: Captured from notesText
@@ -241,7 +246,8 @@
       output.push("Exact Problem Details (Error Message): " + (problemDetails || USER_NOT_PROVIDED)); 
 
       // Troubleshooting steps: Captured from notesText
-      const troubleshootingSteps = extract(/Describe any troubleshooting steps.*?:\s*(.+)$/im, notesText); 
+      const troubleshootingStepsMatch = notesText.match(/Describe any troubleshooting steps.*?:\s*((?:.|\n)*?)(?=\s*\d+\.\s*|\s*Please Note:|---------------------------------------------------------------)/i);
+      const troubleshootingSteps = troubleshootingStepsMatch ? troubleshootingStepsMatch[1].trim() : "";
       output.push("Troubleshooting steps: " + (troubleshootingSteps || USER_NOT_PROVIDED));
 
       // Reason for escalating to tier 2.0 (Logic for inference or explicit text with new fallback)
@@ -277,6 +283,14 @@
 
       document.getElementById("cecEscalationOutput").value = output.join("\n");
       M.textareaAutoResize(document.getElementById("cecEscalationOutput"));
+    }
+
+    function clearEscalationFields() {
+      document.getElementById("peopleRecordInput").value = "";
+      document.getElementById("notesInput").value = "";
+      document.getElementById("cecEscalationOutput").value = "";
+      const fields = ["peopleRecordInput", "notesInput", "cecEscalationOutput"];
+      fields.forEach(id => M.textareaAutoResize(document.getElementById(id)));
     }
   </script>
 </body>
