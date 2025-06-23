@@ -52,6 +52,9 @@
                     <button class="btn waves-effect waves-light blue" onclick="processInput()">
                       <i class="material-icons left">play_arrow</i>Extract Fields
                     </button>
+                    <button class="btn waves-effect waves-light grey" style="margin-left:10px;" onclick="clearProcessInputFields()">
+                      <i class="material-icons left">clear</i>Clear Fields
+                    </button>
                   </div>
                   <div class="input-field" style="margin-top: 24px;">
                     <textarea id="outputArea" class="materialize-textarea" rows="8" readonly></textarea>
@@ -82,6 +85,9 @@
                   <div class="center-align">
                     <button class="btn waves-effect waves-light red darken-1" onclick="extractCECEscalation()">
                       <i class="material-icons left">play_circle</i>Generate Escalation Template
+                    </button>
+                    <button class="btn waves-effect waves-light grey" style="margin-left:10px;" onclick="clearEscalationFields()">
+                      <i class="material-icons left">clear</i>Clear Fields
                     </button>
                   </div>
                   <div class="input-field" style="margin-top: 24px;">
@@ -147,15 +153,33 @@
       M.textareaAutoResize(document.getElementById("outputArea"));
     }
 
+    function clearProcessInputFields() {
+      document.getElementById("inputArea").value = "";
+      document.getElementById("outputArea").value = "";
+      M.textareaAutoResize(document.getElementById("inputArea"));
+      M.textareaAutoResize(document.getElementById("outputArea"));
+    }
+
     function extractCECEscalation() {
       const peopleRecordText = document.getElementById("peopleRecordInput").value;
       const notesText = document.getElementById("notesInput").value;
       
       const USER_NOT_PROVIDED = "User did not provide"; 
 
-      const extract = (regex, sourceText) => { 
+      const extract = (regex, sourceText) => {
         const match = sourceText.match(regex);
         return match ? match[1].trim() : "";
+      };
+
+      const extractNonIP = (regex, sourceText) => {
+        const match = sourceText.match(regex);
+        if (match) {
+          const val = match[1].trim();
+          if (!/\b\d{1,3}(?:\.\d{1,3}){3}\b/.test(val)) {
+            return val;
+          }
+        }
+        return "";
       };
 
       const output = [];
@@ -208,17 +232,21 @@
       const workHours = workHoursMatch ? workHoursMatch[1].trim() : "";
       output.push("Work Hours (HH:MM EST/HH:MM EST D-D): " + (workHours || USER_NOT_PROVIDED));
       
-      // Building: Prioritize "Address:" from people record, then from notes. Handle "Working from home" explicitly.
-      let building = extract(/^Address:\s*(.+)/im, peopleRecordText); 
-      if (building && building.toLowerCase().includes("home office")) { 
+      // Building: prefer address/location from notes or people record, ignoring IP address values
+      let building = extractNonIP(/^(?!\s*IP\s*Address:)\s*Address:\s*(.+)$/im, notesText);
+      if (!building) building = extractNonIP(/^(?!\s*IP\s*Address:)\s*Address:\s*(.+)$/im, peopleRecordText);
+      if (!building) building = extractNonIP(/Location:\s*(.+)/im, notesText);
+      if (!building) building = extractNonIP(/Location:\s*(.+)/im, peopleRecordText);
+
+      if (building && building.toLowerCase().includes("home office")) {
         const workingFromHomeNote = extract(/Are you working from home.*?:\s*(.+)$/im, notesText);
         if (workingFromHomeNote && workingFromHomeNote.toLowerCase().includes("working from home")) {
-          building = "Working from home"; 
+          building = "Working from home";
         }
       } else if (extract(/Are you working from home.*?:\s*(working from home)/im, notesText)) {
-          building = "Working from home"; 
+        building = "Working from home";
       }
-      if (!building) building = extract(/Address:\s*(.+)$/im, notesText); 
+
       output.push("Building: " + (building || USER_NOT_PROVIDED));
       
       // Room/cube: Captured from notesText
@@ -276,6 +304,15 @@
 
 
       document.getElementById("cecEscalationOutput").value = output.join("\n");
+      M.textareaAutoResize(document.getElementById("cecEscalationOutput"));
+    }
+
+    function clearEscalationFields() {
+      document.getElementById("peopleRecordInput").value = "";
+      document.getElementById("notesInput").value = "";
+      document.getElementById("cecEscalationOutput").value = "";
+      M.textareaAutoResize(document.getElementById("peopleRecordInput"));
+      M.textareaAutoResize(document.getElementById("notesInput"));
       M.textareaAutoResize(document.getElementById("cecEscalationOutput"));
     }
   </script>
