@@ -213,43 +213,59 @@
       const workHours = workHoursMatch ? workHoursMatch[1].trim() : "";
       output.push("Work Hours (HH:MM EST/HH:MM EST D-D): " + (workHours || USER_NOT_PROVIDED));
       
-      // Building: derive from 'working from home' question or address fields
-      const ipRegex = /^\d{1,3}(?:\.\d{1,3}){3}$/;
+// Assume 'output' is an array where results are pushed, and 'extract' is a function.
+// Assume 'USER_NOT_PROVIDED' is a defined constant (e.g., "N/A" or "User Not Provided").
 
-      let building = "";
-      const wfhMatch = notesText.match(/Are you working from home.*?:\s*(.+)$/im);
-      if (wfhMatch) {
-        const answer = wfhMatch[1].trim();
-        if (/yes|working from home/i.test(answer)) {
-          building = "Working from home";
-        } else if (/no/i.test(answer)) {
-          // Attempt to capture address after the word 'no'
-          const afterNo = answer.replace(/no[\s,:-]*/i, '').trim();
-          if (afterNo && !ipRegex.test(afterNo)) {
+// Function to extract a value using a regex from text
+function extract(regex, text) {
+    const match = text.match(regex);
+    return match ? match[1].trim() : null;
+}
+
+// Assume peopleRecordText and notesText are available strings.
+
+// Building: derive from 'working from home' question or address fields
+const ipRegex = /^\d{1,3}(?:\.\d{1,3}){3}$/; // Regex to check if a string is an IP address
+
+let building = "";
+
+// 1. Try to derive from 'Working from home' question in notes
+const wfhMatch = notesText.match(/Are you working from home.*?:\s*(.+)$/im);
+if (wfhMatch) {
+    const answer = wfhMatch[1].trim();
+    if (/yes|working from home/i.test(answer)) {
+        building = "Working from home";
+    } else if (/no/i.test(answer)) {
+        // If "no", attempt to capture address immediately after 'no' in the answer
+        const afterNo = answer.replace(/no[\s,:-]*/i, '').trim();
+        if (afterNo && !ipRegex.test(afterNo)) {
             building = afterNo;
-          }
         }
-      }
+    }
+}
 
-      if (!building) {
-        const notesAddr = extract(/^\s*Address:\s*(.+)$/im, notesText);
-        if (notesAddr && !ipRegex.test(notesAddr)) {
-          building = notesAddr;
-        }
-      }
+// 2. If 'building' is still not found, try 'Address:' in notes
+if (!building) {
+    const notesAddr = extract(/^\s*Address:\s*(.+)$/im, notesText);
+    if (notesAddr && !ipRegex.test(notesAddr)) { // Ensure it's not an IP address
+        building = notesAddr;
+    }
+}
 
-      if (!building) {
-        const recordAddr = extract(/^\s*Address:\s*(.+)$/im, peopleRecordText);
-        if (recordAddr && !ipRegex.test(recordAddr)) {
-          building = recordAddr;
-        }
-      }
+// 3. If 'building' is still not found, try 'Address:' in people record
+if (!building) {
+    const recordAddr = extract(/^\s*Address:\s*(.+)$/im, peopleRecordText);
+    if (recordAddr && !ipRegex.test(recordAddr)) { // Ensure it's not an IP address
+        building = recordAddr;
+    }
+}
 
-      if (!building) {
-        building = USER_NOT_PROVIDED + ". Is address in people record?";
-      }
+// 4. Final fallback if no building information could be derived
+if (!building) {
+    building = (typeof USER_NOT_PROVIDED !== 'undefined' ? USER_NOT_PROVIDED : "N/A") + ". Is address in people record?";
+}
 
-      output.push("Building: " + building);
+output.push("Building: " + building);
       
       // Room/cube: Captured from notesText
       output.push("Room/cube: " + (extract(/Room\/cube:\s*(.+)/i, notesText) || USER_NOT_PROVIDED));
