@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ultimate Note Overlay</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="libs/tailwind.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <link href="libs/quill.snow.css" rel="stylesheet">
     <style>
         /* Define custom CSS variables for themes and global styles */
         :root {
@@ -180,8 +180,8 @@
             color: var(--hermes-button-text);
         }
 
-        /* Workspaces (Notes and Code) */
-        #notesWorkspace, #codeWorkspace {
+        /* Workspaces (Notes, Code and Tools) */
+        #notesWorkspace, #codeWorkspace, #toolsWorkspace {
             flex: 1;
             display: flex;
             min-height: 0;
@@ -201,6 +201,20 @@
         #codeEditorContainer {
             flex: 1;
             min-height: 0;
+        }
+
+        /* Tools Workspace styling */
+        #toolsWorkspace textarea {
+            width: 100%;
+            background: var(--hermes-input-bg);
+            color: var(--hermes-input-text);
+            border: 1px solid var(--hermes-input-border);
+            border-radius: 8px;
+            padding: 8px;
+            resize: vertical;
+        }
+        #toolsWorkspace .tool-section {
+            margin-bottom: 20px;
         }
 
         /* Media query for smaller screens */
@@ -639,6 +653,7 @@
             <div id="tabBar">
                 <div id="notesTab" class="tab-button active">Notes</div>
                 <div id="codeTab" class="tab-button">Code</div>
+                <div id="toolsTab" class="tab-button">Tools</div>
             </div>
             <div id="notesWorkspace" class="flex flex-1">
                 <div id="sidebar">
@@ -676,6 +691,23 @@
                 </div>
                 <div id="codeEditorContainer"></div>
             </div>
+            <div id="toolsWorkspace" class="hidden flex-1 p-4 overflow-auto">
+                <h3>Helpdesk Tools</h3>
+                <div class="tool-section">
+                    <h4>Extract Fields</h4>
+                    <textarea id="inputArea" rows="6" placeholder="Paste raw ticket text here..."></textarea>
+                    <button id="processInputBtn" class="hermes-btn mt-2">Extract</button>
+                    <textarea id="outputArea" rows="6" readonly class="mt-2"></textarea>
+                </div>
+                <hr class="my-4"/>
+                <div class="tool-section">
+                    <h4>CEC Escalation Notes</h4>
+                    <textarea id="peopleRecordInput" rows="6" placeholder="Paste People Record (customer info from BMC Remedy) here..."></textarea>
+                    <textarea id="notesInput" rows="8" placeholder="Paste Notes field (issue details, computer info, troubleshooting) here..." class="mt-2"></textarea>
+                    <button id="generateEscalationBtn" class="hermes-btn mt-2">Generate Escalation Template</button>
+                    <textarea id="cecEscalationOutput" rows="8" readonly class="mt-2"></textarea>
+                </div>
+            </div>
         </div>
 
         <div id="customModal" class="hidden">
@@ -692,10 +724,10 @@
 
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/turndown/dist/turndown.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <script src="libs/marked.min.js"></script>
+    <script src="libs/turndown.min.js"></script>
+    <script src="libs/sortable.min.js"></script>
+    <script src="libs/quill.js"></script>
     <script>
         // ==UserScript==
         // @name        Ultimate Note Overlay – Hermes Edition
@@ -820,11 +852,17 @@
             // Code workspace elements
             const notesTab = document.getElementById('notesTab');
             const codeTab = document.getElementById('codeTab');
+            const toolsTab = document.getElementById('toolsTab');
             const notesWorkspace = document.getElementById('notesWorkspace');
             const codeWorkspace = document.getElementById('codeWorkspace');
+            const toolsWorkspace = document.getElementById('toolsWorkspace');
             const addFileBtn = document.getElementById('addFileBtn');
             const fileList = document.getElementById('fileList');
             const codeEditorContainer = document.getElementById('codeEditorContainer');
+
+            // Tools workspace elements
+            const processInputBtn = document.getElementById('processInputBtn');
+            const generateEscalationBtn = document.getElementById('generateEscalationBtn');
 
             // Modal Elements
             const customModal = document.getElementById('customModal');
@@ -1439,9 +1477,153 @@
                     monacoEditor.focus(); // Set focus to the editor
                 }).catch(error => {
                     console.error("Error loading Monaco or opening file:", error);
-                    showModal('Error', 'Could not load code editor or file. Check console for details.');
-                });
+                showModal('Error', 'Could not load code editor or file. Check console for details.');
+            });
+        }
+
+        // --- Helpdesk Tools Functions ---
+        function processInput() {
+            const text = document.getElementById('inputArea').value;
+            const outputLines = [];
+
+            const extractSingle = (regex) => {
+                const match = text.match(regex);
+                return match ? match[1].trim() : '';
+            };
+
+            const phoneDisplayName = extractSingle(/^\s*Name:\s*(.+)$/m);
+            const phoneMatches = text.match(/^\s*Phone:\s*([\d\s\-]+)/gm);
+            const phoneAffected = phoneMatches && phoneMatches.length > 0 ? phoneMatches[0].split(':')[1].trim() : '';
+            const locationField = extractSingle(/^\s*Address:\s*(.+)$/m);
+            const phoneTroubleshoot = extractSingle(/Provide the best phone number to reach you:\s*([\d\s\-]+)/i);
+            const emailAddress = extractSingle(/^\s*Email:\s*([\w.\-]+@[\w.\-]+)/m);
+            let agencyField = extractSingle(/^\s*Account Agency:\s*(.+)$/m);
+            if (!agencyField) agencyField = extractSingle(/^\s*Agency:\s*(.+)/m);
+            const issueDescription = extractSingle(/^\s*Detailed description of the issue.*?:\s*(.+)$/im);
+            const troubleshootingSteps = extractSingle(/^\s*Describe any troubleshooting steps.*?:\s*(.+)$/im);
+            const usersAffected = extractSingle(/^\s*Number of users affected:\s*(\d+)/im);
+
+            outputLines.push('Phone display name (affected phone): ' + phoneDisplayName);
+            outputLines.push('Phone number (affected phone): ' + phoneAffected);
+            outputLines.push('Location (Building, floor, room, cube): ' + locationField);
+            outputLines.push('Phone number to reach user for troubleshooting: ' + phoneTroubleshoot);
+            outputLines.push('Email address: ' + emailAddress);
+            outputLines.push('Agency: ' + agencyField);
+            outputLines.push('Detailed description of issue: ' + issueDescription);
+            outputLines.push('Detailed troubleshooting steps: ' + troubleshootingSteps);
+            outputLines.push('Number of users affected: ' + usersAffected);
+
+            document.getElementById('outputArea').value = outputLines.join('\n');
+        }
+
+        function extractCECEscalation() {
+            const peopleRecordText = document.getElementById('peopleRecordInput').value;
+            const notesText = document.getElementById('notesInput').value;
+
+            const USER_NOT_PROVIDED = 'User did not provide';
+
+            const extract = (regex, sourceText) => {
+                const match = sourceText.match(regex);
+                return match ? match[1].trim() : '';
+            };
+
+            const output = [];
+
+            let name = '';
+            const nameCommaMatch = peopleRecordText.match(/^Name:\s*([^,]+),\s*([^P]+?)(?:Preferred Name:|Corporate ID:|$)/im);
+            if (nameCommaMatch && nameCommaMatch.length >= 3) {
+                name = nameCommaMatch[2].trim() + ' ' + nameCommaMatch[1].trim();
+            } else {
+                const nameNoCommaMatch = peopleRecordText.match(/^Name:\s*(.+?)(?:Preferred Name:|Corporate ID:|$)/im);
+                if (nameNoCommaMatch) {
+                    name = nameNoCommaMatch[1].trim();
+                }
             }
+            if (!name) {
+                name = extract(/Account Name:\s*USDA\\([\w\s.]+)/i, notesText);
+            }
+            output.push('Name: ' + (name || USER_NOT_PROVIDED));
+
+            let phone = extract(/^Phone:\s*([\d\s\-()]+)/im, peopleRecordText);
+            if (!phone) phone = extract(/Provide the best phone number to reach you:\s*([\d\s\-()]+)/i, notesText);
+            output.push('Phone: ' + (phone || USER_NOT_PROVIDED));
+
+            let email = extract(/^Email:\s*([\w\-.]+@[\w\-.]+)/im, peopleRecordText);
+            output.push('Email: ' + (email || USER_NOT_PROVIDED));
+
+            let agency = extract(/Account Agency:\s*(.+)/i, notesText);
+            if (!agency) agency = extract(/Agency:\s*(.+)/i, notesText);
+            if (!agency) {
+                const siteMatch = peopleRecordText.match(/^Site:\s*(\w+)/im);
+                if (siteMatch) {
+                    const siteValue = siteMatch[1].trim();
+                    if (siteValue.length <= 5 && siteValue.match(/^[A-Z0-9]+$/)) {
+                        agency = siteValue;
+                    }
+                }
+            }
+            output.push('Agency: ' + (agency || USER_NOT_PROVIDED));
+
+            const workHoursMatch = notesText.match(/Provide your duty days and hours.*?:\s*((?:.|\n)*?)(?=\s*\d+\.\s*|\s*Please Note:|-----------------------------------------------)/i);
+            const workHours = workHoursMatch ? workHoursMatch[1].trim() : '';
+            output.push('Work Hours (HH:MM EST/HH:MM EST D-D): ' + (workHours || USER_NOT_PROVIDED));
+
+            let building = extract(/^Address:\s*(.+)/im, peopleRecordText);
+            if (building && building.toLowerCase().includes('home office')) {
+                const workingFromHomeNote = extract(/Are you working from home.*?:\s*(.+)$/im, notesText);
+                if (workingFromHomeNote && workingFromHomeNote.toLowerCase().includes('working from home')) {
+                    building = 'Working from home';
+                }
+            } else if (extract(/Are you working from home.*?:\s*(working from home)/im, notesText)) {
+                building = 'Working from home';
+            }
+            if (!building) building = extract(/Address:\s*(.+)$/im, notesText);
+            output.push('Building: ' + (building || USER_NOT_PROVIDED));
+
+            output.push('Room/cube: ' + (extract(/Room\/cube:\s*(.+)/i, notesText) || USER_NOT_PROVIDED));
+            output.push('Computer Name: ' + (extract(/Computer Name:\s*(.+)/i, notesText) || USER_NOT_PROVIDED));
+            output.push('IP Address: ' + (extract(/IP Address:\s*(.+)/i, notesText) || USER_NOT_PROVIDED));
+
+            const criticalDeadlineMatch = notesText.match(/Is this issue impacting your ability to meet a critical deadline for your Agency?[\s\r\n]*(.+?)(?=\s*\d+\.\s*Preferred contact method|\s*\d+\.\s*Provide the best phone number|\s*Please Note:|---------------------------------------------------------------)/i);
+            const criticalDeadline = criticalDeadlineMatch ? criticalDeadlineMatch[1].trim() : '';
+            output.push('Is this issue impacting critical deadline?: ' + (criticalDeadline || USER_NOT_PROVIDED));
+
+            const problemDetailsMatch = notesText.match(/Detailed description of the issue\s*\/ error, and any relevant screenshot\(s\) as attachments.*?:\s*((?:.|\n)*?)(?=\s*\d+\.\s*Describe any troubleshooting steps|\s*Please Note:|---------------------------------------------------)/i);
+            const problemDetails = problemDetailsMatch ? problemDetailsMatch[1].trim() : '';
+            output.push('Exact Problem Details (Error Message): ' + (problemDetails || USER_NOT_PROVIDED));
+
+            const troubleshootingSteps = extract(/Describe any troubleshooting steps.*?:\s*(.+)$/im, notesText);
+            output.push('Troubleshooting steps: ' + (troubleshootingSteps || USER_NOT_PROVIDED));
+
+            let escalationReason = extract(/Reason for escalating to tier 2.0:\s*(.+)$/im, notesText);
+
+            if (!escalationReason || escalationReason === USER_NOT_PROVIDED) {
+                const currentProblemDetails = output.find(line => line.startsWith('Exact Problem Details')).split(': ')[1];
+                const currentTroubleshootingSteps = output.find(line => line.startsWith('Troubleshooting steps')).split(': ')[1];
+
+                if (currentProblemDetails && (currentProblemDetails.toLowerCase().includes('admin privileges') || currentProblemDetails.toLowerCase().includes('software install') || currentProblemDetails.toLowerCase().includes('install software'))) {
+                    escalationReason = 'User requires administrative privileges or software installation.';
+                } else if (currentTroubleshootingSteps.toLowerCase().includes('no troubleshooting steps were performed') || currentTroubleshootingSteps.toLowerCase().includes('informed my supervisor and he recommended i submit a cec help ticket')) {
+                    escalationReason = 'User informed supervisor and was advised to submit a ticket; implies issue beyond user\'s troubleshooting capability.';
+                } else if (currentProblemDetails.toLowerCase().includes('spam calls')) {
+                    escalationReason = 'Recurring spam call issue requires higher-level investigation or network/phone system intervention.';
+                } else if (currentProblemDetails && (currentProblemDetails.toLowerCase().includes('does not disconnect') || currentProblemDetails.toLowerCase().includes('will hang') || currentProblemDetails.toLowerCase().includes('end the process') || currentProblemDetails.toLowerCase().includes('crashes') || currentProblemDetails.toLowerCase().includes('not responding') || currentProblemDetails.toLowerCase().includes('freezes'))) {
+                    escalationReason = 'Application instability (e.g., hanging, crashing) requires Tier 2.0 investigation.';
+                }
+            }
+
+            if (!escalationReason || escalationReason === USER_NOT_PROVIDED) {
+                const fallbackProblemDetails = output.find(line => line.startsWith('Exact Problem Details')).split(': ')[1];
+                if (fallbackProblemDetails && fallbackProblemDetails !== USER_NOT_PROVIDED) {
+                    escalationReason = 'Escalated due to: ' + fallbackProblemDetails;
+                } else {
+                    escalationReason = 'Not explicitly stated or inferred. Requires manual review.';
+                }
+            }
+            output.push('Reason for escalating to tier 2.0: ' + escalationReason);
+
+            document.getElementById('cecEscalationOutput').value = output.join('\n');
+        }
 
             function switchTab(tab) {
                 // Save content of the *currently active* editor before switching
@@ -1453,8 +1635,10 @@
 
                 if (tab === 'code') {
                     notesWorkspace.classList.add('hidden');
+                    toolsWorkspace.classList.add('hidden');
                     codeWorkspace.classList.remove('hidden');
                     notesTab.classList.remove('active');
+                    toolsTab.classList.remove('active');
                     codeTab.classList.add('active');
                     loadMonaco().then(() => { // Ensure Monaco is loaded
                         if (currentFileName) { // If a file was previously open, load it
@@ -1468,10 +1652,19 @@
                             codeEditorContainer.innerHTML = '<p style="text-align: center; padding-top: 50px;">Select a file or add a new one to start coding.</p>';
                         }
                     });
+                } else if (tab === 'tools') {
+                    notesWorkspace.classList.add('hidden');
+                    codeWorkspace.classList.add('hidden');
+                    toolsWorkspace.classList.remove('hidden');
+                    notesTab.classList.remove('active');
+                    codeTab.classList.remove('active');
+                    toolsTab.classList.add('active');
                 } else { // Switch to notes tab
                     codeWorkspace.classList.add('hidden');
+                    toolsWorkspace.classList.add('hidden');
                     notesWorkspace.classList.remove('hidden');
                     codeTab.classList.remove('active');
+                    toolsTab.classList.remove('active');
                     notesTab.classList.add('active');
                     // Re-enable Quill if a page is selected and not locked, or clear editor if no page is selected
                     if (currentSectionName !== null && currentPageIndex !== null) {
@@ -1508,6 +1701,8 @@
                                     codeEditorContainer.innerHTML = '<p style="text-align: center; padding-top: 50px;">Select a file or add a new one to start coding.</p>';
                                 }
                             });
+                        } else if (toolsTab.classList.contains('active')) {
+                            // nothing to load for tools
                         }
                     }
                 };
@@ -1561,6 +1756,7 @@
 
                 notesTab.onclick = () => switchTab('notes');
                 codeTab.onclick = () => switchTab('code');
+                toolsTab.onclick = () => switchTab('tools');
                 addFileBtn.onclick = () => {
                     showModal('New File', 'Enter file name:', true, (name) => {
                         if (name && name.trim() !== '') {
@@ -1572,6 +1768,9 @@
                         }
                     }, hideModal, true);
                 };
+
+                processInputBtn.onclick = processInput;
+                generateEscalationBtn.onclick = extractCECEscalation;
 
                 themeSelect.onchange = (e) => {
                     currentTheme = e.target.value;
