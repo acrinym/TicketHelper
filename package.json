@@ -1,6 +1,6 @@
 {
   "name": "tickethelper",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Tools for TSDs on the USDA/FS/IIA/ICAM contract",
   "main": "mini-gpt-onenote-killer.user.js",
   "scripts": {
