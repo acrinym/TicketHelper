@@ -87,7 +87,8 @@ async function loadNotebook(name) {
   attachments = a;
   templates = t;
   versionHistory = h;
-  
+
+  migrateSections();
   migratePages();
   renderSections();
   populateNotebookSelect();
@@ -140,16 +141,30 @@ function addVersion(id, timestamp, markdown) {
 }
 
 // --- Core App Logic ---
+function migrateSections() {
+  Object.keys(sections).forEach(sec => {
+    if (Array.isArray(sections[sec])) {
+      sections[sec] = { color: "", icon: "", pages: sections[sec] };
+    } else {
+      sections[sec].color = sections[sec].color || "";
+      sections[sec].icon = sections[sec].icon || "";
+      sections[sec].pages = sections[sec].pages || [];
+    }
+  });
+}
+
 function migratePages() {
   const now = new Date().toISOString();
   Object.keys(sections).forEach(sec => {
-    sections[sec] = sections[sec].map(p => ({
+    const secObj = sections[sec];
+    secObj.pages = (secObj.pages || []).map(p => ({
       name: p.name,
       markdown: p.markdown || "",
       id: p.id || (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2)),
       created: p.created || now,
       modified: p.modified || now,
-      color: p.color || ""
+      color: p.color || "",
+      icon: p.icon || ""
     }));
   });
 }
@@ -158,14 +173,47 @@ function renderSections() {
   const container = document.getElementById("sections");
   container.innerHTML = "";
   Object.keys(sections).forEach(sec => {
+    const secObj = sections[sec];
     const secDiv = document.createElement("div");
     secDiv.className = "section";
+    if (secObj.color) {
+      secDiv.style.backgroundColor = secObj.color;
+    }
     const header = document.createElement("div");
     header.className = "section-header";
+
+    const iconSpan = document.createElement("span");
+    iconSpan.textContent = secObj.icon || "";
+    header.appendChild(iconSpan);
+
     const titleSpan = document.createElement("span");
+    titleSpan.className = "section-title";
     titleSpan.textContent = sec;
     titleSpan.onclick = () => togglePages(secDiv);
     header.appendChild(titleSpan);
+
+    const colorInputSec = document.createElement("input");
+    colorInputSec.type = "color";
+    colorInputSec.value = secObj.color || "#ffffff";
+    colorInputSec.onchange = (ev) => {
+      sections[sec].color = ev.target.value;
+      saveSections();
+      secDiv.style.backgroundColor = ev.target.value;
+    };
+    header.appendChild(colorInputSec);
+
+    const iconBtnSec = document.createElement("button");
+    iconBtnSec.className = "icon-btn";
+    iconBtnSec.textContent = "🔣";
+    iconBtnSec.onclick = () => {
+      const emo = prompt("Icon (emoji)?", secObj.icon || "");
+      if (emo !== null) {
+        sections[sec].icon = emo;
+        saveSections();
+        renderSections();
+      }
+    };
+    header.appendChild(iconBtnSec);
     const delBtn = document.createElement("button");
     delBtn.className = "delete-btn";
     delBtn.textContent = "🗑️";
@@ -179,13 +227,19 @@ function renderSections() {
 
     const pageList = document.createElement("div");
     pageList.className = "pages";
-    sections[sec].forEach((p, idx) => {
+    sections[sec].pages.forEach((p, idx) => {
       const pgDiv = document.createElement("div");
       pgDiv.className = "page-title";
       if (p.color) {
         pgDiv.style.backgroundColor = p.color;
       }
+
+      const iconSpan = document.createElement("span");
+      iconSpan.textContent = p.icon || "";
+      pgDiv.appendChild(iconSpan);
+
       const pgSpan = document.createElement("span");
+      pgSpan.className = "page-title-text";
       pgSpan.textContent = p.name;
       pgSpan.onclick = () => loadPage(sec, idx);
       pgDiv.appendChild(pgSpan);
@@ -195,18 +249,32 @@ function renderSections() {
       colorInput.id = `color-${p.id}`;
       colorInput.value = p.color || "#ffffff";
       colorInput.onchange = (ev) => {
-        sections[sec][idx].color = ev.target.value;
+        sections[sec].pages[idx].color = ev.target.value;
         saveSections();
         pgDiv.style.backgroundColor = ev.target.value;
       };
       pgDiv.appendChild(colorInput);
+
+      const iconBtn = document.createElement("button");
+      iconBtn.className = "icon-btn";
+      iconBtn.textContent = "🔣";
+      iconBtn.onclick = (e) => {
+        e.stopPropagation();
+        const emo = prompt("Icon (emoji)?", p.icon || "");
+        if (emo !== null) {
+          sections[sec].pages[idx].icon = emo;
+          saveSections();
+          renderSections();
+        }
+      };
+      pgDiv.appendChild(iconBtn);
 
       const pgDel = document.createElement("button");
       pgDel.className = "delete-btn";
       pgDel.textContent = "🗑️";
       pgDel.onclick = (e) => {
         e.stopPropagation();
-        sections[sec].splice(idx, 1);
+        sections[sec].pages.splice(idx, 1);
         saveSections();
         renderSections();
       };
@@ -226,12 +294,18 @@ function renderSections() {
           if (tpl !== null) { markdown = tpl; }
         }
         const now = new Date().toISOString();
-        sections[sec].push({
-          name, markdown, id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2), created: now, modified: now, color: ""
+        sections[sec].pages.push({
+          name,
+          markdown,
+          id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2),
+          created: now,
+          modified: now,
+          color: "",
+          icon: ""
         });
         saveSections();
         renderSections();
-        loadPage(sec, sections[sec].length - 1);
+        loadPage(sec, sections[sec].pages.length - 1);
       }
     };
     secDiv.appendChild(addPgBtn);
@@ -252,7 +326,7 @@ function togglePages(secDiv) {
 function addSection() {
   const name = document.getElementById("newSectionInput").value.trim();
   if (name && !sections[name]) {
-    sections[name] = [];
+    sections[name] = { color: "", icon: "", pages: [] };
     saveSections();
     renderSections();
     document.getElementById("newSectionInput").value = "";
@@ -262,7 +336,7 @@ function addSection() {
 function loadPage(sec, idx) {
   currentSection = sec;
   currentPage = idx;
-  const page = sections[sec][idx];
+  const page = sections[sec].pages[idx];
   const htmlContent = marked.parse(page.markdown || "");
   quill.clipboard.dangerouslyPasteHTML(htmlContent);
   document.getElementById("currentPageName").textContent = sec + " > " + page.name;
@@ -276,7 +350,7 @@ function saveCurrentPage() {
   if (currentSection !== null && currentPage !== null) {
     const td = new TurndownService();
     const html = quill.root.innerHTML;
-    const page = sections[currentSection][currentPage];
+    const page = sections[currentSection].pages[currentPage];
     
     addVersion(page.id, page.modified, page.markdown); // Save previous version
     
@@ -295,7 +369,7 @@ function autoSave() {
 
 function renderMarkdown() {
   if (currentSection !== null && currentPage !== null) {
-    const raw = sections[currentSection][currentPage].markdown || "";
+    const raw = sections[currentSection].pages[currentPage].markdown || "";
     document.getElementById("preview").innerHTML = marked.parse(raw);
   } else {
     document.getElementById("preview").innerHTML = "<p>Select a page to see its preview.</p>";
@@ -335,11 +409,11 @@ function insertImage(ev) {
 
 function exportMarkdown() {
   if (currentSection === null || currentPage === null) return;
-  const md = sections[currentSection][currentPage].markdown;
+  const md = sections[currentSection].pages[currentPage].markdown;
   const blob = new Blob([md], { type: "text/markdown" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = sections[currentSection][currentPage].name.replace(/\s+/g, "_") + ".md";
+  a.download = sections[currentSection].pages[currentPage].name.replace(/\s+/g, "_") + ".md";
   a.click();
 }
 
@@ -348,7 +422,7 @@ function importMarkdown(event) {
   if (!file || currentSection === null || currentPage === null) return;
   const fr = new FileReader();
   fr.onload = e => {
-    sections[currentSection][currentPage].markdown = e.target.result;
+    sections[currentSection].pages[currentPage].markdown = e.target.result;
     saveSections();
     loadPage(currentSection, currentPage);
   };
@@ -358,20 +432,20 @@ function importMarkdown(event) {
 function saveData() {
   const data = {};
   document.querySelectorAll("#sections > .section").forEach(secDiv => {
-    const title = secDiv.querySelector(".section-header span").textContent;
-    const existingSectionPages = sections[title] || [];
+    const title = secDiv.querySelector(".section-header .section-title").textContent;
+    const existingSection = sections[title] || { color:"", icon:"", pages:[] };
     const newPagesOrder = [];
-    secDiv.querySelectorAll(".page-title span").forEach(pgSpan => {
-      const pageName = pgSpan.textContent;
-      const originalPage = existingSectionPages.find(p => p.name === pageName);
+    secDiv.querySelectorAll(".page-title").forEach(pgDiv => {
+      const pageName = pgDiv.querySelector(".page-title-text").textContent;
+      const originalPage = existingSection.pages.find(p => p.name === pageName);
       if (originalPage) {
         newPagesOrder.push(originalPage);
       } else {
         const now = new Date().toISOString();
-        newPagesOrder.push({ name: pageName, markdown: "", id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2), created: now, modified: now, color: "" });
+        newPagesOrder.push({ name: pageName, markdown: "", id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2), created: now, modified: now, color: "", icon: "" });
       }
     });
-    data[title] = newPagesOrder;
+    data[title] = { color: existingSection.color, icon: existingSection.icon, pages: newPagesOrder };
   });
   sections = data;
   saveSections();
@@ -384,7 +458,7 @@ function updateSearch() {
     if(!term){ resDiv.style.display='none'; return; }
     const pages=[];
     Object.keys(sections).forEach(sec=>{
-        sections[sec].forEach((p,idx)=>{
+        sections[sec].pages.forEach((p,idx)=>{
             pages.push({section:sec,index:idx,name:p.name,markdown:p.markdown});
         });
     });
@@ -510,7 +584,7 @@ function showHistory(){
         panel.style.display='flex';
         return;
     }
-    const page=sections[currentSection][currentPage];
+    const page=sections[currentSection].pages[currentPage];
     const hist=(versionHistory[page.id]||[]).slice().reverse();
     hist.forEach((h)=>{
         const div=document.createElement('div');
@@ -561,7 +635,7 @@ function updateCommandResults(){
     if(!term) return;
     const pages=[];
     Object.keys(sections).forEach(sec=>{
-        sections[sec].forEach((p,idx)=>pages.push({section:sec,index:idx,name:p.name}));
+        sections[sec].pages.forEach((p,idx)=>pages.push({section:sec,index:idx,name:p.name}));
     });
     const fuse=new Fuse(pages,{keys:['name'],threshold:0.4});
     const results=fuse.search(term).slice(0,10);
