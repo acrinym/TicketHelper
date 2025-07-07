@@ -727,6 +727,8 @@ window.onload = async function() {
     document.getElementById("preview").innerHTML = "<p>Select a page or create a new one to start writing.</p>";
 
     startAutosave();
+    // Notify plugin system that NextNote finished loading
+    document.dispatchEvent(new Event('NextNoteReady'));
 };
 
 document.addEventListener('keydown', function(event) {
