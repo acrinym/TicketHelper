@@ -10,6 +10,10 @@
 </head>
 <body>
   <div id="sidebar">
+    <div style="margin-bottom:10px;">
+      <select id="notebookSelect" onchange="switchNotebook(event)"></select>
+      <button onclick="newNotebook()">+ Notebook</button>
+    </div>
     <h3>Sections</h3>
     <input id="newSectionInput" placeholder="New Section Name"/>
     <button onclick="addSection()">+ Add Section</button>
