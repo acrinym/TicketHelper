@@ -7,9 +7,9 @@
     * `[ ]` **Upgrade Storage Backend:** Migrate from `localStorage` to `IndexedDB` for high-performance, large-scale storage of notes and attachments.
     * `[x]` **Refine Code Organization:** Split the current single HTML file into separate `index.html`, `style.css`, and `script.js` files for better maintainability.
     * `[x]` **Attachment/Resource Manager:** Base system complete. Needs upgrade to use `IndexedDB` instead of base64 in `localStorage`.
-    * `[ ]` **Multi-Notebook Support:** Implement the ability to create, open, and switch between different notebooks (self-contained databases within `IndexedDB`).
-    * `[ ]` **Autosave & Versioning:** Implement a reliable autosave mechanism.
-        * `[ ]` **Advanced:** Track page history/snapshots for version control.
+    * `[x]` **Multi-Notebook Support:** Implement the ability to create, open, and switch between different notebooks (self-contained databases within `IndexedDB`).
+    * `[x]` **Autosave & Versioning:** Implement a reliable autosave mechanism.
+        * `[x]` **Advanced:** Track page history/snapshots for version control.
 
 * **[EXISTING CORE FEATURES - COMPLETE]**
     * `[x]` **Section/Page Tree:** Core UI with drag-and-drop is functional.

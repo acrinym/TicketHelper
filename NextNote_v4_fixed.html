@@ -24,6 +24,10 @@
     <div id="toolbar">
       <span id="currentPageName">No Page Selected</span>
       <span id="pageMeta" style="margin-left:10px;color:var(--hermes-disabled-text);"></span>
+      <div class="notebook-select">
+        <select id="notebookSelect" onchange="switchNotebook(this.value)"></select>
+        <button onclick="createNotebook()">+Notebook</button>
+      </div>
       <button onclick="saveCurrentPage()">💾 Save</button>
       <button onclick="togglePreview()">📄 Preview</button>
       <button onclick="document.getElementById('imgInput').click()">🏞️ Image</button>
@@ -36,6 +40,7 @@
         <select id="themeSelect"></select>
       </div>
       <button onclick="toggleAttachments()">📎 Attachments</button>
+      <button onclick="showHistory()">History</button>
       <button onclick="showTemplateManager()">Templates</button>
       <input type="file" id="attachmentInput" style="display:none" multiple onchange="addAttachments(event)"/>
       <div id="attachmentsPanel"></div>
@@ -58,6 +63,13 @@
       <div id="templateList"></div>
       <button onclick="addTemplate()">+ Add Template</button>
       <button onclick="hideTemplateManager()">Close</button>
+    </div>
+  </div>
+  <div id="historyPanel" class="overlay">
+    <div class="template-box">
+      <h3>History</h3>
+      <div id="historyList"></div>
+      <button onclick="hideHistory()">Close</button>
     </div>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>

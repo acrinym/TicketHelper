@@ -126,10 +126,12 @@
     }
     .delete-btn { background:none; border:none; color:var(--hermes-error-text); cursor:pointer; }
 .theme-select { margin-left:auto; }
+.notebook-select { display:flex; align-items:center; gap:5px; }
 
 /* Command palette overlay */
 #commandPalette.overlay,
-#templateManager.overlay {
+#templateManager.overlay,
+#historyPanel.overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -143,7 +145,8 @@
 }
 
 #commandPalette .palette-box,
-#templateManager .template-box {
+#templateManager .template-box,
+#historyPanel .template-box {
   background: var(--hermes-panel-bg);
   border: 1px solid var(--hermes-border);
   padding: 10px;
