@@ -73,10 +73,16 @@
       `
       // Add more themes as needed...
     };
-    let sections = JSON.parse(localStorage.getItem("sections_v4")) || {};
+  let sections = JSON.parse(localStorage.getItem("sections_v4")) || {};
     let attachments = JSON.parse(localStorage.getItem("attachments_v1")) || [];
+    let templates = JSON.parse(localStorage.getItem("templates_v1")) || [];
+    
     function saveAttachments(){
       localStorage.setItem("attachments_v1", JSON.stringify(attachments));
+    }
+
+    function saveTemplates(){
+      localStorage.setItem("templates_v1", JSON.stringify(templates));
     }
     function migratePages(){
       const now = new Date().toISOString();
@@ -136,32 +142,64 @@
           colorInput.id=`color-${p.id}`;
           colorInput.value=p.color||"#ffffff";
           colorInput.onchange=(ev)=>{
-            sections[sec][idx].color=ev.target.value;
-            saveToStorage();
-            pgDiv.style.backgroundColor=ev.target.value;
-          };
-          pgDiv.appendChild(colorInput);
-          if(p.color){
-            pgDiv.style.backgroundColor=p.color;
-          }
-          pageList.appendChild(pgDiv);
-        });
-        secDiv.appendChild(pageList);
-        const addPgBtn=document.createElement("button");
-        addPgBtn.textContent="+ Page";
-        addPgBtn.onclick=()=>{
-          const name=prompt("Page Name?");
-          if(name){
-            const now = new Date().toISOString();
-            sections[sec].push({name,markdown:"",id:crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2),created:now,modified:now,color:""});
-            saveToStorage();
-            renderSections();
-            loadPage(sec, sections[sec].length - 1);
-          }
-        };
-        secDiv.appendChild(addPgBtn);
-        container.appendChild(secDiv);
-      });
+sections[sec].forEach((p, idx) => {
+      const pgDiv = document.createElement("div");
+      pgDiv.className = "page-title";
+      if (p.color) { 
+        pgDiv.style.backgroundColor = p.color;
+      }
+
+      const pgSpan = document.createElement("span");
+      pgSpan.textContent = p.name;
+      pgSpan.onclick = () => loadPage(sec, idx);
+      pgDiv.appendChild(pgSpan);
+      
+      const colorInput=document.createElement("input");
+      colorInput.type="color";
+      colorInput.id=`color-${p.id}`;
+      colorInput.value=p.color||"#ffffff";
+      colorInput.onchange=(ev)=>{
+        sections[sec][idx].color=ev.target.value;
+        saveToStorage();
+        pgDiv.style.backgroundColor=ev.target.value;
+      };
+      pgDiv.appendChild(colorInput);
+      
+      if(p.color){
+        pgDiv.style.backgroundColor=p.color;
+      }
+
+      const pgDel = document.createElement("button");
+      pgDel.className = "delete-btn";
+      pgDel.textContent = "卵";
+      pgDel.onclick = (e) => { e.stopPropagation(); sections[sec].splice(idx, 1); saveToStorage(); renderSections(); };
+      pgDiv.appendChild(pgDel);
+
+      pageList.appendChild(pgDiv);
+    });
+
+    secDiv.appendChild(pageList);
+    
+    const addPgBtn = document.createElement("button");
+    addPgBtn.textContent = "+ Page";
+    addPgBtn.onclick = () => {
+      const name = prompt("Page Name?");
+      if (name) {
+        let markdown = "";
+        if (templates.length && confirm('Create from template?')) {
+          const tpl = newPageWithTemplate(sec);
+          if (tpl !== null) { markdown = tpl; }
+        }
+        const now = new Date().toISOString();
+        sections[sec].push({ name, markdown, id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2), created: now, modified: now, color: "" });
+        saveToStorage();
+        renderSections();
+        loadPage(sec, sections[sec].length - 1);
+      }
+    };
+    secDiv.appendChild(addPgBtn);
+    container.appendChild(secDiv);
+  });
       // Sortable
       Sortable.create(container,{animation:150, handle:".section-header", onEnd:saveData});
       document.querySelectorAll(".pages").forEach(pl=>{
@@ -375,6 +413,96 @@ function toggleAttachments(){
       }
       toggleAttachments();
     }
+// Template management
+    function showTemplateManager(){
+      const mgr=document.getElementById('templateManager');
+      const list=document.getElementById('templateList');
+      list.innerHTML='';
+      templates.forEach((t,i)=>{
+        const div=document.createElement('div');
+        div.textContent=t.name;
+        const edit=document.createElement('button');
+        edit.textContent='Edit';
+        edit.onclick=()=>editTemplate(i);
+        const del=document.createElement('button');
+        del.textContent='Delete';
+        del.onclick=()=>{templates.splice(i,1); saveTemplates(); showTemplateManager();};
+        div.appendChild(edit);
+        div.appendChild(del);
+        list.appendChild(div);
+      });
+      mgr.style.display='flex';
+    }
+
+    function hideTemplateManager(){
+      document.getElementById('templateManager').style.display='none';
+    }
+
+    function addTemplate(){
+      const name=prompt('Template name?');
+      if(!name) return;
+      const content=prompt('Template markdown?');
+      templates.push({name,markdown:content||''});
+      saveTemplates();
+      showTemplateManager();
+    }
+
+    function editTemplate(idx){
+      const t=templates[idx];
+      const name=prompt('Template name?', t.name);
+      if(!name) return;
+      const content=prompt('Template markdown?', t.markdown);
+      templates[idx]={name,markdown:content||''};
+      saveTemplates();
+      showTemplateManager();
+    }
+
+    function newPageWithTemplate(sec){
+      if(!templates.length){
+        return null;
+      }
+      const opts=templates.map((t,i)=>`${i+1}: ${t.name}`).join('\n');
+      const choice=prompt(`Choose template number or Cancel for blank:\n${opts}`);
+      const idx=parseInt(choice)-1;
+      if(!isNaN(idx) && templates[idx]){
+        return templates[idx].markdown;
+      }
+      return '';
+    }
+
+    // Command palette
+    function showCommandPalette(){
+      const overlay=document.getElementById('commandPalette');
+      const input=document.getElementById('commandInput');
+      document.getElementById('commandResults').innerHTML='';
+      input.value='';
+      overlay.style.display='flex';
+      input.focus();
+    }
+
+    function hideCommandPalette(){
+      document.getElementById('commandPalette').style.display='none';
+    }
+
+    function updateCommandResults(){
+      const term=document.getElementById('commandInput').value.trim();
+      const container=document.getElementById('commandResults');
+      container.innerHTML='';
+      if(!term) return;
+      const pages=[];
+      Object.keys(sections).forEach(sec=>{
+        sections[sec].forEach((p,idx)=>pages.push({section:sec,index:idx,name:p.name}));
+      });
+      const fuse=new Fuse(pages,{keys:['name'],threshold:0.4});
+      const results=fuse.search(term).slice(0,10);
+      results.forEach(r=>{
+        const div=document.createElement('div');
+        div.textContent=`${r.item.section} > ${r.item.name}`;
+        div.onclick=()=>{loadPage(r.item.section,r.item.index); hideCommandPalette();};
+        container.appendChild(div);
+      });
+    }
+
     // Theme setup
     const themeSelect=document.getElementById("themeSelect");
     Object.keys(hermesThemes).forEach(name=>{
@@ -382,41 +510,36 @@ function toggleAttachments(){
     });
     themeSelect.onchange=()=>{
       document.documentElement.style.cssText=hermesThemes[themeSelect.value];
-      localStorage.setItem("nextnote-theme", themeSelect.value); // Save selected theme
+      localStorage.setItem("nextnote-theme", themeSelect.value);
     };
+    
     // Load
     window.onload=function(){
       migratePages();
       renderSections();
-      // load theme
+      
       const savedTheme=localStorage.getItem("nextnote-theme")||"light";
       themeSelect.value=savedTheme;
       document.documentElement.style.cssText=hermesThemes[savedTheme];
 
-      // Initialize Quill
       quill = new Quill('#quillEditorContainer', {
-        theme: 'snow', // Or 'bubble' for a floating tooltip
+        theme: 'snow',
         modules: {
           toolbar: [
-            [{ 'header': [1, 2, 3, 4, 5, 6, false] }], // Headings
-            ['bold', 'italic', 'underline', 'strike'],        // Basic formatting
-            [{ 'list': 'ordered'}, { 'list': 'bullet' }],    // Lists
-            [{ 'align': [] }],                              // Text alignment
-            [{ 'color': [] }, { 'background': [] }],          // Text/background color
-            ['link', 'image'],                            // Links, images (video is also available if needed)
-            ['clean']                                         // Remove formatting
+            [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            [{ 'align': [] }],
+            [{ 'color': [] }, { 'background': [] }],
+            ['link', 'image'],
+            ['clean']
           ]
         }
       });
 
-      // Initially, hide Quill until a page is selected
-      // Use display 'none' for quill container, and 'block' for preview
       document.getElementById("quillEditorContainer").style.display = "none";
       document.getElementById("preview").style.display = "block"; 
       document.getElementById("preview").innerHTML = "<p>Select a page or create a new one to start writing.</p>";
-
-      // Ensure that when saveData is called after drag/drop, markdown content is preserved.
-      // Modified saveData to find and re-associate existing markdown.
     };
 
     document.addEventListener('keydown', function(event) {
@@ -424,5 +547,22 @@ function toggleAttachments(){
         event.preventDefault();
         console.log("Hotkey triggered: Saving page...");
         saveCurrentPage();
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key === 'p') {
+        event.preventDefault();
+        showCommandPalette();
+      }
+      if(event.key === 'Escape') {
+        hideCommandPalette();
+      }
+    });
+
+    document.getElementById('commandInput').addEventListener('input', updateCommandResults);
+    document.getElementById('commandInput').addEventListener('keydown', function(ev){
+      if(ev.key==='Enter'){
+        const first=document.querySelector('#commandResults div');
+        if(first){ first.click(); }
+      } else if(ev.key==='Escape'){
+        hideCommandPalette();
       }
     });

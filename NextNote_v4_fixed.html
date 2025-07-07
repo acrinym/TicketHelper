@@ -32,6 +32,7 @@
         <select id="themeSelect"></select>
       </div>
       <button onclick="toggleAttachments()">📎 Attachments</button>
+      <button onclick="showTemplateManager()">Templates</button>
       <input type="file" id="attachmentInput" style="display:none" multiple onchange="addAttachments(event)"/>
       <div id="attachmentsPanel"></div>
       <div id="searchResults"></div>
@@ -39,6 +40,20 @@
     <div id="editor">
       <div id="quillEditorContainer"></div>
       <div id="preview" style="display:none;"></div>
+    </div>
+  </div>
+  <div id="commandPalette" class="overlay">
+    <div class="palette-box">
+      <input id="commandInput" placeholder="Jump to page..." />
+      <div id="commandResults"></div>
+    </div>
+  </div>
+  <div id="templateManager" class="overlay">
+    <div class="template-box">
+      <h3>Templates</h3>
+      <div id="templateList"></div>
+      <button onclick="addTemplate()">+ Add Template</button>
+      <button onclick="hideTemplateManager()">Close</button>
     </div>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
