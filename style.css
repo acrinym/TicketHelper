@@ -21,6 +21,7 @@
       --hermes-info-text: #17a2b8;
       --hermes-link-color: #007bff;
       --hermes-link-hover-color: #0056b3;
+      --editor-font-size: 16px;
     }
     body {
       display: flex; margin:0; height:100vh;
@@ -60,6 +61,7 @@
       flex:1; padding:10px; overflow:auto;
       background: var(--hermes-input-bg); color: var(--hermes-input-text);
       border:1px solid var(--hermes-input-border);
+      font-size: var(--editor-font-size);
       /* This is important for Quill to take up available space */
       display: flex;
       flex-direction: column;
@@ -88,6 +90,7 @@
       border:1px solid var(--hermes-input-border);
       background: var(--hermes-input-bg); /* Use input background for consistency */
       color: var(--hermes-input-text);
+      font-size: var(--editor-font-size);
     }
     button, select {
       background: var(--hermes-button-bg); color: var(--hermes-button-text);
@@ -133,7 +136,8 @@
 /* Command palette overlay */
 #commandPalette.overlay,
 #templateManager.overlay,
-#historyPanel.overlay {
+#historyPanel.overlay,
+#settingsPanel.overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -148,11 +152,16 @@
 
 #commandPalette .palette-box,
 #templateManager .template-box,
-#historyPanel .template-box {
+#historyPanel .template-box,
+#settingsPanel .settings-box {
   background: var(--hermes-panel-bg);
   border: 1px solid var(--hermes-border);
   padding: 10px;
   width: 300px;
+}
+
+#settingsPanel .settings-box {
+  width: 400px;
 }
 
 #commandResults div {
@@ -168,4 +177,25 @@
   display: flex;
   justify-content: space-between;
   margin-bottom: 5px;
+}
+
+#settingsTabs {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+#settingsTabs button {
+  padding: 5px 10px;
+  border: 1px solid var(--hermes-border);
+  background: var(--hermes-button-bg);
+  cursor: pointer;
+}
+
+#settingsContent > div {
+  display: none;
+}
+
+#settingsContent > div.active {
+  display: block;
 }

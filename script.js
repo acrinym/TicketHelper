@@ -25,6 +25,9 @@ let versionHistory = {};
 let currentSection = null;
 let currentPage = null;
 let quill;
+let autosaveInterval = parseInt(localStorage.getItem("autosave-interval")) || 30000;
+let autosaveTimer = null;
+let editorFontSize = parseInt(localStorage.getItem("editor-font-size")) || 16;
 
 // --- IndexedDB Core Logic ---
 function openDB(name) {
@@ -367,6 +370,11 @@ function autoSave() {
   saveCurrentPage();
 }
 
+function startAutosave() {
+  if (autosaveTimer) clearInterval(autosaveTimer);
+  autosaveTimer = setInterval(autoSave, autosaveInterval);
+}
+
 function renderMarkdown() {
   if (currentSection !== null && currentPage !== null) {
     const raw = sections[currentSection].pages[currentPage].markdown || "";
@@ -647,19 +655,56 @@ function updateCommandResults(){
     });
 }
 
+function showSettingsPanel(){
+    document.getElementById('settingsPanel').style.display='flex';
+    showSettingsSection('appearance');
+}
+
+function hideSettingsPanel(){
+    document.getElementById('settingsPanel').style.display='none';
+}
+
+function showSettingsSection(section){
+    document.querySelectorAll('#settingsContent > div').forEach(div=>div.classList.remove('active'));
+    const target=document.getElementById('settings-'+section);
+    if(target) target.classList.add('active');
+}
+
 // --- Initial Load & Event Listeners ---
 
 window.onload = async function() {
     await loadNotebook(currentNotebook);
 
-    const savedTheme = localStorage.getItem("nextnote-theme") || "light";
     const themeSelect = document.getElementById("themeSelect");
-    themeSelect.value = savedTheme;
-    document.documentElement.style.cssText = hermesThemes[savedTheme];
-    
+    Object.keys(hermesThemes).forEach(t=>{
+        const opt=document.createElement('option');
+        opt.value=t;
+        opt.textContent=t.charAt(0).toUpperCase()+t.slice(1);
+        themeSelect.appendChild(opt);
+    });
+    themeSelect.value = localStorage.getItem("nextnote-theme") || "light";
+    document.documentElement.style.cssText = hermesThemes[themeSelect.value];
+    document.documentElement.style.setProperty('--editor-font-size', editorFontSize + 'px');
+
     themeSelect.onchange = () => {
         document.documentElement.style.cssText = hermesThemes[themeSelect.value];
         localStorage.setItem("nextnote-theme", themeSelect.value);
+    };
+
+    const fontInput=document.getElementById('fontSizeInput');
+    fontInput.value=editorFontSize;
+    fontInput.onchange=(e)=>{
+        editorFontSize=parseInt(e.target.value)||16;
+        document.documentElement.style.setProperty('--editor-font-size', editorFontSize + 'px');
+        localStorage.setItem('editor-font-size', editorFontSize);
+    };
+
+    const autoInput=document.getElementById('autosaveInput');
+    autoInput.value=autosaveInterval;
+    autoInput.onchange=(e)=>{
+        autosaveInterval=parseInt(e.target.value)||30000;
+        localStorage.setItem('autosave-interval', autosaveInterval);
+        startAutosave();
     };
 
     quill = new Quill('#quillEditorContainer', {
@@ -681,7 +726,7 @@ window.onload = async function() {
     document.getElementById("preview").style.display = "block";
     document.getElementById("preview").innerHTML = "<p>Select a page or create a new one to start writing.</p>";
 
-    setInterval(autoSave, 30000); // Autosave every 30 seconds
+    startAutosave();
 };
 
 document.addEventListener('keydown', function(event) {
@@ -696,6 +741,7 @@ document.addEventListener('keydown', function(event) {
     if (event.key === 'Escape') {
         hideCommandPalette();
         hideHistory();
+        hideSettingsPanel();
     }
 });
 
