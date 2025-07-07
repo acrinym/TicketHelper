@@ -110,8 +110,9 @@
       display:flex; justify-content:space-between; align-items:center;
       background: var(--hermes-accent-bar-bg); padding:5px;
     }
-    .section-header span {
+    .section-header .section-title {
       font-weight:bold; cursor:pointer;
+      flex:1;
     }
     .pages {
       margin:5px 0 10px 10px; min-height:20px;
@@ -121,9 +122,10 @@
       background:var(--hermes-input-bg); 
       border:1px solid var(--hermes-panel-border); cursor:pointer;
     }
-    .page-title span {
+    .page-title .page-title-text {
       flex:1; padding:3px;
     }
+    .icon-btn { background:none; border:none; cursor:pointer; }
     .delete-btn { background:none; border:none; color:var(--hermes-error-text); cursor:pointer; }
 .theme-select { margin-left:auto; }
 .notebook-select { display:flex; align-items:center; gap:5px; }
