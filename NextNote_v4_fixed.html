@@ -20,13 +20,13 @@
     <div id="toolbar">
       <span id="currentPageName">No Page Selected</span>
       <span id="pageMeta" style="margin-left:10px;color:var(--hermes-disabled-text);"></span>
-      <button onclick="saveCurrentPage()">沈 Save</button>
-      <button onclick="togglePreview()">早 Preview</button>
-      <button onclick="document.getElementById('imgInput').click()">名 Image</button>
+      <button onclick="saveCurrentPage()">💾 Save</button>
+      <button onclick="togglePreview()">📄 Preview</button>
+      <button onclick="document.getElementById('imgInput').click()">🏞️ Image</button>
       <input type="file" id="imgInput" accept="image/*" style="display:none" onchange="insertImage(event)"/>
-      <button onclick="exportMarkdown()">豆 Export MD</button>
+      <button onclick="exportMarkdown()">⬇️ Export MD</button>
       <input type="file" id="importFile" style="display:none" onchange="importMarkdown(event)"/>
-      <button onclick="document.getElementById('importFile').click()">踏 Import MD</button>
+      <button onclick="document.getElementById('importFile').click()">⬆️ Import MD</button>
       <input id="searchInput" placeholder="Search..." oninput="updateSearch()" style="margin-left:auto;">
       <div class="theme-select">
         <select id="themeSelect"></select>

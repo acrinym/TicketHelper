@@ -5,7 +5,7 @@
 
 * **[CORE INFRASTRUCTURE]**
     * `[ ]` **Upgrade Storage Backend:** Migrate from `localStorage` to `IndexedDB` for high-performance, large-scale storage of notes and attachments.
-    * `[ ]` **Refine Code Organization:** Split the current single HTML file into separate `index.html`, `style.css`, and `script.js` files for better maintainability.
+    * `[x]` **Refine Code Organization:** Split the current single HTML file into separate `index.html`, `style.css`, and `script.js` files for better maintainability.
     * `[x]` **Attachment/Resource Manager:** Base system complete. Needs upgrade to use `IndexedDB` instead of base64 in `localStorage`.
     * `[ ]` **Multi-Notebook Support:** Implement the ability to create, open, and switch between different notebooks (self-contained databases within `IndexedDB`).
     * `[ ]` **Autosave & Versioning:** Implement a reliable autosave mechanism.
@@ -23,11 +23,12 @@
 *(Objective: Build out the features that make the application powerful and delightful to use daily.)*
 
 * **[UP NEXT - HIGH PRIORITY]**
-    * `[ ]` **Quick Actions & Hotkeys:**
-        * `[ ]` Implement a Command Palette (e.g., Ctrl+P or Ctrl+K) to quickly jump to pages, apply templates, or execute commands.
-        * `[ ]` Establish keyboard shortcuts for common actions (new page, save, toggle preview, etc.).
+    * `[x]` **Quick Actions & Hotkeys:**
+        * `[x]` Implement a Command Palette (e.g., Ctrl+P or Ctrl+K) to quickly jump to pages, apply templates, or execute commands.
+        * `[x]` Establish keyboard shortcuts for common actions (new page, save, toggle preview, etc.).
     * `[ ]` **Customization:**
-        * `[ ]` Add per-section and per-page color and icon selection.
+        * `[x]` Add per-section and per-page color selection.
+        * `[ ]` Add icon selection for sections/pages.
         * `[ ]` Create an advanced settings panel for user preferences, theme customization, and plugin management.
     * `[ ]` **Templates:**
         * `[ ]` Develop a system for creating and applying page templates.
