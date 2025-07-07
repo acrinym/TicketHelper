@@ -73,17 +73,93 @@
       `
       // Add more themes as needed...
     };
-  let sections = JSON.parse(localStorage.getItem("sections_v4")) || {};
-    let attachments = JSON.parse(localStorage.getItem("attachments_v1")) || [];
-    let templates = JSON.parse(localStorage.getItem("templates_v1")) || [];
-    
-    function saveAttachments(){
-      localStorage.setItem("attachments_v1", JSON.stringify(attachments));
-    }
+  const notebookList = JSON.parse(localStorage.getItem("notebook_list")) || ["default"];
+  let currentNotebook = localStorage.getItem("current_notebook") || notebookList[0];
+  let db = null;
+  let sections = {};
+  let attachments = [];
+  let templates = [];
+  let versionHistory = {};
 
-    function saveTemplates(){
-      localStorage.setItem("templates_v1", JSON.stringify(templates));
+  function saveNotebookList(){
+    localStorage.setItem("notebook_list", JSON.stringify(notebookList));
+  }
+
+  function openDB(name){
+    return new Promise((res,rej)=>{
+      const req = indexedDB.open("nextnote_"+name,1);
+      req.onupgradeneeded = e=>{
+        const db = e.target.result;
+        if(!db.objectStoreNames.contains("data")) db.createObjectStore("data");
+      };
+      req.onsuccess = e=>{ db = e.target.result; res(); };
+      req.onerror = e=>rej(e);
+    });
+  }
+
+  function idbGet(key){
+    return new Promise((res,rej)=>{
+      const tx = db.transaction("data","readonly");
+      const req = tx.objectStore("data").get(key);
+      req.onsuccess=()=>res(req.result); req.onerror=()=>rej(req.error);
+    });
+  }
+
+  function idbSet(key,val){
+    return new Promise((res,rej)=>{
+      const tx = db.transaction("data","readwrite");
+      tx.objectStore("data").put(val,key);
+      tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error);
+    });
+  }
+
+  async function loadNotebook(name){
+    await openDB(name);
+    currentNotebook = name;
+    localStorage.setItem("current_notebook", name);
+    sections = await idbGet("sections_v4") || {};
+    attachments = await idbGet("attachments_v1") || [];
+    templates = await idbGet("templates_v1") || [];
+    versionHistory = await idbGet("history_v1") || {};
+    migratePages();
+    renderSections();
+    populateNotebookSelect();
+  }
+
+  function saveSections(){ idbSet("sections_v4", sections); }
+  function saveAttachments(){ idbSet("attachments_v1", attachments); }
+  function saveTemplates(){ idbSet("templates_v1", templates); }
+  function saveHistory(){ idbSet("history_v1", versionHistory); }
+
+  function populateNotebookSelect(){
+    const sel = document.getElementById('notebookSelect');
+    if(!sel) return;
+    sel.innerHTML='';
+    notebookList.forEach(n=>{
+      const opt=document.createElement('option');
+      opt.value=n; opt.textContent=n; sel.appendChild(opt);
+    });
+    sel.value=currentNotebook;
+  }
+
+  function createNotebook(){
+    const name=prompt('Notebook name?');
+    if(!name) return;
+    if(!notebookList.includes(name)){
+      notebookList.push(name); saveNotebookList();
     }
+    loadNotebook(name);
+  }
+
+  function switchNotebook(name){
+    loadNotebook(name);
+  }
+
+  function addVersion(id,timestamp,markdown){
+    if(!versionHistory[id]) versionHistory[id]=[];
+    versionHistory[id].push({timestamp,markdown});
+    saveHistory();
+  }
     function migratePages(){
       const now = new Date().toISOString();
       Object.keys(sections).forEach(sec=>{
@@ -101,9 +177,6 @@
     let currentPage = null;
     let quill; // Declared global quill instance
 
-    function saveToStorage(){
-      localStorage.setItem("sections_v4", JSON.stringify(sections));
-    }
 
     function renderSections(){
       const container = document.getElementById("sections");
@@ -120,7 +193,7 @@
         header.appendChild(titleSpan);
         const delBtn=document.createElement("button");
         delBtn.className="delete-btn"; delBtn.textContent="🗑️";
-        delBtn.onclick=()=>{ delete sections[sec]; saveToStorage(); renderSections(); };
+        delBtn.onclick=()=>{ delete sections[sec]; saveSections(); renderSections(); };
         header.appendChild(delBtn);
         secDiv.appendChild(header);
         // pages
@@ -129,54 +202,27 @@
         sections[sec].forEach((p,idx)=>{
           const pgDiv=document.createElement("div");
           pgDiv.className="page-title";
+          if(p.color){ pgDiv.style.backgroundColor=p.color; }
           const pgSpan=document.createElement("span");
           pgSpan.textContent=p.name;
           pgSpan.onclick=()=>loadPage(sec,idx);
           pgDiv.appendChild(pgSpan);
-          const pgDel=document.createElement("button");
-          pgDel.className="delete-btn"; pgDel.textContent="🗑️";
-          pgDel.onclick=(e)=>{ e.stopPropagation(); sections[sec].splice(idx,1); saveToStorage(); renderSections(); };
-          pgDiv.appendChild(pgDel);
           const colorInput=document.createElement("input");
           colorInput.type="color";
           colorInput.id=`color-${p.id}`;
           colorInput.value=p.color||"#ffffff";
           colorInput.onchange=(ev)=>{
-sections[sec].forEach((p, idx) => {
-      const pgDiv = document.createElement("div");
-      pgDiv.className = "page-title";
-      if (p.color) { 
-        pgDiv.style.backgroundColor = p.color;
-      }
-
-      const pgSpan = document.createElement("span");
-      pgSpan.textContent = p.name;
-      pgSpan.onclick = () => loadPage(sec, idx);
-      pgDiv.appendChild(pgSpan);
-      
-      const colorInput=document.createElement("input");
-      colorInput.type="color";
-      colorInput.id=`color-${p.id}`;
-      colorInput.value=p.color||"#ffffff";
-      colorInput.onchange=(ev)=>{
-        sections[sec][idx].color=ev.target.value;
-        saveToStorage();
-        pgDiv.style.backgroundColor=ev.target.value;
-      };
-      pgDiv.appendChild(colorInput);
-      
-      if(p.color){
-        pgDiv.style.backgroundColor=p.color;
-      }
-
-      const pgDel = document.createElement("button");
-      pgDel.className = "delete-btn";
-      pgDel.textContent = "🗑️";
-      pgDel.onclick = (e) => { e.stopPropagation(); sections[sec].splice(idx, 1); saveToStorage(); renderSections(); };
-      pgDiv.appendChild(pgDel);
-
-      pageList.appendChild(pgDiv);
-    });
+            sections[sec][idx].color=ev.target.value;
+            saveSections();
+            pgDiv.style.backgroundColor=ev.target.value;
+          };
+          pgDiv.appendChild(colorInput);
+          const pgDel=document.createElement("button");
+          pgDel.className="delete-btn"; pgDel.textContent="🗑️";
+          pgDel.onclick=(e)=>{ e.stopPropagation(); sections[sec].splice(idx,1); saveSections(); renderSections(); };
+          pgDiv.appendChild(pgDel);
+          pageList.appendChild(pgDiv);
+        });
 
     secDiv.appendChild(pageList);
     
@@ -192,7 +238,7 @@ sections[sec].forEach((p, idx) => {
         }
         const now = new Date().toISOString();
         sections[sec].push({ name, markdown, id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2), created: now, modified: now, color: "" });
-        saveToStorage();
+        saveSections();
         renderSections();
         loadPage(sec, sections[sec].length - 1);
       }
@@ -215,7 +261,7 @@ sections[sec].forEach((p, idx) => {
     function addSection(){
       const name=document.getElementById("newSectionInput").value.trim();
       if(name&&!sections[name]){
-        sections[name]=[]; saveToStorage(); renderSections(); document.getElementById("newSectionInput").value="";
+        sections[name]=[]; saveSections(); renderSections(); document.getElementById("newSectionInput").value="";
       }
     }
 
@@ -232,18 +278,22 @@ sections[sec].forEach((p, idx) => {
       quill.enable(true); // Ensure Quill is enabled
     }
 
-    function saveCurrentPage(){
+    async function saveCurrentPage(){
       if(currentSection!==null && currentPage!==null){
         const td=new TurndownService();
-        // Get HTML content from Quill's editor root
         const html=quill.root.innerHTML;
         const page = sections[currentSection][currentPage];
         page.markdown = td.turndown(html);
         page.modified = new Date().toISOString();
-        saveToStorage();
+        addVersion(page.id, page.modified, page.markdown);
+        saveSections();
         document.getElementById("pageMeta").textContent = `id: ${page.id} created: ${page.created} modified: ${page.modified}`;
         renderMarkdown();
       }
+    }
+
+    function autoSave(){
+      saveCurrentPage();
     }
 
     function renderMarkdown(){
@@ -306,7 +356,7 @@ sections[sec].forEach((p, idx) => {
     function importMarkdown(event){
       const file=event.target.files[0]; if(!file||currentSection===null||currentPage===null) return;
       const fr=new FileReader();
-      fr.onload=e=>{ sections[currentSection][currentPage].markdown=e.target.result; saveToStorage(); loadPage(currentSection,currentPage); };
+      fr.onload=e=>{ sections[currentSection][currentPage].markdown=e.target.result; saveSections(); loadPage(currentSection,currentPage); };
       fr.readAsText(file);
     }
 
@@ -332,7 +382,7 @@ sections[sec].forEach((p, idx) => {
         });
         data[title] = newPagesOrder;
       });
-      sections=data; saveToStorage();
+      sections=data; saveSections();
     }
 
     function updateSearch(){
@@ -457,6 +507,35 @@ function toggleAttachments(){
       showTemplateManager();
     }
 
+    function showHistory(){
+      const panel=document.getElementById('historyPanel');
+      const list=document.getElementById('historyList');
+      list.innerHTML='';
+      if(currentSection===null||currentPage===null){
+        list.textContent='No page selected';
+        panel.style.display='flex';
+        return;
+      }
+      const page=sections[currentSection][currentPage];
+      const hist=(versionHistory[page.id]||[]).slice().reverse();
+      hist.forEach((h)=>{
+        const div=document.createElement('div');
+        const info=document.createElement('span');
+        info.textContent=new Date(h.timestamp).toLocaleString();
+        const btn=document.createElement('button');
+        btn.textContent='Restore';
+        btn.onclick=()=>{page.markdown=h.markdown; loadPage(currentSection,currentPage); hideHistory(); saveSections();};
+        div.appendChild(info);
+        div.appendChild(btn);
+        list.appendChild(div);
+      });
+      panel.style.display='flex';
+    }
+
+    function hideHistory(){
+      document.getElementById('historyPanel').style.display='none';
+    }
+
     function newPageWithTemplate(sec){
       if(!templates.length){
         return null;
@@ -514,10 +593,9 @@ function toggleAttachments(){
     };
     
     // Load
-    window.onload=function(){
-      migratePages();
-      renderSections();
-      
+    window.onload=async function(){
+      await loadNotebook(currentNotebook);
+
       const savedTheme=localStorage.getItem("nextnote-theme")||"light";
       themeSelect.value=savedTheme;
       document.documentElement.style.cssText=hermesThemes[savedTheme];
@@ -538,8 +616,9 @@ function toggleAttachments(){
       });
 
       document.getElementById("quillEditorContainer").style.display = "none";
-      document.getElementById("preview").style.display = "block"; 
+      document.getElementById("preview").style.display = "block";
       document.getElementById("preview").innerHTML = "<p>Select a page or create a new one to start writing.</p>";
+      setInterval(autoSave, 30000);
     };
 
     document.addEventListener('keydown', function(event) {
