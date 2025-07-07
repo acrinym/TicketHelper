@@ -119,7 +119,7 @@
         titleSpan.onclick=()=>togglePages(secDiv);
         header.appendChild(titleSpan);
         const delBtn=document.createElement("button");
-        delBtn.className="delete-btn"; delBtn.textContent="卵";
+        delBtn.className="delete-btn"; delBtn.textContent="🗑️";
         delBtn.onclick=()=>{ delete sections[sec]; saveToStorage(); renderSections(); };
         header.appendChild(delBtn);
         secDiv.appendChild(header);
@@ -134,7 +134,7 @@
           pgSpan.onclick=()=>loadPage(sec,idx);
           pgDiv.appendChild(pgSpan);
           const pgDel=document.createElement("button");
-          pgDel.className="delete-btn"; pgDel.textContent="卵";
+          pgDel.className="delete-btn"; pgDel.textContent="🗑️";
           pgDel.onclick=(e)=>{ e.stopPropagation(); sections[sec].splice(idx,1); saveToStorage(); renderSections(); };
           pgDiv.appendChild(pgDel);
           const colorInput=document.createElement("input");
@@ -171,7 +171,7 @@ sections[sec].forEach((p, idx) => {
 
       const pgDel = document.createElement("button");
       pgDel.className = "delete-btn";
-      pgDel.textContent = "卵";
+      pgDel.textContent = "🗑️";
       pgDel.onclick = (e) => { e.stopPropagation(); sections[sec].splice(idx, 1); saveToStorage(); renderSections(); };
       pgDiv.appendChild(pgDel);
 
