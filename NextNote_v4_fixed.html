@@ -36,9 +36,7 @@
       <input type="file" id="importFile" style="display:none" onchange="importMarkdown(event)"/>
       <button onclick="document.getElementById('importFile').click()">⬆️ Import MD</button>
       <input id="searchInput" placeholder="Search..." oninput="updateSearch()" style="margin-left:auto;">
-      <div class="theme-select">
-        <select id="themeSelect"></select>
-      </div>
+      <button onclick="showSettingsPanel()">⚙️</button>
       <button onclick="toggleAttachments()">📎 Attachments</button>
       <button onclick="showHistory()">History</button>
       <button onclick="showTemplateManager()">Templates</button>
@@ -70,6 +68,30 @@
       <h3>History</h3>
       <div id="historyList"></div>
       <button onclick="hideHistory()">Close</button>
+    </div>
+  </div>
+  <div id="settingsPanel" class="overlay">
+    <div class="settings-box">
+      <div id="settingsTabs">
+        <button onclick="showSettingsSection('appearance')">Appearance</button>
+        <button onclick="showSettingsSection('editor')">Editor</button>
+        <button onclick="showSettingsSection('notebooks')">Notebooks</button>
+        <button onclick="hideSettingsPanel()" style="margin-left:auto;">Close</button>
+      </div>
+      <div id="settingsContent">
+        <div id="settings-appearance">
+          <label>Theme:
+            <select id="themeSelect"></select>
+          </label>
+        </div>
+        <div id="settings-editor">
+          <label>Font Size:<input type="number" id="fontSizeInput" min="10" max="32" step="1"></label>
+          <label>Autosave (ms):<input type="number" id="autosaveInput" min="5000" step="1000"></label>
+        </div>
+        <div id="settings-notebooks">
+          <p>Notebook preferences coming soon.</p>
+        </div>
+      </div>
     </div>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
