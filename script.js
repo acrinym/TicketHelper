@@ -73,16 +73,83 @@
       `
       // Add more themes as needed...
     };
-  let sections = JSON.parse(localStorage.getItem("sections_v4")) || {};
-    let attachments = JSON.parse(localStorage.getItem("attachments_v1")) || [];
-    let templates = JSON.parse(localStorage.getItem("templates_v1")) || [];
+  let db;
+  let currentNotebook = localStorage.getItem("currentNotebook") || "default";
+  let notebooks = JSON.parse(localStorage.getItem("notebook_list")) || ["default"];
+
+  let sections = {};
+  let attachments = [];
+  let templates = [];
+
+    function loadData(key, def){
+      return new Promise(res=>{
+        if(!db){res(def); return;}
+        const tx=db.transaction('data','readonly');
+        const req=tx.objectStore('data').get(key);
+        req.onsuccess=()=>res(req.result!==undefined?req.result:def);
+        req.onerror=()=>res(def);
+      });
+    }
+
+    function openNotebook(name){
+      return new Promise((resolve,reject)=>{
+        const req=indexedDB.open('nextnote_'+name,1);
+        req.onupgradeneeded=e=>{
+          const db=e.target.result;
+          if(!db.objectStoreNames.contains('data')){db.createObjectStore('data');}
+        };
+        req.onsuccess=e=>{
+          db=e.target.result;
+          currentNotebook=name;
+          if(!notebooks.includes(name)){
+            notebooks.push(name);
+            localStorage.setItem('notebook_list', JSON.stringify(notebooks));
+          }
+          localStorage.setItem('currentNotebook', name);
+          Promise.all([
+            loadData('sections',{}),
+            loadData('attachments',[]),
+            loadData('templates',[])
+          ]).then(([s,a,t])=>{
+            sections=s; attachments=a; templates=t; migratePages(); renderSections(); resolve();
+          });
+        };
+        req.onerror=e=>reject(e);
+      });
+    }
+
+    function updateNotebookSelect(){
+      const sel=document.getElementById('notebookSelect');
+      if(!sel) return;
+      sel.innerHTML='';
+      notebooks.forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;sel.appendChild(o);});
+      sel.value=currentNotebook;
+    }
+
+    function newNotebook(){
+      const name=prompt('New notebook name?');
+      if(!name) return;
+      openNotebook(name).then(updateNotebookSelect);
+    }
+
+    function switchNotebook(ev){
+      openNotebook(ev.target.value).then(updateNotebookSelect);
+    }
     
+    function saveData(key,data){
+      return new Promise(res=>{
+        if(!db){res();return;}
+        const tx=db.transaction('data','readwrite');
+        tx.objectStore('data').put(data,key).onsuccess=()=>res();
+      });
+    }
+
     function saveAttachments(){
-      localStorage.setItem("attachments_v1", JSON.stringify(attachments));
+      return saveData('attachments', attachments);
     }
 
     function saveTemplates(){
-      localStorage.setItem("templates_v1", JSON.stringify(templates));
+      return saveData('templates', templates);
     }
     function migratePages(){
       const now = new Date().toISOString();
@@ -102,7 +169,7 @@
     let quill; // Declared global quill instance
 
     function saveToStorage(){
-      localStorage.setItem("sections_v4", JSON.stringify(sections));
+      return saveData('sections', sections);
     }
 
     function renderSections(){
@@ -129,56 +196,35 @@
         sections[sec].forEach((p,idx)=>{
           const pgDiv=document.createElement("div");
           pgDiv.className="page-title";
+          if (p.color) {
+            pgDiv.style.backgroundColor = p.color;
+          }
+
           const pgSpan=document.createElement("span");
           pgSpan.textContent=p.name;
           pgSpan.onclick=()=>loadPage(sec,idx);
           pgDiv.appendChild(pgSpan);
-          const pgDel=document.createElement("button");
-          pgDel.className="delete-btn"; pgDel.textContent="🗑️";
-          pgDel.onclick=(e)=>{ e.stopPropagation(); sections[sec].splice(idx,1); saveToStorage(); renderSections(); };
-          pgDiv.appendChild(pgDel);
+
           const colorInput=document.createElement("input");
           colorInput.type="color";
           colorInput.id=`color-${p.id}`;
           colorInput.value=p.color||"#ffffff";
           colorInput.onchange=(ev)=>{
-sections[sec].forEach((p, idx) => {
-      const pgDiv = document.createElement("div");
-      pgDiv.className = "page-title";
-      if (p.color) { 
-        pgDiv.style.backgroundColor = p.color;
-      }
+            sections[sec][idx].color=ev.target.value;
+            saveToStorage();
+            pgDiv.style.backgroundColor=ev.target.value;
+          };
+          pgDiv.appendChild(colorInput);
 
-      const pgSpan = document.createElement("span");
-      pgSpan.textContent = p.name;
-      pgSpan.onclick = () => loadPage(sec, idx);
-      pgDiv.appendChild(pgSpan);
-      
-      const colorInput=document.createElement("input");
-      colorInput.type="color";
-      colorInput.id=`color-${p.id}`;
-      colorInput.value=p.color||"#ffffff";
-      colorInput.onchange=(ev)=>{
-        sections[sec][idx].color=ev.target.value;
-        saveToStorage();
-        pgDiv.style.backgroundColor=ev.target.value;
-      };
-      pgDiv.appendChild(colorInput);
-      
-      if(p.color){
-        pgDiv.style.backgroundColor=p.color;
-      }
+          const pgDel=document.createElement("button");
+          pgDel.className="delete-btn"; pgDel.textContent="🗑️";
+          pgDel.onclick=(e)=>{ e.stopPropagation(); sections[sec].splice(idx,1); saveToStorage(); renderSections(); };
+          pgDiv.appendChild(pgDel);
 
-      const pgDel = document.createElement("button");
-      pgDel.className = "delete-btn";
-      pgDel.textContent = "🗑️";
-      pgDel.onclick = (e) => { e.stopPropagation(); sections[sec].splice(idx, 1); saveToStorage(); renderSections(); };
-      pgDiv.appendChild(pgDel);
+          pageList.appendChild(pgDiv);
+        });
 
-      pageList.appendChild(pgDiv);
-    });
-
-    secDiv.appendChild(pageList);
+        secDiv.appendChild(pageList);
     
     const addPgBtn = document.createElement("button");
     addPgBtn.textContent = "+ Page";
@@ -235,9 +281,11 @@ sections[sec].forEach((p, idx) => {
     function saveCurrentPage(){
       if(currentSection!==null && currentPage!==null){
         const td=new TurndownService();
-        // Get HTML content from Quill's editor root
         const html=quill.root.innerHTML;
         const page = sections[currentSection][currentPage];
+        page.history = page.history || [];
+        page.history.push({timestamp: page.modified || new Date().toISOString(), markdown: page.markdown});
+        if(page.history.length>20) page.history.shift();
         page.markdown = td.turndown(html);
         page.modified = new Date().toISOString();
         saveToStorage();
@@ -515,9 +563,10 @@ function toggleAttachments(){
     
     // Load
     window.onload=function(){
-      migratePages();
-      renderSections();
-      
+      openNotebook(currentNotebook).then(()=>{
+        updateNotebookSelect();
+      });
+
       const savedTheme=localStorage.getItem("nextnote-theme")||"light";
       themeSelect.value=savedTheme;
       document.documentElement.style.cssText=hermesThemes[savedTheme];
@@ -540,6 +589,8 @@ function toggleAttachments(){
       document.getElementById("quillEditorContainer").style.display = "none";
       document.getElementById("preview").style.display = "block"; 
       document.getElementById("preview").innerHTML = "<p>Select a page or create a new one to start writing.</p>";
+
+      setInterval(()=>{ saveCurrentPage(); saveToStorage(); }, 10000);
     };
 
     document.addEventListener('keydown', function(event) {
