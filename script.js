@@ -14,6 +14,7 @@ const hermesThemes = {
 
 // --- Application State ---
 let db = null;
+let useLocalStorageFallback = false;
 const notebookList = JSON.parse(localStorage.getItem("notebook_list")) || ["default"];
 let currentNotebook = localStorage.getItem("current_notebook") || notebookList[0];
 
@@ -31,7 +32,14 @@ let editorFontSize = parseInt(localStorage.getItem("editor-font-size")) || 16;
 
 // --- IndexedDB Core Logic ---
 function openDB(name) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
+    if (!window.indexedDB) {
+      console.warn('IndexedDB unavailable, using localStorage fallback');
+      useLocalStorageFallback = true;
+      db = null;
+      resolve();
+      return;
+    }
     const request = indexedDB.open("nextnote_" + name, 1);
     request.onupgradeneeded = e => {
       const dbInstance = e.target.result;
@@ -43,14 +51,25 @@ function openDB(name) {
       db = e.target.result;
       resolve();
     };
-    request.onerror = e => reject(e);
+    request.onerror = e => {
+      console.error('IndexedDB open failed, using localStorage fallback', e);
+      useLocalStorageFallback = true;
+      db = null;
+      resolve();
+    };
   });
 }
 
 function idbGet(key, defaultValue) {
   return new Promise((resolve) => {
-    if (!db) {
-      resolve(defaultValue);
+    if (useLocalStorageFallback || !db) {
+      try {
+        const v = localStorage.getItem(`nextnote_${currentNotebook}_${key}`);
+        resolve(v ? JSON.parse(v) : defaultValue);
+      } catch (e) {
+        console.error('localStorage get failed', e);
+        resolve(defaultValue);
+      }
       return;
     }
     const tx = db.transaction("data", "readonly");
@@ -62,8 +81,14 @@ function idbGet(key, defaultValue) {
 
 function idbSet(key, value) {
   return new Promise((resolve, reject) => {
-    if (!db) {
-      reject("Database not open.");
+    if (useLocalStorageFallback || !db) {
+      try {
+        localStorage.setItem(`nextnote_${currentNotebook}_${key}` , JSON.stringify(value));
+        resolve();
+      } catch (e) {
+        console.error('localStorage set failed', e);
+        resolve();
+      }
       return;
     }
     const tx = db.transaction("data", "readwrite");
@@ -75,7 +100,11 @@ function idbSet(key, value) {
 
 // --- Notebook Management ---
 async function loadNotebook(name) {
-  await openDB(name);
+  try {
+    await openDB(name);
+  } catch (e) {
+    console.error('Failed to open database', e);
+  }
   currentNotebook = name;
   localStorage.setItem("current_notebook", name);
 
