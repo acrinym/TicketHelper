@@ -738,6 +738,7 @@ window.onload = async function() {
 
     quill = new Quill('#quillEditorContainer', {
         theme: 'snow',
+        placeholder: 'Select a page or create a new one to start writing.',
         modules: {
             toolbar: [
                 [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
@@ -771,9 +772,10 @@ window.onload = async function() {
         input.click();
     });
 
-    document.getElementById("quillEditorContainer").style.display = "none";
-    document.getElementById("preview").style.display = "block";
-    document.getElementById("preview").innerHTML = "<p>Select a page or create a new one to start writing.</p>";
+    document.getElementById("quillEditorContainer").style.display = "flex";
+    quill.enable(false);
+    quill.root.innerHTML = "<p>Select a page or create a new one to start writing.</p>";
+    document.getElementById("preview").style.display = "none";
 
     startAutosave();
     // Notify plugin system that NextNote finished loading
