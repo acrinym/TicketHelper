@@ -738,6 +738,7 @@ window.onload = async function() {
 
     quill = new Quill('#quillEditorContainer', {
         theme: 'snow',
+        placeholder: 'Select a page or create a new one to start writing.',
         modules: {
             toolbar: [
                 [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
@@ -750,10 +751,31 @@ window.onload = async function() {
             ]
         }
     });
+    // expose globally for plugins like template manager/resource manager
+    window.quill = quill;
 
-    document.getElementById("quillEditorContainer").style.display = "none";
-    document.getElementById("preview").style.display = "block";
-    document.getElementById("preview").innerHTML = "<p>Select a page or create a new one to start writing.</p>";
+    // basic handler for inserting images when the toolbar image button is clicked
+    quill.getModule('toolbar').addHandler('image', () => {
+        const input = document.createElement('input');
+        input.setAttribute('type', 'file');
+        input.setAttribute('accept', 'image/*');
+        input.addEventListener('change', () => {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const range = quill.getSelection();
+                quill.insertEmbed(range ? range.index : quill.getLength(), 'image', e.target.result);
+            };
+            reader.readAsDataURL(file);
+        });
+        input.click();
+    });
+
+    document.getElementById("quillEditorContainer").style.display = "flex";
+    quill.enable(false);
+    quill.root.innerHTML = "<p>Select a page or create a new one to start writing.</p>";
+    document.getElementById("preview").style.display = "none";
 
     startAutosave();
     // Notify plugin system that NextNote finished loading
