@@ -1,214 +1,39 @@
 /* --- CSS Variables for Theming --- */
 :root {
-  /* Default Material Theme */
   --primary-color: #2196f3; /* blue lighten-1 */
-  --primary-dark-color: #1976d2; /* darker blue for hover/active */
+  --primary-dark-color: #1976d2; /* darker blue */
   --accent-color: #ffc107; /* amber */
   --background-color: #f5f5f5; /* light grey */
   --text-color: #212121; /* dark grey */
   --card-background: #ffffff;
   --shadow-color: rgba(0, 0, 0, 0.2);
-  --glow-shadow: none; /* No glow by default */
-  --glow-text-shadow: none; /* No text glow by default */
-  --input-border-color: #9e9e9e;
-  --input-focus-border-color: #2196f3;
-  --input-label-color: #9e9e9e;
-  --input-label-focus-color: #2196f3;
+  --glow-shadow: none;
+  --glow-text-shadow: none;
 }
 
 /* Red LED Glow Theme */
 body.red-led-theme {
-  --primary-color: #d32f2f; /* Red darken-2 */
-  --primary-dark-color: #b71c1c; /* Red darken-4 */
-  --accent-color: #ff5252; /* Red accent-2 for glow */
-  --background-color: #1a1a1a; /* Very dark grey for background */
-  --text-color: #ffebee; /* Light red for text */
-  --card-background: #2c2c2c; /* Dark grey for cards */
-  --shadow-color: rgba(255, 0, 0, 0.4); /* Red tint for shadows */
-  --glow-shadow: 0 0 10px var(--accent-color), 0 0 20px var(--accent-color); /* Stronger glow */
-  --glow-text-shadow: 0 0 5px var(--accent-color), 0 0 10px var(--accent-color); /* Text glow */
-  --input-border-color: #ef9a9a; /* Red lighten-3 */
-  --input-focus-border-color: #ff5252; /* Red accent-2 */
-  --input-label-color: #ef9a9a;
-  --input-label-focus-color: #ff5252;
-}
-
-/* --- General Styling --- */
-body {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  background-color: var(--background-color); /* Apply theme background */
-  color: var(--text-color); /* Apply theme text color */
-  transition: background-color 0.3s ease, color 0.3s ease; /* Smooth theme transition */
-}
-
-main {
-  flex: 1 0 auto;
-  padding: 24px;
-}
-
-/* --- Materialize Overrides using CSS Variables --- */
-nav.blue.lighten-1 {
-  background-color: var(--primary-color) !important;
-  transition: background-color 0.3s ease;
-}
-
-.tabs .indicator {
-  background-color: var(--primary-color) !important;
-  transition: background-color 0.3s ease;
-}
-
-.tool-card.card { /* Ensure .card is included for specificity */
-  margin-top: 24px;
-  background-color: var(--card-background);
-  box-shadow: 0 2px 5px var(--shadow-color);
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-.tool-card.card .card-title,
-.tool-card.card h5,
-.tool-card.card h6 {
+  --primary-color: #d32f2f;
+  --primary-dark-color: #b71c1c;
+  --accent-color: #ff5252;
+  --background-color: #1a1a1a;
+  --text-color: #ffebee;
+  --card-background: #2c2c2c;
+  --shadow-color: rgba(255, 0, 0, 0.4);
+  --glow-shadow: 0 0 10px var(--accent-color), 0 0 20px var(--accent-color);
+  --glow-text-shadow: 0 0 5px var(--accent-color), 0 0 10px var(--accent-color);
+  background-color: var(--background-color);
   color: var(--text-color);
-  text-shadow: var(--glow-text-shadow); /* Apply text glow */
-  transition: color 0.3s ease, text-shadow 0.3s ease;
 }
 
-textarea {
-  font-family: monospace;
-  color: var(--text-color); /* Ensure textarea text color follows theme */
-}
-
-.fixed-button-container {
-  position: sticky;
-  top: 10px;
-  z-index: 100;
-  background-color: var(--card-background); /* Use card background for consistency */
-  padding: 10px;
-  border-radius: 8px;
-  box-shadow: 0 2px 5px var(--shadow-color);
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  margin-bottom: 15px;
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-#cecEscalationOutput {
-  margin-top: 20px;
-  white-space: pre-wrap;
-  /* Ensures output formatting is preserved */
-}
-
-.missing-field {
-  color: var(--accent-color); /* Use accent color for missing fields for theme consistency */
-  font-weight: bold;
-}
-
-#kbaSuggestions {
-  margin-top: 20px;
-  padding: 10px;
-  background-color: var(--card-background);
-  border-radius: 4px;
-  box-shadow: 0 2px 5px var(--shadow-color);
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-#kbaSuggestions ul {
-  margin: 0;
-  padding-left: 20px;
-}
-
-#kbaSuggestions ul li {
-  color: var(--text-color); /* Ensure KBA list items follow theme */
-}
-
-.switch {
-  margin-top: 15px;
-}
-
-/* Buttons */
-.btn {
+body.red-led-theme button {
   background-color: var(--primary-color);
-  box-shadow: var(--glow-shadow); /* Apply glow to buttons */
+  color: var(--text-color);
+  box-shadow: var(--glow-shadow);
   transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-.btn:hover {
+body.red-led-theme button:hover {
   background-color: var(--primary-dark-color);
-  box-shadow: var(--glow-shadow), 0 0 15px var(--accent-color); /* Enhanced glow on hover */
-}
-
-/* Specific button overrides to ensure they use variables */
-.btn.red.darken-1,
-.btn.blue,
-.btn.green {
-  background-color: var(--primary-color) !important;
-}
-
-.btn.grey.lighten-1 { /* Clear button has a different background */
-  background-color: var(--card-background) !important;
-  color: var(--text-color) !important;
-  box-shadow: none !important; /* No glow for clear button */
-}
-
-.btn.grey.lighten-1:hover {
-  background-color: var(--primary-dark-color) !important;
-  color: var(--text-color) !important;
-  box-shadow: var(--glow-shadow) !important; /* Add glow on hover for clear button */
-}
-
-/* Input Fields */
-.input-field input[type=text]:not(.browser-default):focus:not([readonly]),
-.input-field textarea.materialize-textarea:focus:not([readonly]) {
-  border-bottom: 1px solid var(--input-focus-border-color) !important;
-  box-shadow: 0 1px 0 0 var(--input-focus-border-color) !important;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-.input-field input[type=text]:not(.browser-default),
-.input-field textarea.materialize-textarea {
-  border-bottom: 1px solid var(--input-border-color);
-  color: var(--text-color);
-  transition: border-color 0.3s ease, color 0.3s ease;
-}
-
-.input-field label {
-  color: var(--input-label-color);
-  transition: color 0.3s ease;
-}
-
-.input-field label.active {
-  color: var(--input-label-focus-color);
-  transition: color 0.3s ease;
-}
-
-/* Collapsible Headers */
-.collapsible-header {
-  background-color: var(--card-background);
-  color: var(--text-color);
-  border-bottom: 1px solid var(--input-border-color);
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-}
-
-.collapsible-body {
-  background-color: var(--card-background);
-  color: var(--text-color);
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-.collapsible-header i.material-icons {
-  color: var(--text-color);
-  transition: color 0.3s ease;
-}
-
-/* Footer */
-footer.page-footer {
-  background-color: var(--primary-color) !important;
-  transition: background-color 0.3s ease;
-}
-
-footer.page-footer .white-text {
-  color: var(--text-color) !important;
-  transition: color 0.3s ease;
+  box-shadow: var(--glow-shadow), 0 0 15px var(--accent-color);
 }
