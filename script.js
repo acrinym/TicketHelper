@@ -9,6 +9,9 @@ const hermesThemes = {
   `,
   phoenix: `
     --hermes-bg:#fff3e0; --hermes-text:#4e342e; --hermes-border:#ff8f00; --hermes-button-bg:#ffcc80; --hermes-button-text:#4e342e; --hermes-button-hover-bg:#ffb74d; --hermes-panel-bg:#fff8e1; --hermes-panel-text:#4e342e; --hermes-panel-border:#ffd180; --hermes-input-bg:#fff; --hermes-input-text:#4e342e; --hermes-input-border:#ffc260; --hermes-accent-bar-bg:#ff6f00; --hermes-highlight-bg:#ff6f00; --hermes-highlight-text:#fff; --hermes-disabled-text:#aaa; --hermes-error-text:#dc3545; --hermes-success-text:#28a745; --hermes-warning-text:#ffc107; --hermes-info-text:#17a2b8; --hermes-link-color:#ff6f00; --hermes-link-hover-color:#e65c00;
+  `,
+  red: `
+    --hermes-bg:#1a1a1a; --hermes-text:#ffebee; --hermes-border:#b71c1c; --hermes-button-bg:#d32f2f; --hermes-button-text:#ffebee; --hermes-button-hover-bg:#b71c1c; --hermes-panel-bg:#2c2c2c; --hermes-panel-text:#ffebee; --hermes-panel-border:#d32f2f; --hermes-input-bg:#2c2c2c; --hermes-input-text:#ffebee; --hermes-input-border:#d32f2f; --hermes-accent-bar-bg:#d32f2f; --hermes-highlight-bg:#ff5252; --hermes-highlight-text:#fff; --hermes-disabled-text:#777; --hermes-error-text:#f5c6cb; --hermes-success-text:#c3e6cb; --hermes-warning-text:#ffeeba; --hermes-info-text:#bee5eb; --hermes-link-color:#ff5252; --hermes-link-hover-color:#ff1744;
   `
 };
 
@@ -704,6 +707,13 @@ function showSettingsSection(section){
 window.onload = async function() {
     await loadNotebook(currentNotebook);
 
+    const redThemeLink = document.createElement('link');
+    redThemeLink.rel = 'stylesheet';
+    redThemeLink.href = 'css.css';
+    redThemeLink.id = 'redThemeStylesheet';
+    redThemeLink.disabled = true;
+    document.head.appendChild(redThemeLink);
+
     const themeSelect = document.getElementById("themeSelect");
     Object.keys(hermesThemes).forEach(t=>{
         const opt=document.createElement('option');
@@ -714,10 +724,21 @@ window.onload = async function() {
     themeSelect.value = localStorage.getItem("nextnote-theme") || "light";
     document.documentElement.style.cssText = hermesThemes[themeSelect.value];
     document.documentElement.style.setProperty('--editor-font-size', editorFontSize + 'px');
+    if (themeSelect.value === 'red') {
+        redThemeLink.disabled = false;
+        document.body.classList.add('red-led-theme');
+    }
 
     themeSelect.onchange = () => {
         document.documentElement.style.cssText = hermesThemes[themeSelect.value];
         localStorage.setItem("nextnote-theme", themeSelect.value);
+        if (themeSelect.value === 'red') {
+            redThemeLink.disabled = false;
+            document.body.classList.add('red-led-theme');
+        } else {
+            redThemeLink.disabled = true;
+            document.body.classList.remove('red-led-theme');
+        }
     };
 
     const fontInput=document.getElementById('fontSizeInput');
@@ -738,6 +759,7 @@ window.onload = async function() {
 
     quill = new Quill('#quillEditorContainer', {
         theme: 'snow',
+        placeholder: 'Select a page or create a new one to start writing.',
         modules: {
             toolbar: [
                 [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
@@ -750,10 +772,31 @@ window.onload = async function() {
             ]
         }
     });
+    // expose globally for plugins like template manager/resource manager
+    window.quill = quill;
 
-    document.getElementById("quillEditorContainer").style.display = "none";
-    document.getElementById("preview").style.display = "block";
-    document.getElementById("preview").innerHTML = "<p>Select a page or create a new one to start writing.</p>";
+    // basic handler for inserting images when the toolbar image button is clicked
+    quill.getModule('toolbar').addHandler('image', () => {
+        const input = document.createElement('input');
+        input.setAttribute('type', 'file');
+        input.setAttribute('accept', 'image/*');
+        input.addEventListener('change', () => {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const range = quill.getSelection();
+                quill.insertEmbed(range ? range.index : quill.getLength(), 'image', e.target.result);
+            };
+            reader.readAsDataURL(file);
+        });
+        input.click();
+    });
+
+    document.getElementById("quillEditorContainer").style.display = "flex";
+    quill.enable(false);
+    quill.root.innerHTML = "<p>Select a page or create a new one to start writing.</p>";
+    document.getElementById("preview").style.display = "none";
 
     startAutosave();
     // Notify plugin system that NextNote finished loading
