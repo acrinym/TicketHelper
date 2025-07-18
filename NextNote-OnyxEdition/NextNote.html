@@ -117,6 +117,55 @@
     }
     .delete-btn { background:none; border:none; color:var(--hermes-error-text); cursor:pointer; }
     .theme-select { margin-left:auto; }
+    
+    /* Command palette styling */
+    .command-result {
+      padding: 8px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid #eee;
+      transition: background-color 0.2s;
+    }
+    .command-result:hover {
+      background-color: #f5f5f5;
+    }
+    .command-result:last-child {
+      border-bottom: none;
+    }
+    
+    /* Resource manager styling */
+    #resourceList {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    
+    /* Improved button styling */
+    button {
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    /* Section and page styling improvements */
+    .section-header {
+      border-radius: 4px 4px 0 0;
+    }
+    .page-title {
+      border-radius: 4px;
+      margin: 2px 0;
+      transition: background-color 0.2s;
+    }
+    .page-title:hover {
+      background-color: var(--hermes-button-hover-bg);
+    }
+    
+    /* Active page indicator */
+    .page-title.active {
+      background-color: var(--hermes-highlight-bg);
+      color: var(--hermes-highlight-text);
+    }
   </style>
 </head>
 <body>
@@ -130,6 +179,7 @@
   <div id="main">
     <div id="toolbar">
       <span id="currentPageName">No Page Selected</span>
+      <span id="pageMeta" style="margin-left:10px; color:var(--hermes-disabled-text); font-size:12px;"></span>
       <button onclick="saveCurrentPage()">💾 Save</button>
       <button onclick="togglePreview()">👁️ Preview</button>
       <button onclick="document.getElementById('imgInput').click()">🖼️ Image</button>
@@ -137,6 +187,8 @@
       <button onclick="exportMarkdown()">📝 Export MD</button>
       <input type="file" id="importFile" style="display:none" onchange="importMarkdown(event)"/>
       <button onclick="document.getElementById('importFile').click()">📥 Import MD</button>
+      <button onclick="showResourceManager()">📁 Resources</button>
+      <button onclick="showCommandPalette()">🔍 Search</button>
       <div class="theme-select">
         <select id="themeSelect"></select>
       </div>
@@ -144,6 +196,30 @@
     <div id="editor">
       <div id="quillEditorContainer"></div>
       <div id="preview" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- Command Palette -->
+  <div id="commandPalette" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); z-index:5000; justify-content:center; align-items:flex-start; padding-top:10vh;">
+    <div style="background:#fff; border-radius:8px; padding:20px; width:500px; max-width:90vw; box-shadow:0 10px 30px rgba(0,0,0,0.3);">
+      <input id="commandInput" type="text" placeholder="Search pages or type a command..." style="width:100%; padding:10px; border:1px solid #ccc; border-radius:4px; margin-bottom:10px;" oninput="updateCommandResults()" onkeydown="if(event.key==='Escape')hideCommandPalette()">
+      <div id="commandResults" style="max-height:300px; overflow-y:auto;"></div>
+      <div style="margin-top:10px; font-size:12px; color:#666;">
+        Press Ctrl+P to open • Ctrl+N for new page • Ctrl+S to save • Esc to close
+      </div>
+    </div>
+  </div>
+
+  <!-- Resource Manager -->
+  <div id="resourceManagerOverlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); z-index:5000; justify-content:center; align-items:center;">
+    <div style="background:#fff; border-radius:8px; padding:20px; width:600px; max-width:90vw; max-height:80vh; overflow-y:auto; box-shadow:0 10px 30px rgba(0,0,0,0.3);">
+      <h3>Resource Manager</h3>
+      <div id="resourceList" style="margin:10px 0;">
+        <p>No resources yet. Upload files to get started.</p>
+      </div>
+      <input type="file" id="resourceInput" multiple style="display:none" onchange="addResources(event)">
+      <button onclick="document.getElementById('resourceInput').click()">📁 Add Files</button>
+      <button onclick="hideResourceManager()" style="margin-left:10px;">Close</button>
     </div>
   </div>
   <!-- External Libraries -->
@@ -183,10 +259,742 @@
       }
     };
   </script>
-  <!-- Main App Logic (unchanged from earlier) -->
+  <!-- Main App Logic -->
   <script>
-    // [Main NextNote core code, same as previously detailed—omitted here for brevity but will be included in full in the final ZIP and copy-paste]
-    // (If you want the whole script block, say so and I'll output that as well)
+    // NextNote Core Application Logic
+    let sections = [];
+    let currentSection = null;
+    let currentPage = null;
+    let quill;
+    let autosaveInterval = 30000;
+    let autosaveTimer = null;
+
+    // Theme definitions
+    const themes = {
+      light: {
+        '--hermes-bg': '#fff',
+        '--hermes-text': '#333',
+        '--hermes-border': '#ccc',
+        '--hermes-button-bg': '#e9e9e9',
+        '--hermes-button-text': '#333',
+        '--hermes-button-hover-bg': '#dcdcdc',
+        '--hermes-panel-bg': '#f4f4f4',
+        '--hermes-panel-text': '#333',
+        '--hermes-panel-border': '#ccc',
+        '--hermes-input-bg': '#fff',
+        '--hermes-input-text': '#333',
+        '--hermes-input-border': '#ccc',
+        '--hermes-accent-bar-bg': '#eee',
+        '--hermes-highlight-bg': '#007bff',
+        '--hermes-highlight-text': '#fff',
+        '--hermes-disabled-text': '#aaa',
+        '--hermes-error-text': '#dc3545',
+        '--hermes-success-text': '#28a745',
+        '--hermes-warning-text': '#ffc107',
+        '--hermes-info-text': '#17a2b8',
+        '--hermes-link-color': '#007bff',
+        '--hermes-link-hover-color': '#0056b3'
+      },
+      dark: {
+        '--hermes-bg': '#2c2c2c',
+        '--hermes-text': '#e0e0e0',
+        '--hermes-border': '#555',
+        '--hermes-button-bg': '#484848',
+        '--hermes-button-text': '#e0e0e0',
+        '--hermes-button-hover-bg': '#585858',
+        '--hermes-panel-bg': '#333',
+        '--hermes-panel-text': '#e0e0e0',
+        '--hermes-panel-border': '#444',
+        '--hermes-input-bg': '#3a3a3a',
+        '--hermes-input-text': '#e0e0e0',
+        '--hermes-input-border': '#666',
+        '--hermes-accent-bar-bg': '#1e1e1e',
+        '--hermes-highlight-bg': '#007bff',
+        '--hermes-highlight-text': '#fff',
+        '--hermes-disabled-text': '#777',
+        '--hermes-error-text': '#f5c6cb',
+        '--hermes-success-text': '#c3e6cb',
+        '--hermes-warning-text': '#ffeeba',
+        '--hermes-info-text': '#bee5eb',
+        '--hermes-link-color': '#6cb2eb',
+        '--hermes-link-hover-color': '#3490dc'
+      },
+      phoenix: {
+        '--hermes-bg': '#fff3e0',
+        '--hermes-text': '#4e342e',
+        '--hermes-border': '#ff8f00',
+        '--hermes-button-bg': '#ffcc80',
+        '--hermes-button-text': '#4e342e',
+        '--hermes-button-hover-bg': '#ffb74d',
+        '--hermes-panel-bg': '#fff8e1',
+        '--hermes-panel-text': '#4e342e',
+        '--hermes-panel-border': '#ffd180',
+        '--hermes-input-bg': '#fff',
+        '--hermes-input-text': '#4e342e',
+        '--hermes-input-border': '#ffc260',
+        '--hermes-accent-bar-bg': '#ff6f00',
+        '--hermes-highlight-bg': '#ff6f00',
+        '--hermes-highlight-text': '#fff',
+        '--hermes-disabled-text': '#aaa',
+        '--hermes-error-text': '#dc3545',
+        '--hermes-success-text': '#28a745',
+        '--hermes-warning-text': '#ffc107',
+        '--hermes-info-text': '#17a2b8',
+        '--hermes-link-color': '#ff6f00',
+        '--hermes-link-hover-color': '#e65c00'
+      }
+    };
+
+    // Initialize the application
+    document.addEventListener('DOMContentLoaded', function() {
+      initializeQuill();
+      loadData();
+      renderSections();
+      setupThemeSelector();
+      startAutosave();
+      setupKeyboardShortcuts();
+    });
+
+    // Initialize Quill editor
+    function initializeQuill() {
+      const toolbarOptions = [
+        ['bold', 'italic', 'underline', 'strike'],
+        ['blockquote', 'code-block'],
+        [{ 'header': 1 }, { 'header': 2 }],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        [{ 'script': 'sub'}, { 'script': 'super' }],
+        [{ 'indent': '-1'}, { 'indent': '+1' }],
+        [{ 'direction': 'rtl' }],
+        [{ 'size': ['small', false, 'large', 'huge'] }],
+        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+        [{ 'color': [] }, { 'background': [] }],
+        [{ 'font': [] }],
+        [{ 'align': [] }],
+        ['clean'],
+        ['link', 'image']
+      ];
+
+      quill = new Quill('#quillEditorContainer', {
+        theme: 'snow',
+        modules: {
+          toolbar: toolbarOptions
+        }
+      });
+
+      quill.on('text-change', function() {
+        if (autosaveTimer) clearTimeout(autosaveTimer);
+        autosaveTimer = setTimeout(saveCurrentPage, autosaveInterval);
+      });
+    }
+
+    // Load data from localStorage
+    function loadData() {
+      const saved = localStorage.getItem('nextnote_sections');
+      if (saved) {
+        sections = JSON.parse(saved);
+      } else {
+        // Create default section
+        sections = [{
+          id: crypto.randomUUID(),
+          name: 'Getting Started',
+          pages: [{
+            id: crypto.randomUUID(),
+            title: 'Welcome to NextNote',
+            content: '# Welcome to NextNote Onyx Edition!\n\nThis is your first note. Start typing to create your content.\n\n## Features\n- Rich text editing\n- Multiple themes\n- Section organization\n- Auto-save\n- Markdown export\n\nHappy note-taking!',
+            created: new Date().toISOString(),
+            modified: new Date().toISOString()
+          }]
+        }];
+      }
+    }
+
+    // Save data to localStorage
+    function saveData() {
+      localStorage.setItem('nextnote_sections', JSON.stringify(sections));
+    }
+
+    // Render sections in sidebar
+    function renderSections() {
+      const sectionsDiv = document.getElementById('sections');
+      sectionsDiv.innerHTML = '';
+      
+      sections.forEach(section => {
+        const sectionDiv = document.createElement('div');
+        sectionDiv.className = 'section';
+        sectionDiv.innerHTML = `
+          <div class="section-header" onclick="togglePages(this.parentElement)">
+            <span>${section.name}</span>
+            <button onclick="deleteSection('${section.id}'); event.stopPropagation();" class="delete-btn">×</button>
+          </div>
+          <div class="pages">
+            ${section.pages.map(page => `
+              <div class="page-title" onclick="selectPage('${section.id}', '${page.id}')">
+                <span>${page.title}</span>
+                <button onclick="deletePage('${section.id}', '${page.id}'); event.stopPropagation();" class="delete-btn">×</button>
+              </div>
+            `).join('')}
+            <button onclick="addPage('${section.id}')" style="width:100%; margin-top:5px;">+ Add Page</button>
+          </div>
+        `;
+        sectionsDiv.appendChild(sectionDiv);
+      });
+    }
+
+    // Toggle pages visibility
+    function togglePages(sectionDiv) {
+      const pagesDiv = sectionDiv.querySelector('.pages');
+      pagesDiv.style.display = pagesDiv.style.display === 'none' ? 'block' : 'none';
+    }
+
+    // Add new section
+    function addSection() {
+      const input = document.getElementById('newSectionInput');
+      const name = input.value.trim();
+      if (!name) return;
+      
+      sections.push({
+        id: crypto.randomUUID(),
+        name: name,
+        pages: []
+      });
+      
+      input.value = '';
+      saveData();
+      renderSections();
+    }
+
+    // Delete section
+    function deleteSection(sectionId) {
+      if (confirm('Delete this section and all its pages?')) {
+        sections = sections.filter(s => s.id !== sectionId);
+        if (currentSection && currentSection.id === sectionId) {
+          currentSection = null;
+          currentPage = null;
+          quill.setText('');
+          document.getElementById('currentPageName').textContent = 'No Page Selected';
+        }
+        saveData();
+        renderSections();
+      }
+    }
+
+    // Add new page
+    function addPage(sectionId) {
+      const section = sections.find(s => s.id === sectionId);
+      if (!section) return;
+      
+      const title = prompt('Page title?');
+      if (!title) return;
+      
+      const newPage = {
+        id: crypto.randomUUID(),
+        title: title,
+        content: '',
+        created: new Date().toISOString(),
+        modified: new Date().toISOString()
+      };
+      
+      section.pages.push(newPage);
+      saveData();
+      renderSections();
+      selectPage(sectionId, newPage.id);
+    }
+
+    // Delete page
+    function deletePage(sectionId, pageId) {
+      if (confirm('Delete this page?')) {
+        const section = sections.find(s => s.id === sectionId);
+        if (section) {
+          section.pages = section.pages.filter(p => p.id !== pageId);
+          if (currentPage && currentPage.id === pageId) {
+            currentPage = null;
+            quill.setText('');
+            document.getElementById('currentPageName').textContent = 'No Page Selected';
+          }
+          saveData();
+          renderSections();
+        }
+      }
+    }
+
+    // Select page
+    function selectPage(sectionId, pageId) {
+      const section = sections.find(s => s.id === sectionId);
+      if (!section) return;
+      
+      const page = section.pages.find(p => p.id === pageId);
+      if (!page) return;
+      
+      currentSection = section;
+      currentPage = page;
+      
+      quill.setContents(quill.clipboard.convert(page.content));
+      document.getElementById('currentPageName').textContent = page.title;
+      
+      // Update page metadata display
+      updatePageMetadata(page);
+      
+      // Update active page highlighting
+      document.querySelectorAll('.page-title').forEach(el => el.classList.remove('active'));
+      const activePageEl = document.querySelector(`[onclick*="${pageId}"]`);
+      if (activePageEl) {
+        activePageEl.classList.add('active');
+      }
+      
+      // Emit event for plugins
+      if (window.NextNoteApp && window.NextNoteApp.emit) {
+        window.NextNoteApp.emit('pageSelected', { section, page });
+      }
+    }
+
+    // Update page metadata display
+    function updatePageMetadata(page) {
+      const metaDiv = document.getElementById('pageMeta');
+      if (metaDiv && page) {
+        const created = new Date(page.created).toLocaleDateString();
+        const modified = new Date(page.modified).toLocaleDateString();
+        const wordCount = page.content ? page.content.replace(/<[^>]*>/g, '').split(/\s+/).length : 0;
+        metaDiv.textContent = `Created: ${created} • Modified: ${modified} • Words: ${wordCount}`;
+      }
+    }
+
+    // Save current page
+    function saveCurrentPage() {
+      if (!currentPage) return;
+      
+      currentPage.content = quill.root.innerHTML;
+      currentPage.modified = new Date().toISOString();
+      saveData();
+      
+      // Update metadata display
+      updatePageMetadata(currentPage);
+      
+      // Show save indicator
+      const saveBtn = document.querySelector('button[onclick="saveCurrentPage()"]');
+      const originalText = saveBtn.textContent;
+      saveBtn.textContent = '✓ Saved';
+      setTimeout(() => {
+        saveBtn.textContent = originalText;
+      }, 1000);
+      
+      // Emit event for plugins
+      if (window.NextNoteApp && window.NextNoteApp.emit) {
+        window.NextNoteApp.emit('pageSaved', { section: currentSection, page: currentPage });
+      }
+    }
+
+    // Toggle preview
+    function togglePreview() {
+      const editor = document.getElementById('quillEditorContainer');
+      const preview = document.getElementById('preview');
+      
+      if (preview.style.display === 'none') {
+        preview.innerHTML = quill.root.innerHTML;
+        editor.style.display = 'none';
+        preview.style.display = 'block';
+      } else {
+        preview.style.display = 'none';
+        editor.style.display = 'flex';
+      }
+    }
+
+    // Insert image
+    function insertImage(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const range = quill.getSelection();
+        quill.insertEmbed(range.index, 'image', e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Export markdown
+    function exportMarkdown() {
+      if (!currentPage) {
+        alert('No page selected');
+        return;
+      }
+      
+      const turndownService = new TurndownService();
+      const markdown = turndownService.turndown(currentPage.content);
+      
+      const blob = new Blob([markdown], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${currentPage.title}.md`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Import markdown
+    function importMarkdown(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const markdown = e.target.result;
+        const html = marked.parse(markdown);
+        quill.root.innerHTML = html;
+        
+        if (currentPage) {
+          currentPage.content = html;
+          currentPage.modified = new Date().toISOString();
+          saveData();
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // Setup theme selector
+    function setupThemeSelector() {
+      const select = document.getElementById('themeSelect');
+      Object.keys(themes).forEach(themeName => {
+        const option = document.createElement('option');
+        option.value = themeName;
+        option.textContent = themeName.charAt(0).toUpperCase() + themeName.slice(1);
+        select.appendChild(option);
+      });
+      
+      // Load saved theme
+      const savedTheme = localStorage.getItem('nextnote_theme') || 'light';
+      select.value = savedTheme;
+      applyTheme(savedTheme);
+      
+      select.addEventListener('change', function() {
+        applyTheme(this.value);
+        localStorage.setItem('nextnote_theme', this.value);
+      });
+    }
+
+    // Apply theme
+    function applyTheme(themeName) {
+      const theme = themes[themeName];
+      if (!theme) return;
+      
+      Object.entries(theme).forEach(([property, value]) => {
+        document.documentElement.style.setProperty(property, value);
+      });
+    }
+
+    // Start autosave
+    function startAutosave() {
+      setInterval(() => {
+        if (currentPage && quill) {
+          saveCurrentPage();
+        }
+      }, autosaveInterval);
+    }
+
+    // Keyboard shortcuts
+    function setupKeyboardShortcuts() {
+      document.addEventListener('keydown', function(e) {
+        // Ctrl+P or Ctrl+K for command palette
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'k')) {
+          e.preventDefault();
+          showCommandPalette();
+        }
+        
+        // Ctrl+S for save
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+          e.preventDefault();
+          saveCurrentPage();
+        }
+        
+        // Ctrl+N for new page
+        if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+          e.preventDefault();
+          if (currentSection) {
+            addPage(currentSection.id);
+          }
+        }
+        
+        // Ctrl+Shift+N for new section
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'N') {
+          e.preventDefault();
+          addSection();
+        }
+        
+        // Escape to close modals
+        if (e.key === 'Escape') {
+          hideCommandPalette();
+          hideResourceManager();
+        }
+      });
+    }
+
+    // Command palette functionality
+    function showCommandPalette() {
+      const palette = document.getElementById('commandPalette');
+      if (palette) {
+        palette.style.display = 'flex';
+        const input = document.getElementById('commandInput');
+        if (input) {
+          input.focus();
+          input.select();
+        }
+      }
+    }
+
+    function hideCommandPalette() {
+      const palette = document.getElementById('commandPalette');
+      if (palette) {
+        palette.style.display = 'none';
+      }
+    }
+
+    function updateCommandResults() {
+      const input = document.getElementById('commandInput');
+      const results = document.getElementById('commandResults');
+      if (!input || !results) return;
+      
+      const query = input.value.toLowerCase();
+      const allPages = [];
+      
+      sections.forEach(section => {
+        section.pages.forEach(page => {
+          allPages.push({
+            section: section.name,
+            sectionId: section.id,
+            page: page,
+            pageId: page.id
+          });
+        });
+      });
+      
+      const filtered = allPages.filter(item => 
+        item.page.title.toLowerCase().includes(query) ||
+        item.section.toLowerCase().includes(query)
+      );
+      
+      results.innerHTML = '';
+      filtered.slice(0, 10).forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'command-result';
+        div.textContent = `${item.page.title} (${item.section})`;
+        div.onclick = () => {
+          selectPage(item.sectionId, item.pageId);
+          hideCommandPalette();
+        };
+        results.appendChild(div);
+      });
+    }
+
+    // Resource manager functionality
+    function showResourceManager() {
+      const overlay = document.getElementById('resourceManagerOverlay');
+      if (overlay) {
+        overlay.style.display = 'block';
+        renderResources();
+      }
+    }
+
+    function hideResourceManager() {
+      const overlay = document.getElementById('resourceManagerOverlay');
+      if (overlay) {
+        overlay.style.display = 'none';
+      }
+    }
+
+    // Resource management
+    let resources = JSON.parse(localStorage.getItem('nextnote_resources') || '[]');
+
+    function addResources(event) {
+      const files = Array.from(event.target.files);
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const resource = {
+            id: crypto.randomUUID(),
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            data: e.target.result,
+            created: new Date().toISOString()
+          };
+          resources.push(resource);
+          saveResources();
+          renderResources();
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function saveResources() {
+      localStorage.setItem('nextnote_resources', JSON.stringify(resources));
+    }
+
+    function renderResources() {
+      const list = document.getElementById('resourceList');
+      if (!list) return;
+      
+      if (resources.length === 0) {
+        list.innerHTML = '<p>No resources yet. Upload files to get started.</p>';
+        return;
+      }
+      
+      list.innerHTML = resources.map(resource => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border:1px solid #eee; margin:5px 0; border-radius:4px;">
+          <div>
+            <strong>${resource.name}</strong><br>
+            <small>${resource.type} • ${formatFileSize(resource.size)} • ${new Date(resource.created).toLocaleDateString()}</small>
+          </div>
+          <div>
+            <button onclick="insertResource('${resource.id}')" style="margin-right:5px;">Insert</button>
+            <button onclick="deleteResource('${resource.id}')" style="background:#dc3545; color:white;">Delete</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function insertResource(resourceId) {
+      const resource = resources.find(r => r.id === resourceId);
+      if (!resource || !quill) return;
+      
+      if (resource.type.startsWith('image/')) {
+        const range = quill.getSelection();
+        quill.insertEmbed(range.index, 'image', resource.data);
+      } else {
+        // For non-image files, insert a link
+        const range = quill.getSelection();
+        quill.insertText(range.index, resource.name, 'link', resource.data);
+      }
+      
+      hideResourceManager();
+    }
+
+    function deleteResource(resourceId) {
+      if (confirm('Delete this resource?')) {
+        resources = resources.filter(r => r.id !== resourceId);
+        saveResources();
+        renderResources();
+      }
+    }
+
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Make functions globally available
+    window.addSection = addSection;
+    window.deleteSection = deleteSection;
+    window.addPage = addPage;
+    window.deletePage = deletePage;
+    window.selectPage = selectPage;
+    window.saveCurrentPage = saveCurrentPage;
+    window.togglePreview = togglePreview;
+    window.insertImage = insertImage;
+    window.exportMarkdown = exportMarkdown;
+    window.importMarkdown = importMarkdown;
+    window.togglePages = togglePages;
+    window.showResourceManager = showResourceManager;
+    window.hideResourceManager = hideResourceManager;
+    window.addResources = addResources;
+    window.saveResources = saveResources;
+    window.renderResources = renderResources;
+    window.insertResource = insertResource;
+    window.deleteResource = deleteResource;
+    window.formatFileSize = formatFileSize;
+    window.showCommandPalette = showCommandPalette;
+    window.hideCommandPalette = hideCommandPalette;
+    window.updateCommandResults = updateCommandResults;
+    window.updatePageMetadata = updatePageMetadata;
+
+    // Create NextNoteApp object for plugins
+    window.NextNoteApp = {
+      // Core data
+      sections: () => sections,
+      currentSection: () => currentSection,
+      currentPage: () => currentPage,
+      notebook: () => ({
+        title: "NextNote Onyx Edition",
+        sections: sections,
+        resources: [],
+        settings: {},
+        id: "onyx-edition",
+        created: new Date().toISOString(),
+        modified: new Date().toISOString()
+      }),
+
+      // Core functions
+      addSection: addSection,
+      deleteSection: deleteSection,
+      addPage: addPage,
+      deletePage: deletePage,
+      selectPage: selectPage,
+      saveCurrentPage: saveCurrentPage,
+      togglePreview: togglePreview,
+      insertImage: insertImage,
+      exportMarkdown: exportMarkdown,
+      importMarkdown: importMarkdown,
+      togglePages: togglePages,
+
+      // Editor functions
+      getQuill: () => quill,
+      getEditorContent: () => quill ? quill.root.innerHTML : '',
+      setEditorContent: (content) => {
+        if (quill) {
+          quill.root.innerHTML = content;
+        }
+      },
+
+      // Data functions
+      saveData: saveData,
+      loadData: loadData,
+      renderSections: renderSections,
+
+      // Resource functions
+      getResources: () => resources,
+      addResource: (resource) => {
+        resources.push(resource);
+        saveResources();
+        renderResources();
+      },
+      deleteResource: deleteResource,
+
+      // UI functions
+      showCommandPalette: showCommandPalette,
+      hideCommandPalette: hideCommandPalette,
+      showResourceManager: showResourceManager,
+      hideResourceManager: hideResourceManager,
+      updatePageMetadata: updatePageMetadata,
+
+      // Utility functions
+      generateId: () => crypto.randomUUID(),
+      formatDate: (date) => new Date(date).toLocaleString(),
+      formatFileSize: formatFileSize,
+
+      // Event system
+      events: {},
+      on: function(event, callback) {
+        if (!this.events[event]) this.events[event] = [];
+        this.events[event].push(callback);
+      },
+      emit: function(event, data) {
+        if (this.events[event]) {
+          this.events[event].forEach(callback => callback(data));
+        }
+      }
+    };
+
+    // Initialize plugins after app is ready
+    setTimeout(() => {
+      if (window.NextNotePlugins) {
+        window.NextNotePlugins.forEach(plugin => {
+          if (typeof plugin.onLoad === 'function') {
+            plugin.onLoad(window.NextNoteApp);
+          }
+        });
+      }
+    }, 100);
   </script>
 </body>
 </html>

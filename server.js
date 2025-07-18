@@ -5,10 +5,10 @@ const app = express();
 app.use(express.static(__dirname));
 
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'NextNote_v4_fixed.html'));
+  res.sendFile(path.join(__dirname, 'NextNote-OnyxEdition/NextNote.html'));
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`NextNote server running on http://localhost:${PORT}`);
+  console.log(`NextNote Onyx Edition server running on http://localhost:${PORT}`);
 });
