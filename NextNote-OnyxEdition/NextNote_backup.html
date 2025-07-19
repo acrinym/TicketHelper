@@ -1,0 +1,3146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>NextNote Onyx Edition</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <link href="styles.css" rel="stylesheet">
+</head>
+<body>
+  <div id="sidebar">
+    <div class="sidebar-resize-handle" id="sidebarResizeHandle"></div>
+    <div class="sidebar-section">
+      <h3>📚 Sections</h3>
+      <input id="newSectionInput" placeholder="New Section Name" style="width: 100%; margin-bottom: 8px; padding: 6px; border-radius: 4px; border: 1px solid var(--hermes-border);"/>
+      <button onclick="addSection()" style="width: 100%; padding: 8px; background: var(--hermes-highlight-bg); color: var(--hermes-highlight-text); border: none; border-radius: 4px; cursor: pointer;">+ Add Section</button>
+    </div>
+    
+    <div class="sidebar-section">
+      <h3>📄 Pages</h3>
+      <div id="sections"></div>
+    </div>
+    
+    <!-- Plugin panels will be inserted here -->
+    <div id="pluginPanels"></div>
+  </div>
+  <div id="main">
+    <div id="toolbar">
+      <button class="toolbar-settings-btn" onclick="showToolbarCustomization()" title="Customize Toolbar">⚙️</button>
+      
+      <!-- Page Info Row -->
+      <div class="toolbar-row">
+        <span id="currentPageName" style="font-weight: bold; color: var(--hermes-text); font-size: 12px;">No Page Selected</span>
+        <span id="pageMeta" style="margin-left:8px; color:var(--hermes-disabled-text); font-size:11px;"></span>
+        <div style="margin-left: auto;">
+          <div class="toolbar-section">
+            <span class="toolbar-section-label">Theme:</span>
+            <select id="themeSelect" style="font-size: 10px; padding: 2px 4px;"></select>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Toolbar content will be generated dynamically -->
+      
+      <!-- Hidden file inputs -->
+      <input type="file" id="importFile" style="display:none" onchange="importMarkdown(event)"/>
+      <input type="file" id="imgInput" accept="image/*" style="display:none" onchange="insertImage(event)"/>
+      <input type="file" id="audioInput" accept="audio/*" style="display:none" onchange="insertAudio(event)"/>
+      <input type="file" id="gifInput" accept="image/gif" style="display:none" onchange="insertGIF(event)"/>
+      <input type="file" id="videoInput" accept="video/*" style="display:none" onchange="insertVideo(event)"/>
+    </div>
+    <div id="editor">
+      <div id="quillEditorContainer"></div>
+      <div id="preview" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- Command Palette -->
+  <div id="commandPalette" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); z-index:5000; justify-content:center; align-items:flex-start; padding-top:10vh;">
+    <div style="background:#fff; border-radius:8px; padding:20px; width:500px; max-width:90vw; box-shadow:0 10px 30px rgba(0,0,0,0.3);">
+      <input id="commandInput" type="text" placeholder="Search pages or type a command..." style="width:100%; padding:10px; border:1px solid #ccc; border-radius:4px; margin-bottom:10px;" oninput="updateCommandResults()" onkeydown="if(event.key==='Escape')hideCommandPalette()">
+      <div id="commandResults" style="max-height:300px; overflow-y:auto;"></div>
+      <div style="margin-top:10px; font-size:12px; color:#666;">
+        Press Ctrl+P to open • Ctrl+N for new page • Ctrl+S to save • Esc to close
+      </div>
+    </div>
+  </div>
+
+  <!-- Resource Manager -->
+  <div id="resourceManagerOverlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); z-index:5000; justify-content:center; align-items:center;">
+    <div style="background:#fff; border-radius:8px; padding:20px; width:600px; max-width:90vw; max-height:80vh; overflow-y:auto; box-shadow:0 10px 30px rgba(0,0,0,0.3);">
+      <h3>Resource Manager</h3>
+      <div id="resourceList" style="margin:10px 0;">
+        <p>No resources yet. Upload files to get started.</p>
+      </div>
+      <input type="file" id="resourceInput" multiple style="display:none" onchange="addResources(event)">
+      <button onclick="document.getElementById('resourceInput').click()">📁 Add Files</button>
+      <button onclick="hideResourceManager()" style="margin-left:10px;">Close</button>
+    </div>
+  </div>
+
+  <!-- Toolbar Customization Dialog -->
+  <div id="toolbarCustomizeDialog" class="toolbar-customize-dialog">
+    <div class="toolbar-customize-content">
+      <h2 style="margin-top: 0; color: var(--hermes-text);">⚙️ Customize Toolbar</h2>
+      <p style="margin-bottom: 20px; color: var(--hermes-disabled-text);">
+        Enable or disable toolbar buttons to customize your workspace
+      </p>
+      
+      <div id="toolbarCustomizeContent">
+        <!-- Content will be generated dynamically -->
+      </div>
+      
+      <div style="margin-top: 20px; text-align: center;">
+        <button onclick="saveToolbarSettings()" style="background: var(--hermes-highlight-bg); color: var(--hermes-highlight-text); padding: 8px 16px; margin-right: 10px;">Save Settings</button>
+        <button onclick="resetToolbarSettings()" style="background: var(--hermes-warning-text); color: white; padding: 8px 16px; margin-right: 10px;">Reset to Default</button>
+        <button onclick="hideToolbarCustomization()" style="background: var(--hermes-button-bg); padding: 8px 16px;">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <!-- External Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/turndown/dist/turndown.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2/dist/fuse.min.js"></script>
+  <!-- Plugin System Loader (inline) -->
+  <script>
+    // NextNote Plugin Loader: add plugin filenames to this array to activate
+    const plugins = [
+      "plugin-resource-manager.js",
+      "plugin-fuzzysearch.js",
+      "plugin-multinotebook.js",
+      "plugin-quickactions.js",
+      "plugin-tags.js",
+      "plugin-backlinks.js",
+      "plugin-templates.js",
+      "plugin-reminders.js",
+      "plugin-outline.js",
+      "plugin-favorites.js",
+      "plugin-history.js",
+      "plugin-wikibuilder.js",
+      "plugin-mindmap.js",
+      "plugin-diagrambuilder.js",
+      "plugin-googledrive.js",
+      "plugin-fissio-library.js",
+      "plugin-ritual-mode.js"
+      // Add new plugin .js files here to hotload them!
+    ];
+    plugins.forEach(filename => {
+      const s = document.createElement('script');
+      s.src = `plugins/${filename}`;
+      document.body.appendChild(s);
+    });
+
+    // Plugin API
+    window.NextNotePlugins = [];
+    window.registerNextNotePlugin = function(plugin) {
+      window.NextNotePlugins.push(plugin);
+      if (typeof plugin.onLoad === 'function') {
+        plugin.onLoad(window.NextNoteApp || {});
+      }
+    };
+  </script>
+  <!-- Main App Logic -->
+  <script>
+    // NextNote Core Application Logic
+    let sections = [];
+    let currentSection = null;
+    let currentPage = null;
+    let quill;
+    let autosaveInterval = 30000;
+    let autosaveTimer = null;
+
+    // Theme definitions
+    const themes = {
+      light: {
+        '--hermes-bg': '#fff',
+        '--hermes-text': '#333',
+        '--hermes-border': '#ccc',
+        '--hermes-button-bg': '#e9e9e9',
+        '--hermes-button-text': '#333',
+        '--hermes-button-hover-bg': '#dcdcdc',
+        '--hermes-panel-bg': '#f4f4f4',
+        '--hermes-panel-text': '#333',
+        '--hermes-panel-border': '#ccc',
+        '--hermes-input-bg': '#fff',
+        '--hermes-input-text': '#333',
+        '--hermes-input-border': '#ccc',
+        '--hermes-accent-bar-bg': '#eee',
+        '--hermes-highlight-bg': '#007bff',
+        '--hermes-highlight-text': '#fff',
+        '--hermes-disabled-text': '#aaa',
+        '--hermes-error-text': '#dc3545',
+        '--hermes-success-text': '#28a745',
+        '--hermes-warning-text': '#ffc107',
+        '--hermes-info-text': '#17a2b8',
+        '--hermes-link-color': '#007bff',
+        '--hermes-link-hover-color': '#0056b3'
+      },
+      dark: {
+        '--hermes-bg': '#2c2c2c',
+        '--hermes-text': '#e0e0e0',
+        '--hermes-border': '#555',
+        '--hermes-button-bg': '#484848',
+        '--hermes-button-text': '#e0e0e0',
+        '--hermes-button-hover-bg': '#585858',
+        '--hermes-panel-bg': '#333',
+        '--hermes-panel-text': '#e0e0e0',
+        '--hermes-panel-border': '#444',
+        '--hermes-input-bg': '#3a3a3a',
+        '--hermes-input-text': '#e0e0e0',
+        '--hermes-input-border': '#666',
+        '--hermes-accent-bar-bg': '#1e1e1e',
+        '--hermes-highlight-bg': '#007bff',
+        '--hermes-highlight-text': '#fff',
+        '--hermes-disabled-text': '#777',
+        '--hermes-error-text': '#f5c6cb',
+        '--hermes-success-text': '#c3e6cb',
+        '--hermes-warning-text': '#ffeeba',
+        '--hermes-info-text': '#bee5eb',
+        '--hermes-link-color': '#6cb2eb',
+        '--hermes-link-hover-color': '#3490dc'
+      },
+      phoenix: {
+        '--hermes-bg': '#fff3e0',
+        '--hermes-text': '#4e342e',
+        '--hermes-border': '#ff8f00',
+        '--hermes-button-bg': '#ffcc80',
+        '--hermes-button-text': '#4e342e',
+        '--hermes-button-hover-bg': '#ffb74d',
+        '--hermes-panel-bg': '#fff8e1',
+        '--hermes-panel-text': '#4e342e',
+        '--hermes-panel-border': '#ffd180',
+        '--hermes-input-bg': '#fff',
+        '--hermes-input-text': '#4e342e',
+        '--hermes-input-border': '#ffc260',
+        '--hermes-accent-bar-bg': '#ff6f00',
+        '--hermes-highlight-bg': '#ff6f00',
+        '--hermes-highlight-text': '#fff',
+        '--hermes-disabled-text': '#aaa',
+        '--hermes-error-text': '#dc3545',
+        '--hermes-success-text': '#28a745',
+        '--hermes-warning-text': '#ffc107',
+        '--hermes-info-text': '#17a2b8',
+        '--hermes-link-color': '#ff6f00',
+        '--hermes-link-hover-color': '#e65c00'
+      }
+    };
+
+    // Toolbar customization settings
+    let toolbarSettings = JSON.parse(localStorage.getItem('nextnote_toolbar_settings') || '{}');
+    
+    // Default toolbar configuration
+    const defaultToolbarConfig = {
+      'Core': {
+        'save': { enabled: true, label: '💾 Save', onclick: 'saveCurrentPage()' },
+        'preview': { enabled: true, label: '👁️ Preview', onclick: 'togglePreview()' },
+        'search': { enabled: true, label: '🔍 Search', onclick: 'showCommandPalette()' }
+      },
+      'Import/Export': {
+        'export': { enabled: true, label: '📝 Export MD', onclick: 'exportMarkdown()' },
+        'import': { enabled: true, label: '📥 Import MD', onclick: 'document.getElementById(\'importFile\').click()' }
+      },
+      'Media': {
+        'image': { enabled: true, label: '🖼️ Image', onclick: 'triggerFileInput(\'imgInput\')' },
+        'audio': { enabled: true, label: '🎵 Audio', onclick: 'triggerFileInput(\'audioInput\')' },
+        'gif': { enabled: true, label: '🎬 GIF', onclick: 'triggerFileInput(\'gifInput\')' },
+        'video': { enabled: true, label: '🎥 Video', onclick: 'triggerFileInput(\'videoInput\')' }
+      },
+      'Features': {
+        'reminder': { enabled: true, label: '⏰ Reminder', onclick: 'showReminderDialog()' },
+        'resources': { enabled: true, label: '📁 Resources', onclick: 'showResourceManager()' }
+      },
+      'Modes': {
+        'modes': { enabled: true, label: '🎭 Modes', onclick: 'showModeSwitcher()' },
+        'templates': { enabled: true, label: '📋 Templates', onclick: 'showTemplateSelector()' },
+        'fissio': { enabled: true, label: '📐 Fissio', onclick: 'showFissioLibrary()' },
+        'ritual': { enabled: true, label: '🧙‍♂️ Ritual', onclick: 'showRitualMode()' }
+      },
+      'Tools': {
+        'mindmap': { enabled: true, label: '🧠 Mindmap', onclick: 'toggleMindmapMode()' },
+        'diagram': { enabled: true, label: '📐 Diagram', onclick: 'toggleDiagramMode()' },
+        'drive': { enabled: true, label: '☁️ Drive', onclick: 'toggleDriveMode()' }
+      }
+    };
+
+    // Initialize the application
+    document.addEventListener('DOMContentLoaded', function() {
+      initializeQuill();
+      loadData();
+      renderSections();
+      setupThemeSelector();
+      startAutosave();
+      setupKeyboardShortcuts();
+      setupFuzzySearch(); // Call the new function here
+      initializeReminders(); // Initialize reminders
+      setupSidebarResize(); // Setup resizable sidebar
+      renderToolbar(); // Render toolbar with custom settings
+    });
+
+    // Initialize Quill editor
+    function initializeQuill() {
+      const toolbarOptions = [
+        ['bold', 'italic', 'underline', 'strike'],
+        ['blockquote', 'code-block'],
+        [{ 'header': 1 }, { 'header': 2 }],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        [{ 'script': 'sub'}, { 'script': 'super' }],
+        [{ 'indent': '-1'}, { 'indent': '+1' }],
+        [{ 'direction': 'rtl' }],
+        [{ 'size': ['small', false, 'large', 'huge'] }],
+        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+        [{ 'color': [] }, { 'background': [] }],
+        [{ 'font': [] }],
+        [{ 'align': [] }],
+        ['clean'],
+        ['link', 'image']
+      ];
+
+      quill = new Quill('#quillEditorContainer', {
+        theme: 'snow',
+        modules: {
+          toolbar: toolbarOptions
+        }
+      });
+
+      quill.on('text-change', function() {
+        if (autosaveTimer) clearTimeout(autosaveTimer);
+        autosaveTimer = setTimeout(saveCurrentPage, autosaveInterval);
+      });
+    }
+
+    // Load data from localStorage
+    function loadData() {
+      const saved = localStorage.getItem('nextnote_sections');
+      if (saved) {
+        sections = JSON.parse(saved);
+      } else {
+        // Create default section
+        sections = [{
+          id: crypto.randomUUID(),
+          name: 'Getting Started',
+          pages: [{
+            id: crypto.randomUUID(),
+            title: 'Welcome to NextNote',
+            content: '# Welcome to NextNote Onyx Edition!\n\nThis is your first note. Start typing to create your content.\n\n## Features\n- Rich text editing\n- Multiple themes\n- Section organization\n- Auto-save\n- Markdown export\n\nHappy note-taking!',
+            tags: ['welcome', 'getting-started'], // Add default tags
+            created: new Date().toISOString(),
+            modified: new Date().toISOString()
+          }]
+        }];
+      }
+      
+      // Make sections available globally for plugins
+      window.sections = sections;
+      window.notebook = {
+        title: "NextNote Onyx Edition",
+        sections: sections,
+        resources: [],
+        settings: {},
+        id: "onyx-edition",
+        created: new Date().toISOString(),
+        modified: new Date().toISOString()
+      };
+    }
+
+    // Save data to localStorage
+    function saveData() {
+      localStorage.setItem('nextnote_sections', JSON.stringify(sections));
+      
+      // Keep global references in sync for plugins
+      window.sections = sections;
+      window.notebook.sections = sections;
+      window.notebook.modified = new Date().toISOString();
+      
+      // Emit event for plugins
+      if (window.NextNoteApp && window.NextNoteApp.emit) {
+        window.NextNoteApp.emit('notebookUpdated', { sections, notebook: window.notebook });
+      }
+    }
+
+    // Custom Fuzzy Search Implementation
+    function setupFuzzySearch() {
+      // Add search bar to toolbar
+      const searchInput = document.createElement("input");
+      searchInput.type = "text";
+      searchInput.placeholder = "🔍 Search notes…";
+      searchInput.id = "fuzzySearchBar";
+      searchInput.style.marginLeft = "1em";
+      searchInput.style.padding = "3px 9px";
+      searchInput.style.borderRadius = "5px";
+      searchInput.style.border = "1px solid var(--hermes-input-border)";
+      searchInput.style.width = "200px";
+      searchInput.style.background = "var(--hermes-input-bg)";
+      searchInput.style.color = "var(--hermes-input-text)";
+      searchInput.autocomplete = "off";
+      searchInput.title = "Fuzzy Search All Notes (Enter to jump, Esc to clear)";
+
+      // Insert before theme selector
+      const themeSelect = document.querySelector('.theme-select');
+      if (themeSelect) {
+        themeSelect.parentNode.insertBefore(searchInput, themeSelect);
+      } else {
+        document.getElementById("toolbar").appendChild(searchInput);
+      }
+
+      // Search Results Dropdown Panel
+      const resultsPanel = document.createElement("div");
+      resultsPanel.id = "fuzzySearchResults";
+      resultsPanel.style.position = "absolute";
+      resultsPanel.style.background = "var(--hermes-panel-bg)";
+      resultsPanel.style.boxShadow = "0 2px 12px rgba(0,0,0,0.20)";
+      resultsPanel.style.borderRadius = "5px";
+      resultsPanel.style.border = "1px solid var(--hermes-panel-border)";
+      resultsPanel.style.maxHeight = "300px";
+      resultsPanel.style.overflowY = "auto";
+      resultsPanel.style.width = "380px";
+      resultsPanel.style.display = "none";
+      resultsPanel.style.zIndex = "3002";
+      resultsPanel.style.marginTop = "4px";
+      document.body.appendChild(resultsPanel);
+
+      // Get all pages for search
+      function getAllPages() {
+        let allPages = [];
+        sections.forEach(section => {
+          section.pages.forEach(page => {
+            allPages.push({
+              section: section.name,
+              sectionId: section.id,
+              pageTitle: page.title,
+              pageId: page.id,
+              content: page.content || "",
+              modified: page.modified,
+              created: page.created
+            });
+          });
+        });
+        return allPages;
+      }
+
+      // Run fuzzy search
+      function runFuzzySearch(query) {
+        const allPages = getAllPages();
+        if (!window.Fuse || allPages.length === 0) return [];
+        
+        const fuse = new window.Fuse(allPages, {
+          keys: [
+            { name: "pageTitle", weight: 0.5 },
+            { name: "content", weight: 0.3 },
+            { name: "section", weight: 0.2 }
+          ],
+          threshold: 0.33,
+          includeScore: true,
+          ignoreLocation: true,
+          minMatchCharLength: 2
+        });
+        return fuse.search(query, { limit: 12 });
+      }
+
+      // Render search results
+      function renderResults(results, query) {
+        resultsPanel.innerHTML = "";
+        if (!results.length) {
+          const noResult = document.createElement("div");
+          noResult.textContent = query.trim()
+            ? `No results for "${query.trim()}".`
+            : "Type to search notes…";
+          noResult.style.color = "var(--hermes-disabled-text)";
+          noResult.style.padding = "15px";
+          resultsPanel.appendChild(noResult);
+          return;
+        }
+        
+        results.forEach(r => {
+          const res = r.item;
+          const entry = document.createElement("div");
+          entry.className = "fuzzy-search-result";
+          entry.style.padding = "9px 11px";
+          entry.style.borderBottom = "1px solid var(--hermes-panel-border)";
+          entry.style.cursor = "pointer";
+          entry.style.display = "flex";
+          entry.style.flexDirection = "column";
+          entry.style.background = "var(--hermes-panel-bg)";
+          entry.onmouseenter = () => (entry.style.background = "var(--hermes-button-hover-bg)");
+          entry.onmouseleave = () => (entry.style.background = "var(--hermes-panel-bg)");
+          entry.onclick = () => {
+            resultsPanel.style.display = "none";
+            selectPage(res.sectionId, res.pageId);
+          };
+          
+          const titleSpan = document.createElement("span");
+          titleSpan.style.fontWeight = "bold";
+          titleSpan.style.color = "var(--hermes-link-color)";
+          titleSpan.textContent = res.pageTitle || "[Untitled]";
+          
+          const sectionSpan = document.createElement("span");
+          sectionSpan.style.fontSize = "13px";
+          sectionSpan.style.color = "var(--hermes-disabled-text)";
+          sectionSpan.textContent = `Section: ${res.section}`;
+          
+          entry.appendChild(titleSpan);
+          entry.appendChild(sectionSpan);
+          
+          // Show snippet if match in content
+          if (r.matches && r.matches.some(m => m.key === "content")) {
+            const snippet = document.createElement("span");
+            snippet.style.fontSize = "12px";
+            snippet.style.color = "var(--hermes-text)";
+            const content = res.content.replace(/<[^>]*>/g, ''); // Strip HTML
+            const idx = content.toLowerCase().indexOf(query.trim().toLowerCase());
+            snippet.textContent = idx > -1
+              ? "..." + content.substring(Math.max(0, idx - 20), Math.min(content.length, idx + 50)) + "..."
+              : "";
+            entry.appendChild(snippet);
+          }
+          
+          resultsPanel.appendChild(entry);
+        });
+      }
+
+      // Position results panel
+      function positionPanel() {
+        const rect = searchInput.getBoundingClientRect();
+        resultsPanel.style.left = rect.left + "px";
+        resultsPanel.style.top = rect.bottom + window.scrollY + "px";
+      }
+
+      // Search input event
+      searchInput.addEventListener("input", function () {
+        const query = searchInput.value.trim();
+        if (!query || query.length < 2) {
+          resultsPanel.style.display = "none";
+          return;
+        }
+        positionPanel();
+        const results = runFuzzySearch(query);
+        renderResults(results, query);
+        resultsPanel.style.display = "block";
+      });
+
+      // Keyboard navigation
+      searchInput.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") {
+          resultsPanel.style.display = "none";
+          searchInput.value = "";
+          searchInput.blur();
+        }
+        if (e.key === "Enter") {
+          const query = searchInput.value.trim();
+          const results = runFuzzySearch(query);
+          if (results && results.length > 0) {
+            resultsPanel.style.display = "none";
+            selectPage(results[0].item.sectionId, results[0].item.pageId);
+            searchInput.blur();
+          }
+        }
+      });
+
+      // Hide results on click outside
+      document.addEventListener("mousedown", function (e) {
+        if (e.target !== searchInput && !resultsPanel.contains(e.target)) {
+          resultsPanel.style.display = "none";
+        }
+      });
+    }
+
+    // Render sections in sidebar
+    function renderSections() {
+      const sectionsDiv = document.getElementById('sections');
+      sectionsDiv.innerHTML = '';
+      
+      sections.forEach(section => {
+        const sectionDiv = document.createElement('div');
+        sectionDiv.className = 'section';
+        sectionDiv.innerHTML = `
+          <div class="section-header" onclick="togglePages(this.parentElement)">
+            <span>${section.name}</span>
+            <button onclick="deleteSection('${section.id}'); event.stopPropagation();" class="delete-btn">×</button>
+          </div>
+          <div class="pages">
+            ${section.pages.map(page => `
+              <div class="page-title" onclick="selectPage('${section.id}', '${page.id}')">
+                <span>${page.title}</span>
+                <button onclick="deletePage('${section.id}', '${page.id}'); event.stopPropagation();" class="delete-btn">×</button>
+              </div>
+            `).join('')}
+            <button onclick="addPage('${section.id}')" style="width:100%; margin-top:5px;">+ Add Page</button>
+          </div>
+        `;
+        sectionsDiv.appendChild(sectionDiv);
+      });
+    }
+
+    // Toggle pages visibility
+    function togglePages(sectionDiv) {
+      const pagesDiv = sectionDiv.querySelector('.pages');
+      pagesDiv.style.display = pagesDiv.style.display === 'none' ? 'block' : 'none';
+    }
+
+    // Add new section
+    function addSection() {
+      const input = document.getElementById('newSectionInput');
+      const name = input.value.trim();
+      if (!name) return;
+      
+      sections.push({
+        id: crypto.randomUUID(),
+        name: name,
+        pages: []
+      });
+      
+      input.value = '';
+      saveData();
+      renderSections();
+    }
+
+    // Delete section
+    function deleteSection(sectionId) {
+      if (confirm('Delete this section and all its pages?')) {
+        sections = sections.filter(s => s.id !== sectionId);
+        if (currentSection && currentSection.id === sectionId) {
+          currentSection = null;
+          currentPage = null;
+          quill.setText('');
+          document.getElementById('currentPageName').textContent = 'No Page Selected';
+        }
+        saveData();
+        renderSections();
+      }
+    }
+
+    // Add new page
+    function addPage(sectionId) {
+      const section = sections.find(s => s.id === sectionId);
+      if (!section) return;
+      
+      const title = prompt('Page title?');
+      if (!title) return;
+      
+      const newPage = {
+        id: crypto.randomUUID(),
+        title: title,
+        content: '',
+        tags: [], // Add tags array
+        created: new Date().toISOString(),
+        modified: new Date().toISOString()
+      };
+      
+      section.pages.push(newPage);
+      saveData();
+      renderSections();
+      selectPage(sectionId, newPage.id);
+    }
+
+    // Delete page
+    function deletePage(sectionId, pageId) {
+      if (confirm('Delete this page?')) {
+        const section = sections.find(s => s.id === sectionId);
+        if (section) {
+          section.pages = section.pages.filter(p => p.id !== pageId);
+          if (currentPage && currentPage.id === pageId) {
+            currentPage = null;
+            quill.setText('');
+            document.getElementById('currentPageName').textContent = 'No Page Selected';
+          }
+          saveData();
+          renderSections();
+        }
+      }
+    }
+
+    // Select page
+    function selectPage(sectionId, pageId) {
+      const section = sections.find(s => s.id === sectionId);
+      if (!section) return;
+      
+      const page = section.pages.find(p => p.id === pageId);
+      if (!page) return;
+      
+      currentSection = section;
+      currentPage = page;
+      
+      // Convert markdown to HTML if needed, then set in Quill
+      let htmlContent;
+      if (page.content && page.content.includes('#')) {
+        // Likely markdown content, convert to HTML
+        htmlContent = marked.parse(page.content);
+      } else {
+        // Already HTML content
+        htmlContent = page.content || '';
+      }
+      quill.setContents(quill.clipboard.convert(htmlContent));
+      document.getElementById('currentPageName').textContent = page.title;
+      
+      // Update page metadata display
+      updatePageMetadata(page);
+      
+      // Update active page highlighting
+      document.querySelectorAll('.page-title').forEach(el => el.classList.remove('active'));
+      const activePageEl = document.querySelector(`[onclick*="${pageId}"]`);
+      if (activePageEl) {
+        activePageEl.classList.add('active');
+      }
+      
+      // Emit event for plugins
+      if (window.NextNoteApp && window.NextNoteApp.emit) {
+        window.NextNoteApp.emit('pageSelected', { section, page });
+      }
+      
+      // Show backlinks panel
+      renderBacklinksPanel(page);
+    }
+
+    // Update page metadata display
+    function updatePageMetadata(page) {
+      const metaDiv = document.getElementById('pageMeta');
+      if (metaDiv && page) {
+        const created = new Date(page.created).toLocaleDateString();
+        const modified = new Date(page.modified).toLocaleDateString();
+        const wordCount = page.content ? page.content.replace(/<[^>]*>/g, '').split(/\s+/).length : 0;
+        metaDiv.textContent = `Created: ${created} • Modified: ${modified} • Words: ${wordCount}`;
+      }
+    }
+
+    // Save current page
+    function saveCurrentPage() {
+      if (!currentPage) return;
+      
+      currentPage.content = quill.root.innerHTML;
+      currentPage.modified = new Date().toISOString();
+      saveData();
+      
+      // Update metadata display
+      updatePageMetadata(currentPage);
+      
+      // Show save indicator
+      const saveBtn = document.querySelector('button[onclick="saveCurrentPage()"]');
+      if (saveBtn) {
+        const originalText = saveBtn.textContent;
+        saveBtn.textContent = '✓ Saved';
+        setTimeout(() => {
+          saveBtn.textContent = originalText;
+        }, 1000);
+      }
+      
+      // Emit event for plugins
+      if (window.NextNoteApp && window.NextNoteApp.emit) {
+        window.NextNoteApp.emit('pageSaved', { section: currentSection, page: currentPage });
+      }
+    }
+
+    // Toggle preview
+    function togglePreview() {
+      const editor = document.getElementById('quillEditorContainer');
+      const preview = document.getElementById('preview');
+      
+      if (preview.style.display === 'none') {
+        preview.innerHTML = quill.root.innerHTML;
+        editor.style.display = 'none';
+        preview.style.display = 'block';
+      } else {
+        preview.style.display = 'none';
+        editor.style.display = 'flex';
+      }
+    }
+
+    // Trigger file input safely
+    function triggerFileInput(inputId) {
+      const input = document.getElementById(inputId);
+      if (input) {
+        input.click();
+      } else {
+        console.error(`File input with id '${inputId}' not found`);
+        alert(`File input not found. Please refresh the page.`);
+      }
+    }
+
+    // Insert image - Modern approach using clipboard API
+    function insertImage(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      // Check if file is an image
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const range = quill.getSelection();
+          if (range) {
+            quill.insertEmbed(range.index, 'image', e.target.result);
+          } else {
+            // Insert at the end if no selection
+            quill.insertEmbed(quill.getLength(), 'image', e.target.result);
+          }
+          
+          // Clear the input for future use
+          event.target.value = '';
+        } catch (error) {
+          console.error('Error inserting image:', error);
+          alert('Error inserting image. Please try again.');
+        }
+      };
+      
+      reader.onerror = function() {
+        alert('Error reading image file');
+      };
+      
+      reader.readAsDataURL(file);
+    }
+
+    // Insert audio
+    function insertAudio(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      // Check if file is an audio file
+      if (!file.type.startsWith('audio/')) {
+        alert('Please select an audio file');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const range = quill.getSelection();
+          const audioHtml = `<audio controls src="${e.target.result}"></audio>`;
+          
+          if (range) {
+            quill.clipboard.dangerouslyPasteHTML(range.index, audioHtml);
+          } else {
+            quill.clipboard.dangerouslyPasteHTML(quill.getLength(), audioHtml);
+          }
+          
+          // Clear the input for future use
+          event.target.value = '';
+        } catch (error) {
+          console.error('Error inserting audio:', error);
+          alert('Error inserting audio. Please try again.');
+        }
+      };
+      
+      reader.onerror = function() {
+        alert('Error reading audio file');
+      };
+      
+      reader.readAsDataURL(file);
+    }
+
+    // Insert video
+    function insertVideo(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      // Check if file is a video file
+      if (!file.type.startsWith('video/')) {
+        alert('Please select a video file');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const range = quill.getSelection();
+          const videoHtml = `<video controls src="${e.target.result}" style="max-width: 100%; height: auto;"></video>`;
+          
+          if (range) {
+            quill.clipboard.dangerouslyPasteHTML(range.index, videoHtml);
+          } else {
+            quill.clipboard.dangerouslyPasteHTML(quill.getLength(), videoHtml);
+          }
+          
+          // Clear the input for future use
+          event.target.value = '';
+        } catch (error) {
+          console.error('Error inserting video:', error);
+          alert('Error inserting video. Please try again.');
+        }
+      };
+      
+      reader.onerror = function() {
+        alert('Error reading video file');
+      };
+      
+      reader.readAsDataURL(file);
+    }
+
+    // Insert GIF
+    function insertGif(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      // Check if file is a GIF
+      if (file.type !== 'image/gif') {
+        alert('Please select a GIF file');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const range = quill.getSelection();
+          if (range) {
+            quill.insertEmbed(range.index, 'image', e.target.result);
+          } else {
+            // Insert at the end if no selection
+            quill.insertEmbed(quill.getLength(), 'image', e.target.result);
+          }
+          
+          // Clear the input for future use
+          event.target.value = '';
+        } catch (error) {
+          console.error('Error inserting GIF:', error);
+          alert('Error inserting GIF. Please try again.');
+        }
+      };
+      
+      reader.onerror = function() {
+        alert('Error reading GIF file');
+      };
+      
+      reader.readAsDataURL(file);
+    }
+
+    // Export markdown
+    function exportMarkdown() {
+      if (!currentPage) {
+        alert('No page selected');
+        return;
+      }
+      
+      const turndownService = new TurndownService();
+      const markdown = turndownService.turndown(currentPage.content);
+      
+      const blob = new Blob([markdown], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${currentPage.title}.md`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Import markdown
+    function importMarkdown(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const markdown = e.target.result;
+        const html = marked.parse(markdown);
+        quill.root.innerHTML = html;
+        
+        if (currentPage) {
+          currentPage.content = html;
+          currentPage.modified = new Date().toISOString();
+          saveData();
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // Setup theme selector
+    function setupThemeSelector() {
+      const select = document.getElementById('themeSelect');
+      Object.keys(themes).forEach(themeName => {
+        const option = document.createElement('option');
+        option.value = themeName;
+        option.textContent = themeName.charAt(0).toUpperCase() + themeName.slice(1);
+        select.appendChild(option);
+      });
+      
+      // Load saved theme
+      const savedTheme = localStorage.getItem('nextnote_theme') || 'light';
+      select.value = savedTheme;
+      applyTheme(savedTheme);
+      
+      select.addEventListener('change', function() {
+        applyTheme(this.value);
+        localStorage.setItem('nextnote_theme', this.value);
+      });
+    }
+
+    // Apply theme
+    function applyTheme(themeName) {
+      const theme = themes[themeName];
+      if (!theme) return;
+      
+      Object.entries(theme).forEach(([property, value]) => {
+        document.documentElement.style.setProperty(property, value);
+      });
+    }
+
+    // Start autosave
+    function startAutosave() {
+      setInterval(() => {
+        if (currentPage && quill) {
+          saveCurrentPage();
+        }
+      }, autosaveInterval);
+    }
+
+    // Keyboard shortcuts
+    function setupKeyboardShortcuts() {
+      document.addEventListener('keydown', function(e) {
+        // Ctrl+P or Ctrl+K for command palette
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'k')) {
+          e.preventDefault();
+          showCommandPalette();
+        }
+        
+        // Ctrl+S for save
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+          e.preventDefault();
+          saveCurrentPage();
+        }
+        
+        // Ctrl+N for new page
+        if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+          e.preventDefault();
+          if (currentSection) {
+            addPage(currentSection.id);
+          }
+        }
+        
+        // Ctrl+Shift+N for new section
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'N') {
+          e.preventDefault();
+          addSection();
+        }
+        
+        // Escape to close modals
+        if (e.key === 'Escape') {
+          hideCommandPalette();
+          hideResourceManager();
+        }
+      });
+    }
+
+    // Command palette functionality
+    function showCommandPalette() {
+      // Use the Quick Actions plugin if available
+      if (window._quickActions && window._quickActions.openPalette) {
+        window._quickActions.openPalette();
+      } else {
+        // Fallback to our simple implementation
+        const palette = document.getElementById('commandPalette');
+        if (palette) {
+          palette.style.display = 'flex';
+          const input = document.getElementById('commandInput');
+          if (input) {
+            input.focus();
+            input.select();
+          }
+        }
+      }
+    }
+
+    function hideCommandPalette() {
+      if (window._quickActions && window._quickActions.closePalette) {
+        window._quickActions.closePalette();
+      } else {
+        const palette = document.getElementById('commandPalette');
+        if (palette) {
+          palette.style.display = 'none';
+        }
+      }
+    }
+
+    // Sidebar resize functionality
+    function setupSidebarResize() {
+      const sidebar = document.getElementById('sidebar');
+      const resizeHandle = document.getElementById('sidebarResizeHandle');
+      
+      if (!resizeHandle || !sidebar) return;
+      
+      let isResizing = false;
+      let startX, startWidth;
+      
+      resizeHandle.addEventListener('mousedown', function(e) {
+        isResizing = true;
+        startX = e.clientX;
+        startWidth = parseInt(getComputedStyle(sidebar).width, 10);
+        
+        resizeHandle.classList.add('resizing');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+        
+        e.preventDefault();
+      });
+      
+      document.addEventListener('mousemove', function(e) {
+        if (!isResizing) return;
+        
+        const width = startWidth + (e.clientX - startX);
+        const minWidth = 200;
+        const maxWidth = 500;
+        
+        if (width >= minWidth && width <= maxWidth) {
+          sidebar.style.width = width + 'px';
+        }
+      });
+      
+      document.addEventListener('mouseup', function() {
+        if (isResizing) {
+          isResizing = false;
+          resizeHandle.classList.remove('resizing');
+          document.body.style.cursor = '';
+          document.body.style.userSelect = '';
+          
+          // Save sidebar width
+          localStorage.setItem('nextnote_sidebar_width', sidebar.style.width);
+        }
+      });
+      
+      // Load saved sidebar width
+      const savedWidth = localStorage.getItem('nextnote_sidebar_width');
+      if (savedWidth) {
+        sidebar.style.width = savedWidth;
+      }
+    }
+
+    function updateCommandResults() {
+      const input = document.getElementById('commandInput');
+      const results = document.getElementById('commandResults');
+      if (!input || !results) return;
+      
+      const query = input.value.toLowerCase();
+      const allPages = [];
+      
+      sections.forEach(section => {
+        section.pages.forEach(page => {
+          allPages.push({
+            section: section.name,
+            sectionId: section.id,
+            page: page,
+            pageId: page.id
+          });
+        });
+      });
+      
+      const filtered = allPages.filter(item => 
+        item.page.title.toLowerCase().includes(query) ||
+        item.section.toLowerCase().includes(query)
+      );
+      
+      results.innerHTML = '';
+      filtered.slice(0, 10).forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'command-result';
+        div.textContent = `${item.page.title} (${item.section})`;
+        div.onclick = () => {
+          selectPage(item.sectionId, item.pageId);
+          hideCommandPalette();
+        };
+        results.appendChild(div);
+      });
+    }
+
+    // Resource manager functionality
+    function showResourceManager() {
+      const overlay = document.getElementById('resourceManagerOverlay');
+      if (overlay) {
+        overlay.style.display = 'block';
+        renderResources();
+      }
+    }
+
+    function hideResourceManager() {
+      const overlay = document.getElementById('resourceManagerOverlay');
+      if (overlay) {
+        overlay.style.display = 'none';
+      }
+    }
+
+    // Resource management
+    let resources = JSON.parse(localStorage.getItem('nextnote_resources') || '[]');
+
+    function addResources(event) {
+      const files = Array.from(event.target.files);
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const resource = {
+            id: crypto.randomUUID(),
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            data: e.target.result,
+            created: new Date().toISOString()
+          };
+          resources.push(resource);
+          saveResources();
+          renderResources();
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function saveResources() {
+      localStorage.setItem('nextnote_resources', JSON.stringify(resources));
+    }
+
+    function renderResources() {
+      const list = document.getElementById('resourceList');
+      if (!list) return;
+      
+      if (resources.length === 0) {
+        list.innerHTML = '<p>No resources yet. Upload files to get started.</p>';
+        return;
+      }
+      
+      list.innerHTML = resources.map(resource => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border:1px solid #eee; margin:5px 0; border-radius:4px;">
+          <div>
+            <strong>${resource.name}</strong><br>
+            <small>${resource.type} • ${formatFileSize(resource.size)} • ${new Date(resource.created).toLocaleDateString()}</small>
+          </div>
+          <div>
+            <button onclick="insertResource('${resource.id}')" style="margin-right:5px;">Insert</button>
+            <button onclick="deleteResource('${resource.id}')" style="background:#dc3545; color:white;">Delete</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function insertResource(resourceId) {
+      const resource = resources.find(r => r.id === resourceId);
+      if (!resource || !quill) return;
+      
+      if (resource.type.startsWith('image/')) {
+        const range = quill.getSelection();
+        quill.insertEmbed(range.index, 'image', resource.data);
+      } else {
+        // For non-image files, insert a link
+        const range = quill.getSelection();
+        quill.insertText(range.index, resource.name, 'link', resource.data);
+      }
+      
+      hideResourceManager();
+    }
+
+    function deleteResource(resourceId) {
+      if (confirm('Delete this resource?')) {
+        resources = resources.filter(r => r.id !== resourceId);
+        saveResources();
+        renderResources();
+      }
+    }
+
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Tag management functions for plugins
+    function addTagToPage(page, tag) {
+      if (!page.tags) page.tags = [];
+      if (!page.tags.includes(tag)) {
+        page.tags.push(tag);
+        saveData();
+        // Emit event for plugins
+        if (window.NextNoteApp && window.NextNoteApp.emit) {
+          window.NextNoteApp.emit('tagAdded', { page, tag });
+        }
+      }
+    }
+
+    function removeTagFromPage(page, tag) {
+      if (page.tags) {
+        page.tags = page.tags.filter(t => t !== tag);
+        saveData();
+        // Emit event for plugins
+        if (window.NextNoteApp && window.NextNoteApp.emit) {
+          window.NextNoteApp.emit('tagRemoved', { page, tag });
+        }
+      }
+    }
+
+    function getAllTags() {
+      const tags = new Set();
+      sections.forEach(section => {
+        section.pages.forEach(page => {
+          if (page.tags) {
+            page.tags.forEach(tag => tags.add(tag));
+          }
+        });
+      });
+      return Array.from(tags).sort();
+    }
+
+    function getPagesByTag(tag) {
+      const results = [];
+      sections.forEach(section => {
+        section.pages.forEach(page => {
+          if (page.tags && page.tags.includes(tag)) {
+            results.push({ section, page });
+          }
+        });
+      });
+      return results;
+    }
+
+    // Backlinks functionality for plugins
+    function extractWikiLinks(content) {
+      const links = [];
+      const wikiRE = /\[\[([^\]]+)\]\]/g;
+      let match;
+      while ((match = wikiRE.exec(content))) {
+        links.push(match[1].trim());
+      }
+      return links;
+    }
+
+    function findBacklinksForTitle(title) {
+      const backlinks = [];
+      sections.forEach(section => {
+        section.pages.forEach(page => {
+          const links = extractWikiLinks(page.content || "");
+          if (links.includes(title)) {
+            backlinks.push({ section, page });
+          }
+        });
+      });
+      return backlinks;
+    }
+
+    function renderBacklinksPanel(page) {
+      // Remove existing panel
+      const existing = document.getElementById("backlinksPanel");
+      if (existing) existing.remove();
+
+      if (!page || !page.title) return;
+
+      const panel = document.createElement("div");
+      panel.id = "backlinksPanel";
+      panel.style.cssText = `
+        background: var(--hermes-panel-bg);
+        border: 1px solid var(--hermes-panel-border);
+        border-radius: 7px;
+        padding: 9px 13px;
+        margin: 9px 0;
+        color: var(--hermes-text);
+        font-size: 14px;
+        min-height: 32px;
+        box-shadow: 0 1px 8px rgba(0,0,0,0.1);
+      `;
+
+      const header = document.createElement("h4");
+      header.textContent = "🔗 Backlinks";
+      header.style.margin = "0 0 4px 0";
+      header.style.fontSize = "14px";
+      header.style.color = "var(--hermes-link-color)";
+      header.style.fontWeight = "bold";
+      panel.appendChild(header);
+
+      const backlinks = findBacklinksForTitle(page.title);
+
+      if (!backlinks.length) {
+        const none = document.createElement("div");
+        none.textContent = "No backlinks found.";
+        none.style.color = "var(--hermes-disabled-text)";
+        none.style.margin = "7px 0 0 0";
+        panel.appendChild(none);
+      } else {
+        backlinks.forEach(entry => {
+          const div = document.createElement("div");
+          div.className = "backlink-entry";
+          div.innerHTML = `<b>${entry.page.title}</b> <span style="font-size:12px;color:var(--hermes-disabled-text);">(${entry.section.name})</span>`;
+          div.title = "Jump to page";
+          div.style.cssText = `
+            margin: 3px 0;
+            cursor: pointer;
+            border-bottom: 1px solid var(--hermes-panel-border);
+            padding-bottom: 2px;
+            transition: background 0.15s;
+          `;
+          div.onmouseenter = () => div.style.background = "var(--hermes-button-hover-bg)";
+          div.onmouseleave = () => div.style.background = "transparent";
+          div.onclick = () => selectPage(entry.page.id, entry.section.id);
+          panel.appendChild(div);
+        });
+      }
+
+      // Insert after editor
+      const editor = document.getElementById("quillEditorContainer");
+      if (editor && editor.parentNode) {
+        editor.parentNode.insertBefore(panel, editor.nextSibling);
+      }
+    }
+
+    function linkifyWikiLinks(text) {
+      return text.replace(/\[\[([^\]]+)\]\]/g, function(_, p1) {
+        return `<span class="wikilink" data-link="${p1}" style="color: var(--hermes-link-color); cursor: pointer; border-bottom: 1px dotted var(--hermes-link-color); padding: 0 2px; border-radius: 2px; transition: background 0.1s;">[[${p1}]]</span>`;
+      });
+    }
+
+    // Multimedia support (Audio/GIF like HyperStudio!)
+    function insertAudio(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const audioId = 'audio_' + crypto.randomUUID();
+        const audioHtml = `
+          <div class="multimedia-container" style="margin: 10px 0; padding: 10px; border: 1px solid var(--hermes-border); border-radius: 8px; background: var(--hermes-panel-bg);">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+              <span style="font-weight: bold; color: var(--hermes-text);">🎵 ${file.name}</span>
+              <button onclick="playAudio('${audioId}')" style="padding: 4px 8px; font-size: 12px;">▶️ Play</button>
+              <button onclick="pauseAudio('${audioId}')" style="padding: 4px 8px; font-size: 12px;">⏸️ Pause</button>
+            </div>
+            <audio id="${audioId}" controls style="width: 100%;">
+              <source src="${e.target.result}" type="${file.type}">
+              Your browser does not support the audio element.
+            </audio>
+          </div>
+        `;
+        
+        const range = quill.getSelection();
+        quill.clipboard.dangerouslyPasteHTML(range.index, audioHtml);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function insertGIF(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const gifId = 'gif_' + crypto.randomUUID();
+        const gifHtml = `
+          <div class="multimedia-container" style="margin: 10px 0; padding: 10px; border: 1px solid var(--hermes-border); border-radius: 8px; background: var(--hermes-panel-bg);">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+              <span style="font-weight: bold; color: var(--hermes-text);">🎬 ${file.name}</span>
+              <button onclick="playGIF('${gifId}')" style="padding: 4px 8px; font-size: 12px;">▶️ Play</button>
+              <button onclick="pauseGIF('${gifId}')" style="padding: 4px 8px; font-size: 12px;">⏸️ Pause</button>
+            </div>
+            <img id="${gifId}" src="${e.target.result}" style="max-width: 100%; border-radius: 4px;" alt="${file.name}">
+          </div>
+        `;
+        
+        const range = quill.getSelection();
+        quill.clipboard.dangerouslyPasteHTML(range.index, gifHtml);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function insertVideo(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const videoId = 'video_' + crypto.randomUUID();
+        const videoHtml = `
+          <div class="multimedia-container" style="margin: 10px 0; padding: 10px; border: 1px solid var(--hermes-border); border-radius: 8px; background: var(--hermes-panel-bg);">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+              <span style="font-weight: bold; color: var(--hermes-text);">🎥 ${file.name}</span>
+            </div>
+            <video id="${videoId}" controls style="width: 100%; max-height: 400px; border-radius: 4px;">
+              <source src="${e.target.result}" type="${file.type}">
+              Your browser does not support the video element.
+            </video>
+          </div>
+        `;
+        
+        const range = quill.getSelection();
+        quill.clipboard.dangerouslyPasteHTML(range.index, videoHtml);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Multimedia control functions
+    function playAudio(audioId) {
+      const audio = document.getElementById(audioId);
+      if (audio) audio.play();
+    }
+
+    function pauseAudio(audioId) {
+      const audio = document.getElementById(audioId);
+      if (audio) audio.pause();
+    }
+
+    function playGIF(gifId) {
+      const gif = document.getElementById(gifId);
+      if (gif) {
+        gif.style.animationPlayState = 'running';
+      }
+    }
+
+    function pauseGIF(gifId) {
+      const gif = document.getElementById(gifId);
+      if (gif) {
+        gif.style.animationPlayState = 'paused';
+      }
+    }
+
+    // Template functionality for plugins
+    let templates = JSON.parse(localStorage.getItem('nextnote_templates') || '[]');
+
+    // Add default templates if none exist
+    if (templates.length === 0) {
+      templates = [
+        {
+          id: crypto.randomUUID(),
+          name: "Meeting Notes",
+          content: "# Meeting Notes\n\n## Date: {{date}}\n## Attendees:\n- \n\n## Agenda:\n1. \n2. \n3. \n\n## Action Items:\n- [ ] \n- [ ] \n- [ ] \n\n## Notes:\n\n## Next Steps:\n",
+          created: new Date().toISOString()
+        },
+        {
+          id: crypto.randomUUID(),
+          name: "Project Plan",
+          content: "# Project Plan\n\n## Project: {{project_name}}\n## Timeline: {{timeline}}\n\n## Goals:\n1. \n2. \n3. \n\n## Tasks:\n### Phase 1\n- [ ] \n- [ ] \n\n### Phase 2\n- [ ] \n- [ ] \n\n## Resources:\n- \n\n## Notes:\n",
+          created: new Date().toISOString()
+        },
+        {
+          id: crypto.randomUUID(),
+          name: "Daily Journal",
+          content: "# Daily Journal - {{date}}\n\n## Today's Goals:\n- [ ] \n- [ ] \n- [ ] \n\n## What I accomplished:\n\n## Challenges:\n\n## Tomorrow's Plan:\n\n## Gratitude:\n- \n- \n- \n",
+          created: new Date().toISOString()
+        },
+        {
+          id: crypto.randomUUID(),
+          name: "Multimedia Story",
+          content: "# Interactive Story\n\n## Introduction\n\n🎵 [Add audio narration here]\n\n## Scene 1\n\n🎬 [Add animated GIF here]\n\n## Interactive Elements\n\n🎥 [Add video content here]\n\n## Navigation\n\nUse [[Page Name]] to create links to other pages!\n",
+          created: new Date().toISOString()
+        }
+      ];
+      saveTemplates();
+    }
+
+    function addTemplate(name, content) {
+      const template = {
+        id: crypto.randomUUID(),
+        name: name,
+        content: content,
+        created: new Date().toISOString()
+      };
+      templates.push(template);
+      saveTemplates();
+      return template;
+    }
+
+    function deleteTemplate(templateId) {
+      templates = templates.filter(t => t.id !== templateId);
+      saveTemplates();
+    }
+
+    function saveTemplates() {
+      localStorage.setItem('nextnote_templates', JSON.stringify(templates));
+    }
+
+    function insertTemplate(templateId) {
+      const template = templates.find(t => t.id === templateId);
+      if (!template || !quill) return;
+      
+      const range = quill.getSelection();
+      const html = marked.parse(template.content);
+      quill.clipboard.dangerouslyPasteHTML(range.index, html);
+    }
+
+    function getTemplates() {
+      return templates;
+    }
+
+    // Reminder functionality for plugins
+    let reminders = JSON.parse(localStorage.getItem('nextnote_reminders') || '[]');
+
+    function addReminder(pageId, title, datetime, message) {
+      const reminder = {
+        id: crypto.randomUUID(),
+        pageId: pageId,
+        title: title,
+        datetime: datetime,
+        message: message,
+        created: new Date().toISOString(),
+        completed: false
+      };
+      reminders.push(reminder);
+      saveReminders();
+      return reminder;
+    }
+
+    function deleteReminder(reminderId) {
+      reminders = reminders.filter(r => r.id !== reminderId);
+      saveReminders();
+    }
+
+    function completeReminder(reminderId) {
+      const reminder = reminders.find(r => r.id === reminderId);
+      if (reminder) {
+        reminder.completed = true;
+        saveReminders();
+      }
+    }
+
+    function saveReminders() {
+      localStorage.setItem('nextnote_reminders', JSON.stringify(reminders));
+    }
+
+    function getReminders() {
+      return reminders;
+    }
+
+    function getRemindersForPage(pageId) {
+      return reminders.filter(r => r.pageId === pageId);
+    }
+
+    function getUpcomingReminders() {
+      const now = new Date();
+      return reminders.filter(r => !r.completed && new Date(r.datetime) > now);
+    }
+
+    // Check for due reminders
+    function checkReminders() {
+      const now = new Date();
+      const dueReminders = reminders.filter(r => !r.completed && new Date(r.datetime) <= now);
+      
+      dueReminders.forEach(reminder => {
+        if (Notification.permission === 'granted') {
+          new Notification(reminder.title, {
+            body: reminder.message,
+            icon: '/favicon.ico'
+          });
+        } else {
+          alert(`Reminder: ${reminder.title}\n${reminder.message}`);
+        }
+      });
+    }
+
+    // Request notification permission and start reminder checking
+    function initializeReminders() {
+      if ('Notification' in window) {
+        Notification.requestPermission();
+      }
+      // Check reminders every minute
+      setInterval(checkReminders, 60000);
+    }
+
+    // Reminder dialog functionality
+    function showReminderDialog() {
+      if (!currentPage) {
+        alert('Please select a page first');
+        return;
+      }
+
+      const dialog = document.createElement('div');
+      dialog.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0,0,0,0.5);
+        z-index: 5000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      `;
+
+      const content = document.createElement('div');
+      content.style.cssText = `
+        background: var(--hermes-panel-bg);
+        border: 1px solid var(--hermes-panel-border);
+        border-radius: 8px;
+        padding: 20px;
+        width: 400px;
+        max-width: 90vw;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      `;
+
+      content.innerHTML = `
+        <h3 style="margin-top: 0;">⏰ Set Reminder</h3>
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px;">Title:</label>
+          <input id="reminderTitle" type="text" value="${currentPage.title}" style="width: 100%; padding: 8px; border: 1px solid var(--hermes-input-border); border-radius: 4px;">
+        </div>
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px;">Date & Time:</label>
+          <input id="reminderDateTime" type="datetime-local" style="width: 100%; padding: 8px; border: 1px solid var(--hermes-input-border); border-radius: 4px;">
+        </div>
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px;">Message:</label>
+          <textarea id="reminderMessage" placeholder="Optional reminder message..." rows="3" style="width: 100%; padding: 8px; border: 1px solid var(--hermes-input-border); border-radius: 4px;"></textarea>
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+          <button onclick="this.closest('div[style*=\'position: fixed\']').remove()" style="padding: 8px 16px;">Cancel</button>
+          <button onclick="createReminder(this)" style="padding: 8px 16px; background: var(--hermes-highlight-bg); color: var(--hermes-highlight-text);">Set Reminder</button>
+        </div>
+      `;
+
+      dialog.appendChild(content);
+      document.body.appendChild(dialog);
+
+      // Set default datetime to 1 hour from now
+      const now = new Date();
+      now.setHours(now.getHours() + 1);
+      document.getElementById('reminderDateTime').value = now.toISOString().slice(0, 16);
+    }
+
+    function createReminder(button) {
+      const title = document.getElementById('reminderTitle').value.trim();
+      const datetime = document.getElementById('reminderDateTime').value;
+      const message = document.getElementById('reminderMessage').value.trim();
+
+      if (!title || !datetime) {
+        alert('Please fill in title and datetime');
+        return;
+      }
+
+      addReminder(currentPage.id, title, datetime, message);
+      button.closest('div[style*="position: fixed"]').remove();
+      alert('Reminder set successfully!');
+    }
+
+    // Mode switcher functionality
+    function showModeSwitcher() {
+      // Remove any existing mode dialog
+      const existingDialog = document.querySelector('.mode-dialog');
+      if (existingDialog) {
+        existingDialog.remove();
+      }
+
+      const dialog = document.createElement('div');
+      dialog.className = 'mode-dialog';
+      dialog.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0,0,0,0.5);
+        z-index: 5000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      `;
+
+      const content = document.createElement('div');
+      content.style.cssText = `
+        background: var(--hermes-panel-bg);
+        border: 1px solid var(--hermes-panel-border);
+        border-radius: 12px;
+        padding: 30px;
+        width: 600px;
+        max-width: 90vw;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      `;
+
+      content.innerHTML = `
+        <h2 style="margin-top: 0; text-align: center; color: var(--hermes-text);">🎭 NextNote Application Modes</h2>
+        <p style="text-align: center; color: var(--hermes-disabled-text); margin-bottom: 30px;">
+          Switch between different specialized applications built on the NextNote platform
+        </p>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+          <div class="mode-card" onclick="switchToMode('note')" style="border: 2px solid var(--hermes-border); border-radius: 8px; padding: 20px; cursor: pointer; transition: all 0.2s;">
+            <h3 style="margin-top: 0;">📝 Note Taking</h3>
+            <p style="margin-bottom: 15px; color: var(--hermes-disabled-text);">Classic note-taking with rich text, sections, and organization</p>
+            <div style="font-size: 12px; color: var(--hermes-info-text);">
+              ✅ Rich text editing<br>
+              ✅ Section organization<br>
+              ✅ Auto-save<br>
+              ✅ Import/export
+            </div>
+          </div>
+          
+          <div class="mode-card" onclick="switchToMode('wiki')" style="border: 2px solid var(--hermes-border); border-radius: 8px; padding: 20px; cursor: pointer; transition: all 0.2s;">
+            <h3 style="margin-top: 0;">�� Wiki Builder</h3>
+            <p style="margin-bottom: 15px; color: var(--hermes-disabled-text);">Create interconnected knowledge bases with wiki-style linking</p>
+            <div style="font-size: 12px; color: var(--hermes-info-text);">
+              ✅ Wiki links [[Page Name]]<br>
+              ✅ Categories & tags<br>
+              ✅ Edit history<br>
+              ✅ Related pages
+            </div>
+          </div>
+          
+          <div class="mode-card" onclick="switchToMode('mindmap')" style="border: 2px solid var(--hermes-border); border-radius: 8px; padding: 20px; cursor: pointer; transition: all 0.2s;">
+            <h3 style="margin-top: 0;">🧠 Mind Mapping</h3>
+            <p style="margin-bottom: 15px; color: var(--hermes-disabled-text);">Visual mind mapping with drag-and-drop nodes</p>
+            <div style="font-size: 12px; color: var(--hermes-info-text);">
+              ✅ Interactive nodes<br>
+              ✅ Drag & drop<br>
+              ✅ Auto-layout<br>
+              ✅ Export to notes
+            </div>
+          </div>
+          
+          <div class="mode-card" onclick="switchToMode('diagram')" style="border: 2px solid var(--hermes-border); border-radius: 8px; padding: 20px; cursor: pointer; transition: all 0.2s;">
+            <h3 style="margin-top: 0;">📐 Diagram Builder</h3>
+            <p style="margin-bottom: 15px; color: var(--hermes-disabled-text);">Visio-style diagrams with shapes and connectors</p>
+            <div style="font-size: 12px; color: var(--hermes-info-text);">
+              ✅ Multiple shapes<br>
+              ✅ Smart connectors<br>
+              ✅ Properties panel<br>
+              ✅ Export/import
+            </div>
+          </div>
+          
+          <div class="mode-card" onclick="switchToMode('drive')" style="border: 2px solid var(--hermes-border); border-radius: 8px; padding: 20px; cursor: pointer; transition: all 0.2s;">
+            <h3 style="margin-top: 0;">☁️ Google Drive</h3>
+            <p style="margin-bottom: 15px; color: var(--hermes-disabled-text);">Cloud sync and backup with Google Drive</p>
+            <div style="font-size: 12px; color: var(--hermes-info-text);">
+              ✅ Cloud backup<br>
+              ✅ Sync across devices<br>
+              ✅ Import/export<br>
+              ✅ File management
+            </div>
+          </div>
+          
+          <div class="mode-card" onclick="switchToMode('multimedia')" style="border: 2px solid var(--hermes-border); border-radius: 8px; padding: 20px; cursor: pointer; transition: all 0.2s;">
+            <h3 style="margin-top: 0;">🎬 Multimedia Story</h3>
+            <p style="margin-bottom: 15px; color: var(--hermes-disabled-text);">Interactive storytelling with audio, video, and GIFs</p>
+            <div style="font-size: 12px; color: var(--hermes-info-text);">
+              ✅ Audio narration<br>
+              ✅ Animated GIFs<br>
+              ✅ Video content<br>
+              ✅ Interactive navigation
+            </div>
+          </div>
+          
+          <div class="mode-card" onclick="switchToMode('project')" style="border: 2px solid var(--hermes-border); border-radius: 8px; padding: 20px; cursor: pointer; transition: all 0.2s;">
+            <h3 style="margin-top: 0;">📋 Project Manager</h3>
+            <p style="margin-bottom: 15px; color: var(--hermes-disabled-text);">Project planning with templates, reminders, and tracking</p>
+            <div style="font-size: 12px; color: var(--hermes-info-text);">
+              ✅ Project templates<br>
+              ✅ Time-based reminders<br>
+              ✅ Task tracking<br>
+              ✅ Progress monitoring
+            </div>
+          </div>
+          
+          <div class="mode-card" onclick="switchToMode('journal')" style="border: 2px solid var(--hermes-border); border-radius: 8px; padding: 20px; cursor: pointer; transition: all 0.2s;">
+            <h3 style="margin-top: 0;">📖 Personal Journal</h3>
+            <p style="margin-bottom: 15px; color: var(--hermes-disabled-text);">Daily journaling with reflection and goal tracking</p>
+            <div style="font-size: 12px; color: var(--hermes-info-text);">
+              ✅ Daily templates<br>
+              ✅ Goal tracking<br>
+              ✅ Gratitude notes<br>
+              ✅ Progress reflection
+            </div>
+          </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px;">
+          <button onclick="dialog.remove()" style="padding: 10px 20px; background: var(--hermes-button-bg); border: 1px solid var(--hermes-border); border-radius: 6px; cursor: pointer;">Close</button>
+        </div>
+      `;
+
+      // Add hover effects
+      const modeCards = content.querySelectorAll('.mode-card');
+      modeCards.forEach(card => {
+        card.addEventListener('mouseenter', () => {
+          card.style.borderColor = 'var(--hermes-highlight-bg)';
+          card.style.transform = 'translateY(-2px)';
+          card.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+        });
+        card.addEventListener('mouseleave', () => {
+          card.style.borderColor = 'var(--hermes-border)';
+          card.style.transform = 'translateY(0)';
+          card.style.boxShadow = 'none';
+        });
+      });
+
+      // Close dialog when clicking outside
+      dialog.addEventListener('click', (e) => {
+        if (e.target === dialog) {
+          dialog.remove();
+        }
+      });
+
+      // Close dialog on Escape key
+      const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+          dialog.remove();
+          document.removeEventListener('keydown', handleEscape);
+        }
+      };
+      document.addEventListener('keydown', handleEscape);
+
+      dialog.appendChild(content);
+      document.body.appendChild(dialog);
+    }
+
+    function switchToMode(mode) {
+      switch (mode) {
+        case 'note':
+          // Default note-taking mode - already active
+          alert('📝 Note-taking mode is already active!');
+          break;
+          
+        case 'wiki':
+          if (window.toggleWikiMode) {
+            window.toggleWikiMode();
+            alert('📚 Wiki mode activated! Click the "📚 Wiki Mode" button to switch back.');
+          } else {
+            alert('Wiki mode plugin not loaded');
+          }
+          break;
+          
+        case 'mindmap':
+          if (window.toggleMindmapMode) {
+            window.toggleMindmapMode();
+            alert('🧠 Mindmap mode activated! Click the "🧠 Mindmap" button to switch back.');
+          } else {
+            alert('Mindmap mode plugin not loaded');
+          }
+          break;
+          
+        case 'diagram':
+          if (window.toggleDiagramMode) {
+            window.toggleDiagramMode();
+            alert('📐 Diagram mode activated! Click the "📐 Diagram" button to switch back.');
+          } else {
+            alert('Diagram mode plugin not loaded');
+          }
+          break;
+          
+        case 'drive':
+          if (window.toggleDriveMode) {
+            window.toggleDriveMode();
+            alert('☁️ Google Drive mode activated! Click the "☁️ Google Drive" button to switch back.');
+          } else {
+            alert('Google Drive mode plugin not loaded');
+          }
+          break;
+          
+        case 'multimedia':
+          // Create a multimedia story template
+          if (currentSection) {
+            const storyPage = {
+              id: crypto.randomUUID(),
+              title: 'Interactive Story',
+              content: `# 🎬 Interactive Story
+
+## Introduction
+
+🎵 [Add audio narration here]
+
+## Scene 1
+
+🎬 [Add animated GIF here]
+
+## Interactive Elements
+
+🎥 [Add video content here]
+
+## Navigation
+
+Use [[Page Name]] to create links to other pages!
+
+## Story Elements
+
+- **Characters**: [Add character descriptions]
+- **Setting**: [Add setting details]
+- **Plot**: [Add plot points]
+
+## Interactive Features
+
+- Audio narration for immersive experience
+- Animated GIFs for dynamic scenes
+- Video content for rich storytelling
+- Wiki-style links for branching narratives`,
+              tags: ['story', 'multimedia', 'interactive'],
+              created: new Date().toISOString(),
+              modified: new Date().toISOString()
+            };
+            
+            currentSection.pages.push(storyPage);
+            saveData();
+            renderSections();
+            selectPage(currentSection.id, storyPage.id);
+            alert('🎬 Multimedia story template created! Add audio, GIFs, and video to create an interactive story.');
+          }
+          break;
+          
+        case 'project':
+          // Create project management template
+          if (currentSection) {
+            const projectPage = {
+              id: crypto.randomUUID(),
+              title: 'Project Plan',
+              content: `# 📋 Project Plan
+
+## Project Overview
+
+**Project Name**: [Enter project name]
+**Timeline**: [Enter timeline]
+**Team**: [Enter team members]
+
+## Goals & Objectives
+
+1. [Primary goal]
+2. [Secondary goal]
+3. [Tertiary goal]
+
+## Tasks & Milestones
+
+### Phase 1: Planning
+- [ ] Define project scope
+- [ ] Create timeline
+- [ ] Assign resources
+- [ ] Set up communication
+
+### Phase 2: Execution
+- [ ] Task 1
+- [ ] Task 2
+- [ ] Task 3
+
+### Phase 3: Review
+- [ ] Quality assurance
+- [ ] Stakeholder review
+- [ ] Final approval
+
+## Resources
+
+- **Budget**: [Enter budget]
+- **Tools**: [List tools needed]
+- **Materials**: [List materials]
+
+## Risk Management
+
+| Risk | Probability | Impact | Mitigation |
+|------|-------------|--------|------------|
+| [Risk 1] | [High/Med/Low] | [High/Med/Low] | [Strategy] |
+
+## Progress Tracking
+
+**Current Status**: [In Progress/On Hold/Completed]
+**Completion**: [X]%
+
+## Notes & Updates
+
+[Add project notes here]`,
+              tags: ['project', 'planning', 'management'],
+              created: new Date().toISOString(),
+              modified: new Date().toISOString()
+            };
+            
+            currentSection.pages.push(projectPage);
+            saveData();
+            renderSections();
+            selectPage(currentSection.id, projectPage.id);
+            alert('📋 Project management template created! Use reminders and tags to track progress.');
+          }
+          break;
+          
+        case 'journal':
+          // Create journal template
+          if (currentSection) {
+            const journalPage = {
+              id: crypto.randomUUID(),
+              title: 'Daily Journal - ' + new Date().toLocaleDateString(),
+              content: `# 📖 Daily Journal
+
+## Today's Date: ${new Date().toLocaleDateString()}
+
+## 🌅 Morning Reflection
+
+**How did I sleep?** [Rate 1-10]
+**Energy level**: [Rate 1-10]
+**Mood**: [Describe your mood]
+
+## 🎯 Today's Goals
+
+- [ ] [Goal 1]
+- [ ] [Goal 2]
+- [ ] [Goal 3]
+
+## 📝 What I Accomplished
+
+[Write about what you achieved today]
+
+## 🚧 Challenges I Faced
+
+[Write about any difficulties or obstacles]
+
+## 💡 Lessons Learned
+
+[What did you learn today?]
+
+## 🎉 Wins & Celebrations
+
+[What went well today?]
+
+## 🌙 Evening Reflection
+
+**How was my day?** [Rate 1-10]
+**Did I meet my goals?** [Yes/Partially/No]
+**What could I have done better?**
+
+## 🎯 Tomorrow's Plan
+
+[What are your priorities for tomorrow?]
+
+## 🙏 Gratitude
+
+- [Something you're grateful for]
+- [Something you're grateful for]
+- [Something you're grateful for]
+
+## 📊 Daily Metrics
+
+- **Productivity**: [Rate 1-10]
+- **Happiness**: [Rate 1-10]
+- **Health**: [Rate 1-10]
+- **Relationships**: [Rate 1-10]
+
+## 💭 Thoughts & Ideas
+
+[Any random thoughts, ideas, or insights]
+
+---
+*Journal entry completed at ${new Date().toLocaleTimeString()}*`,
+              tags: ['journal', 'daily', 'reflection'],
+              created: new Date().toISOString(),
+              modified: new Date().toISOString()
+            };
+            
+            currentSection.pages.push(journalPage);
+            saveData();
+            renderSections();
+            selectPage(currentSection.id, journalPage.id);
+            alert('📖 Daily journal template created! Use this for daily reflection and goal tracking.');
+          }
+          break;
+      }
+      
+      // Close the mode switcher dialog
+      const dialog = document.querySelector('.mode-dialog');
+      if (dialog) dialog.remove();
+    }
+
+    // Make functions globally available
+    window.addSection = addSection;
+    window.deleteSection = deleteSection;
+    window.addPage = addPage;
+    window.deletePage = deletePage;
+    window.selectPage = selectPage;
+    window.saveCurrentPage = saveCurrentPage;
+    window.togglePreview = togglePreview;
+          window.insertImage = insertImage;
+      window.insertAudio = insertAudio;
+      window.insertVideo = insertVideo;
+      window.insertGif = insertGif;
+      window.triggerFileInput = triggerFileInput;
+    window.exportMarkdown = exportMarkdown;
+    window.importMarkdown = importMarkdown;
+    window.togglePages = togglePages;
+    window.showResourceManager = showResourceManager;
+    window.hideResourceManager = hideResourceManager;
+    window.addResources = addResources;
+    window.saveResources = saveResources;
+    window.renderResources = renderResources;
+    window.insertResource = insertResource;
+    window.deleteResource = deleteResource;
+    window.formatFileSize = formatFileSize;
+    window.showCommandPalette = showCommandPalette;
+    window.hideCommandPalette = hideCommandPalette;
+    window.updateCommandResults = updateCommandResults;
+    window.updatePageMetadata = updatePageMetadata;
+    
+    // Tag functions for plugins
+    window.addTagToPage = addTagToPage;
+    window.removeTagFromPage = removeTagFromPage;
+    window.getAllTags = getAllTags;
+    window.getPagesByTag = getPagesByTag;
+    
+    // Backlinks functions for plugins
+    window.extractWikiLinks = extractWikiLinks;
+    window.findBacklinksForTitle = findBacklinksForTitle;
+    window.renderBacklinksPanel = renderBacklinksPanel;
+    window.linkifyWikiLinks = linkifyWikiLinks;
+    
+    // Multimedia support functions for plugins
+    window.insertAudio = insertAudio;
+    window.insertGIF = insertGIF;
+    window.insertVideo = insertVideo;
+    window.playAudio = playAudio;
+    window.pauseAudio = pauseAudio;
+    window.playGIF = playGIF;
+    window.pauseGIF = pauseGIF;
+
+    // Template functions for plugins
+    window.addTemplate = addTemplate;
+    window.deleteTemplate = deleteTemplate;
+    window.saveTemplates = saveTemplates;
+    window.insertTemplate = insertTemplate;
+    window.getTemplates = getTemplates;
+
+    // Reminder functions for plugins
+    window.addReminder = addReminder;
+    window.deleteReminder = deleteReminder;
+    window.completeReminder = completeReminder;
+    window.getReminders = getReminders;
+    window.getRemindersForPage = getRemindersForPage;
+    window.getUpcomingReminders = getUpcomingReminders;
+    window.checkReminders = checkReminders;
+    window.initializeReminders = initializeReminders;
+    window.showReminderDialog = showReminderDialog;
+    window.createReminder = createReminder;
+    window.showModeSwitcher = showModeSwitcher;
+    window.switchToMode = switchToMode;
+    window.showTemplateSelector = showTemplateSelector;
+    window.createTemplateFromMode = createTemplateFromMode;
+    window.showFissioLibrary = showFissioLibrary;
+    window.showRitualMode = showRitualMode;
+
+    // Plugin support functions
+    window.renderSections = renderSections;
+    window.refreshCurrentPage = function() {
+      if (currentPage && quill) {
+        // Convert markdown to HTML if needed, then set in Quill
+        let htmlContent;
+        if (currentPage.content && currentPage.content.includes('#')) {
+          // Likely markdown content, convert to HTML
+          htmlContent = marked.parse(currentPage.content);
+        } else {
+          // Already HTML content
+          htmlContent = currentPage.content || '';
+        }
+        quill.setContents(quill.clipboard.convert(htmlContent));
+        updatePageMetadata(currentPage);
+      }
+    };
+    window.dispatchEvent = function(event) {
+      if (window.NextNoteApp && window.NextNoteApp.emit) {
+        window.NextNoteApp.emit(event.type, event);
+      }
+    };
+
+    // Create NextNoteApp object for plugins
+    window.NextNoteApp = {
+      // Core data
+      sections: () => sections,
+      currentSection: () => currentSection,
+      currentPage: () => currentPage,
+      notebook: () => ({
+        title: "NextNote Onyx Edition",
+        sections: sections,
+        resources: [],
+        settings: {},
+        id: "onyx-edition",
+        created: new Date().toISOString(),
+        modified: new Date().toISOString()
+      }),
+
+      // Core functions
+      addSection: addSection,
+      deleteSection: deleteSection,
+      addPage: addPage,
+      deletePage: deletePage,
+      selectPage: selectPage,
+      saveCurrentPage: saveCurrentPage,
+      togglePreview: togglePreview,
+      insertImage: insertImage,
+      exportMarkdown: exportMarkdown,
+      importMarkdown: importMarkdown,
+      togglePages: togglePages,
+
+      // Editor functions
+      getQuill: () => quill,
+      getEditorContent: () => quill ? quill.root.innerHTML : '',
+      setEditorContent: (content) => {
+        if (quill) {
+          // Convert markdown to HTML if needed, then set in Quill
+          let htmlContent;
+          if (content && content.includes('#')) {
+            // Likely markdown content, convert to HTML
+            htmlContent = marked.parse(content);
+          } else {
+            // Already HTML content
+            htmlContent = content || '';
+          }
+          quill.setContents(quill.clipboard.convert(htmlContent));
+        }
+      },
+
+      // Data functions
+      saveData: saveData,
+      loadData: loadData,
+      renderSections: renderSections,
+
+      // Resource functions
+      getResources: () => resources,
+      addResource: (resource) => {
+        resources.push(resource);
+        saveResources();
+        renderResources();
+      },
+      deleteResource: deleteResource,
+
+      // UI functions
+      showCommandPalette: showCommandPalette,
+      hideCommandPalette: hideCommandPalette,
+      showResourceManager: showResourceManager,
+      hideResourceManager: hideResourceManager,
+      updatePageMetadata: updatePageMetadata,
+
+      // Tag functions
+      addTagToPage: addTagToPage,
+      removeTagFromPage: removeTagFromPage,
+      getAllTags: getAllTags,
+      getPagesByTag: getPagesByTag,
+
+      // Backlinks functions
+      extractWikiLinks: extractWikiLinks,
+      findBacklinksForTitle: findBacklinksForTitle,
+      renderBacklinksPanel: renderBacklinksPanel,
+      linkifyWikiLinks: linkifyWikiLinks,
+
+      // Multimedia support functions
+      insertAudio: insertAudio,
+      insertGIF: insertGIF,
+      insertVideo: insertVideo,
+      playAudio: playAudio,
+      pauseAudio: pauseAudio,
+      playGIF: playGIF,
+      pauseGIF: pauseGIF,
+
+      // Template functions
+      addTemplate: addTemplate,
+      deleteTemplate: deleteTemplate,
+      saveTemplates: saveTemplates,
+      insertTemplate: insertTemplate,
+      getTemplates: getTemplates,
+
+      // Reminder functions
+      addReminder: addReminder,
+      deleteReminder: deleteReminder,
+      completeReminder: completeReminder,
+      getReminders: getReminders,
+      getRemindersForPage: getRemindersForPage,
+      getUpcomingReminders: getUpcomingReminders,
+      checkReminders: checkReminders,
+      initializeReminders: initializeReminders,
+
+      // Utility functions
+      generateId: () => crypto.randomUUID(),
+      formatDate: (date) => new Date(date).toLocaleString(),
+      formatFileSize: formatFileSize,
+
+      // Event system
+      events: {},
+      on: function(event, callback) {
+        if (!this.events[event]) this.events[event] = [];
+        this.events[event].push(callback);
+      },
+      emit: function(event, data) {
+        if (this.events[event]) {
+          this.events[event].forEach(callback => callback(data));
+        }
+      }
+    };
+
+    // Initialize plugins after app is ready
+    setTimeout(() => {
+      if (window.NextNotePlugins) {
+        window.NextNotePlugins.forEach(plugin => {
+          if (typeof plugin.onLoad === 'function') {
+            plugin.onLoad(window.NextNoteApp);
+          }
+        });
+      }
+    }, 100);
+
+    // Template system for different modes
+    const modeTemplates = {
+      diagram: {
+        'Flowchart': {
+          title: 'Process Flowchart',
+          content: `# 📐 Process Flowchart Template
+
+## 🎯 Process Overview
+**Process Name**: [Enter process name]
+**Owner**: [Process owner]
+**Version**: 1.0
+**Last Updated**: ${new Date().toLocaleDateString()}
+
+## 📋 Process Steps
+
+### 1. Start Point
+- **Shape**: Circle (Start/End)
+- **Description**: Process begins here
+- **Responsible**: [Role/Person]
+- **Output**: [What is produced]
+
+### 2. Input Validation
+- **Shape**: Diamond (Decision)
+- **Description**: Validate input data
+- **Decision Points**:
+  - ✅ Valid → Continue to next step
+  - ❌ Invalid → Return to input
+
+### 3. Data Processing
+- **Shape**: Rectangle (Process)
+- **Description**: Process the validated data
+- **Activities**:
+  - [Activity 1]
+  - [Activity 2]
+  - [Activity 3]
+
+### 4. Quality Check
+- **Shape**: Diamond (Decision)
+- **Description**: Check output quality
+- **Decision Points**:
+  - ✅ Pass → Continue to approval
+  - ❌ Fail → Return to processing
+
+### 5. Approval
+- **Shape**: Rectangle (Process)
+- **Description**: Get final approval
+- **Approver**: [Role/Person]
+- **Criteria**: [Approval criteria]
+
+### 6. End Point
+- **Shape**: Circle (Start/End)
+- **Description**: Process complete
+- **Output**: [Final deliverable]
+
+## 🔗 Process Connections
+- Start → Input Validation
+- Input Validation (Valid) → Data Processing
+- Input Validation (Invalid) → Start
+- Data Processing → Quality Check
+- Quality Check (Pass) → Approval
+- Quality Check (Fail) → Data Processing
+- Approval → End
+
+## 📊 Process Metrics
+- **Cycle Time**: [Target time]
+- **Success Rate**: [Target percentage]
+- **Error Rate**: [Target percentage]
+- **Cost per Transaction**: [Target cost]
+
+## 🎨 Diagram Elements
+Use these shapes in Diagram Builder mode:
+- ⭕ **Circles**: Start/End points
+- 💎 **Diamonds**: Decision points
+- ⬜ **Rectangles**: Process steps
+- ➡️ **Arrows**: Flow direction
+
+## 📝 Notes
+- [Additional process notes]
+- [Special considerations]
+- [Exception handling]`,
+          tags: ['diagram', 'flowchart', 'process', 'template']
+        },
+        'Org Chart': {
+          title: 'Organization Chart',
+          content: `# 📊 Organization Chart Template
+
+## 🏢 Company Structure
+**Company**: [Company Name]
+**Department**: [Department Name]
+**Last Updated**: ${new Date().toLocaleDateString()}
+
+## 👥 Organizational Hierarchy
+
+### Level 1: Executive Leadership
+- **CEO/President**: [Name]
+  - **Reports to**: Board of Directors
+  - **Direct Reports**: [Number]
+  - **Responsibilities**: [List key responsibilities]
+
+### Level 2: Senior Management
+- **CTO**: [Name]
+  - **Reports to**: CEO
+  - **Direct Reports**: [List direct reports]
+  - **Responsibilities**: [Technology strategy, etc.]
+
+- **CFO**: [Name]
+  - **Reports to**: CEO
+  - **Direct Reports**: [List direct reports]
+  - **Responsibilities**: [Financial management, etc.]
+
+- **COO**: [Name]
+  - **Reports to**: CEO
+  - **Direct Reports**: [List direct reports]
+  - **Responsibilities**: [Operations management, etc.]
+
+### Level 3: Department Heads
+- **IT Director**: [Name]
+  - **Reports to**: CTO
+  - **Direct Reports**: [List team members]
+  - **Responsibilities**: [IT infrastructure, etc.]
+
+- **HR Director**: [Name]
+  - **Reports to**: COO
+  - **Direct Reports**: [List team members]
+  - **Responsibilities**: [Human resources, etc.]
+
+### Level 4: Team Leaders
+- **Development Team Lead**: [Name]
+  - **Reports to**: IT Director
+  - **Direct Reports**: [List developers]
+  - **Responsibilities**: [Software development, etc.]
+
+## 🎨 Chart Elements
+Use these shapes in Diagram Builder mode:
+- ⬜ **Rectangles**: Positions/Roles
+- ➡️ **Arrows**: Reporting relationships
+- 📝 **Text Boxes**: Additional information
+
+## 📋 Position Details
+For each position, include:
+- **Title**: [Job title]
+- **Name**: [Employee name]
+- **Department**: [Department name]
+- **Reports to**: [Manager name]
+- **Direct Reports**: [Number or list]
+- **Key Responsibilities**: [List main duties]
+
+## 🔄 Reporting Structure
+- **Hierarchical**: Traditional top-down structure
+- **Matrix**: Cross-functional reporting
+- **Flat**: Minimal management layers
+- **Network**: Collaborative team structure
+
+## 📊 Metrics
+- **Total Employees**: [Number]
+- **Management Ratio**: [Ratio]
+- **Span of Control**: [Average direct reports per manager]
+- **Organizational Depth**: [Number of levels]`,
+          tags: ['diagram', 'org-chart', 'organization', 'template']
+        },
+        'Network Diagram': {
+          title: 'Network Architecture',
+          content: `# 🌐 Network Architecture Template
+
+## 🏗️ Network Overview
+**Network Name**: [Network identifier]
+**Type**: [LAN/WAN/VPN/Cloud]
+**Last Updated**: ${new Date().toLocaleDateString()}
+
+## 🔧 Network Components
+
+### Core Infrastructure
+- **Router**: [Model/Name]
+  - **IP Address**: [IP address]
+  - **Location**: [Physical location]
+  - **Function**: [Primary routing, etc.]
+
+- **Switch**: [Model/Name]
+  - **Ports**: [Number of ports]
+  - **Location**: [Physical location]
+  - **Function**: [Local switching, etc.]
+
+### Servers
+- **Web Server**: [Server name]
+  - **IP**: [IP address]
+  - **OS**: [Operating system]
+  - **Services**: [Web hosting, etc.]
+
+- **Database Server**: [Server name]
+  - **IP**: [IP address]
+  - **OS**: [Operating system]
+  - **Services**: [Database hosting, etc.]
+
+- **File Server**: [Server name]
+  - **IP**: [IP address]
+  - **OS**: [Operating system]
+  - **Services**: [File storage, etc.]
+
+### End Devices
+- **Workstations**: [Number of devices]
+  - **IP Range**: [IP address range]
+  - **OS**: [Operating system]
+  - **Function**: [User workstations]
+
+- **Printers**: [Number of devices]
+  - **IP Range**: [IP address range]
+  - **Type**: [Network printers]
+  - **Function**: [Document printing]
+
+## 🔗 Network Connections
+- **Ethernet**: [Speed and type]
+- **WiFi**: [Standard and speed]
+- **VPN**: [Type and configuration]
+- **Internet**: [Provider and speed]
+
+## 🎨 Diagram Elements
+Use these shapes in Diagram Builder mode:
+- ⬜ **Rectangles**: Servers and devices
+- ⭕ **Circles**: Network nodes
+- ⬡ **Hexagons**: Specialized equipment
+- ➡️ **Arrows**: Network connections
+- 📡 **Custom shapes**: Network equipment
+
+## 🔒 Security Zones
+- **DMZ**: [Demilitarized zone devices]
+- **Internal Network**: [Internal devices]
+- **Guest Network**: [Guest access devices]
+- **Management Network**: [Management devices]
+
+## 📊 Network Metrics
+- **Bandwidth**: [Available bandwidth]
+- **Latency**: [Network latency]
+- **Uptime**: [Network availability]
+- **Security**: [Security measures]
+
+## 🛠️ Configuration Details
+- **IP Addressing**: [IP scheme]
+- **Subnetting**: [Subnet configuration]
+- **Routing**: [Routing protocols]
+- **Firewall**: [Firewall rules]`,
+          tags: ['diagram', 'network', 'architecture', 'template']
+        },
+        'UML Class Diagram': {
+          title: 'UML Class Diagram',
+          content: `# 🏗️ UML Class Diagram Template
+
+## 📋 System Overview
+**System Name**: [System identifier]
+**Version**: [Version number]
+**Last Updated**: ${new Date().toLocaleDateString()}
+
+## 🏛️ Class Definitions
+
+### User Class
+\`\`\`
++------------------+
+\\|      User        \\|
++------------------+
+\\| - id: String     \\|
+\\| - name: String   \\|
+\\| - email: String  \\|
+\\| - password: String\\|
++------------------+
+\\| + login()        \\|
+\\| + logout()       \\|
+\\| + updateProfile()\\|
+\\| + deleteAccount()\\|
++------------------+
+\`\`\`
+
+### Product Class
+\`\`\`
++------------------+
+\\|     Product      \\|
++------------------+
+\\| - id: String     \\|
+\\| - name: String   \\|
+\\| - price: Double  \\|
+\\| - category: String\\|
++------------------+
+\\| + create()       \\|
+\\| + update()       \\|
+\\| + delete()       \\|
+\\| + getPrice()     \\|
++------------------+
+\`\`\`
+
+### Order Class
+\`\`\`
++------------------+
+\\|      Order       \\|
++------------------+
+\\| - id: String     \\|
+\\| - userId: String \\|
+\\| - total: Double  \\|
+\\| - status: String \\|
++------------------+
+\\| + placeOrder()   \\|
+\\| + cancelOrder()  \\|
+\\| + updateStatus() \\|
+\\| + calculateTotal()\\|
++------------------+
+\`\`\`
+
+## 🔗 Relationships
+- **User** → **Order** (1:Many)
+- **Order** → **Product** (Many:Many)
+- **Product** → **Category** (Many:1)
+
+## 🎨 Diagram Elements
+Use these shapes in Diagram Builder mode:
+- ⬜ **Rectangles**: Classes
+- ➡️ **Arrows**: Relationships
+- 📝 **Text Boxes**: Methods and properties
+
+## 📊 Class Properties
+For each class, define:
+- **Attributes**: [Data fields]
+- **Methods**: [Functions/operations]
+- **Visibility**: [Public/Private/Protected]
+- **Data Types**: [String/Integer/etc.]
+
+## 🔄 Relationships Types
+- **Inheritance**: "is-a" relationship
+- **Association**: "has-a" relationship
+- **Aggregation**: "whole-part" relationship
+- **Composition**: "strong ownership" relationship
+
+## 📝 Design Patterns
+- **Singleton**: [Single instance pattern]
+- **Factory**: [Object creation pattern]
+- **Observer**: [Event notification pattern]
+- **Strategy**: [Algorithm selection pattern]`,
+          tags: ['diagram', 'uml', 'class', 'template']
+        }
+      },
+      mindmap: {
+        'Brainstorming': {
+          title: 'Brainstorming Session',
+          content: `# 🧠 Brainstorming Mind Map
+
+## 🎯 Central Topic: [Your Main Idea]
+
+### 💡 Main Branches
+
+#### 1. Ideas & Concepts
+- [Idea 1]
+  - [Sub-idea 1.1]
+  - [Sub-idea 1.2]
+- [Idea 2]
+  - [Sub-idea 2.1]
+  - [Sub-idea 2.2]
+
+#### 2. Resources Needed
+- [Resource 1]
+- [Resource 2]
+- [Resource 3]
+
+#### 3. Challenges
+- [Challenge 1]
+- [Challenge 2]
+- [Challenge 3]
+
+#### 4. Opportunities
+- [Opportunity 1]
+- [Opportunity 2]
+- [Opportunity 3]
+
+## 🎨 Mind Map Structure
+Use Mind Mapping mode to create:
+- 🎯 **Central Node**: Main topic
+- 🌿 **Primary Branches**: Major categories
+- 🌱 **Secondary Branches**: Sub-categories
+- 🍃 **Tertiary Branches**: Specific details
+
+## 📝 Notes
+- [Additional thoughts]
+- [Action items]
+- [Next steps]`,
+          tags: ['mindmap', 'brainstorming', 'ideas', 'template']
+        }
+      },
+      wiki: {
+        'Knowledge Base': {
+          title: 'Knowledge Base Wiki',
+          content: `# 📚 Knowledge Base Wiki
+
+## 🏠 Home Page
+
+Welcome to the Knowledge Base! This wiki contains all the information you need.
+
+### 📋 Quick Navigation
+- [[Getting Started]]
+- [[Frequently Asked Questions]]
+- [[Troubleshooting Guide]]
+- [[Contact Information]]
+
+### 🏷️ Categories
+- **#getting-started** - New user guides
+- **#troubleshooting** - Problem solving
+- **#advanced** - Expert topics
+- **#reference** - Quick reference materials
+
+## 🔗 Wiki Links
+Use [[Page Name]] to create links to other pages in this wiki.
+
+## 📝 Edit History
+This page was last modified on ${new Date().toLocaleDateString()}.
+
+## 🎯 Next Steps
+1. Create your first page
+2. Add wiki links
+3. Organize with categories
+4. Build your knowledge network`,
+          tags: ['wiki', 'knowledge-base', 'template']
+        }
+      },
+      project: {
+        'Software Development': {
+          title: 'Software Development Project',
+          content: `# 💻 Software Development Project
+
+## 📋 Project Overview
+**Project Name**: [Project Name]
+**Timeline**: [Start Date] - [End Date]
+**Team Size**: [Number of team members]
+**Budget**: [Budget amount]
+
+## 🎯 Project Goals
+1. [Primary goal]
+2. [Secondary goal]
+3. [Tertiary goal]
+
+## 📊 Project Phases
+
+### Phase 1: Planning & Requirements (Week 1-2)
+- [ ] Define project scope
+- [ ] Gather requirements
+- [ ] Create technical specifications
+- [ ] Set up development environment
+- [ ] **Due**: [Date]
+
+### Phase 2: Design & Architecture (Week 3-4)
+- [ ] Create system architecture
+- [ ] Design database schema
+- [ ] Create UI/UX mockups
+- [ ] Define API specifications
+- [ ] **Due**: [Date]
+
+### Phase 3: Development (Week 5-10)
+- [ ] Set up project structure
+- [ ] Implement core features
+- [ ] Database implementation
+- [ ] API development
+- [ ] Frontend development
+- [ ] **Due**: [Date]
+
+### Phase 4: Testing & QA (Week 11-12)
+- [ ] Unit testing
+- [ ] Integration testing
+- [ ] User acceptance testing
+- [ ] Bug fixes
+- [ ] **Due**: [Date]
+
+### Phase 5: Deployment & Launch (Week 13)
+- [ ] Production deployment
+- [ ] User training
+- [ ] Documentation
+- [ ] Go-live
+- [ ] **Due**: [Date]
+
+## 👥 Team Roles
+- **Project Manager**: [Name] - [Responsibilities]
+- **Lead Developer**: [Name] - [Responsibilities]
+- **UI/UX Designer**: [Name] - [Responsibilities]
+- **QA Tester**: [Name] - [Responsibilities]
+
+## 📈 Progress Tracking
+- **Current Status**: [In Progress/On Hold/Completed]
+- **Completion**: [X]%
+- **Sprint**: [Current sprint number]
+- **Velocity**: [Story points per sprint]
+
+## 🚧 Risk Management
+| Risk | Probability | Impact | Mitigation |
+|------|-------------|--------|------------|
+| [Risk 1] | [High/Med/Low] | [High/Med/Low] | [Strategy] |
+| [Risk 2] | [High/Med/Low] | [High/Med/Low] | [Strategy] |
+
+## 📝 Daily Standups
+### [Date]
+- **Yesterday**: [What was accomplished]
+- **Today**: [What will be done]
+- **Blockers**: [Any obstacles]
+
+## 🎯 Sprint Goals
+### Sprint [Number]
+- [ ] [User Story 1]
+- [ ] [User Story 2]
+- [ ] [User Story 3]
+
+## 📊 Metrics
+- **Story Points Completed**: [Number]
+- **Bugs Found**: [Number]
+- **Bugs Fixed**: [Number]
+- **Code Coverage**: [Percentage]`,
+          tags: ['project', 'software', 'development', 'template']
+        }
+      }
+    };
+
+    function createTemplateFromMode(mode, templateKey) {
+      const templates = modeTemplates[mode];
+      if (!templates || !templates[templateKey]) {
+        alert('Template not found');
+        return;
+      }
+      
+      const template = templates[templateKey];
+      if (currentSection) {
+        const newPage = {
+          id: crypto.randomUUID(),
+          title: template.title,
+          content: template.content,
+          tags: template.tags,
+          created: new Date().toISOString(),
+          modified: new Date().toISOString()
+        };
+        
+        currentSection.pages.push(newPage);
+        saveData();
+        renderSections();
+        selectPage(currentSection.id, newPage.id);
+        alert(`✅ ${template.title} template created!`);
+        
+        // Close the template dialog
+        const dialog = document.querySelector('.template-dialog');
+        if (dialog) dialog.remove();
+      }
+    }
+
+    // Toolbar customization functions
+    function showToolbarCustomization() {
+      const dialog = document.getElementById('toolbarCustomizeDialog');
+      const content = document.getElementById('toolbarCustomizeContent');
+      
+      if (!dialog || !content) return;
+      
+      // Generate customization interface
+      let html = '';
+      
+      Object.keys(defaultToolbarConfig).forEach(category => {
+        html += `
+          <div class="toolbar-category">
+            <h3>${category}</h3>
+        `;
+        
+        Object.keys(defaultToolbarConfig[category]).forEach(buttonKey => {
+          const button = defaultToolbarConfig[category][buttonKey];
+          const isEnabled = toolbarSettings[buttonKey] !== undefined ? toolbarSettings[buttonKey] : button.enabled;
+          
+          html += `
+            <div class="toolbar-button-item">
+              <label>
+                <input type="checkbox" id="toolbar_${buttonKey}" ${isEnabled ? 'checked' : ''}>
+                ${button.label}
+              </label>
+              <span class="toolbar-button-preview">${button.onclick}</span>
+            </div>
+          `;
+        });
+        
+        html += '</div>';
+      });
+      
+      content.innerHTML = html;
+      dialog.style.display = 'flex';
+    }
+
+    function hideToolbarCustomization() {
+      const dialog = document.getElementById('toolbarCustomizeDialog');
+      if (dialog) {
+        dialog.style.display = 'none';
+      }
+    }
+
+    function saveToolbarSettings() {
+      // Collect all checkbox states
+      Object.keys(defaultToolbarConfig).forEach(category => {
+        Object.keys(defaultToolbarConfig[category]).forEach(buttonKey => {
+          const checkbox = document.getElementById(`toolbar_${buttonKey}`);
+          if (checkbox) {
+            toolbarSettings[buttonKey] = checkbox.checked;
+          }
+        });
+      });
+      
+      // Save to localStorage
+      localStorage.setItem('nextnote_toolbar_settings', JSON.stringify(toolbarSettings));
+      
+      // Re-render toolbar
+      renderToolbar();
+      
+      // Hide dialog
+      hideToolbarCustomization();
+      
+      alert('Toolbar settings saved!');
+    }
+
+    function resetToolbarSettings() {
+      if (confirm('Reset toolbar to default settings?')) {
+        toolbarSettings = {};
+        localStorage.removeItem('nextnote_toolbar_settings');
+        renderToolbar();
+        hideToolbarCustomization();
+        alert('Toolbar reset to default settings!');
+      }
+    }
+
+    function renderToolbar() {
+      const toolbar = document.getElementById('toolbar');
+      if (!toolbar) return;
+      
+      // Keep the settings button and page info row
+      const settingsBtn = toolbar.querySelector('.toolbar-settings-btn');
+      const pageInfoRow = toolbar.querySelector('.toolbar-row');
+      
+      // Clear toolbar content except settings button and page info
+      toolbar.innerHTML = '';
+      if (settingsBtn) toolbar.appendChild(settingsBtn);
+      if (pageInfoRow) toolbar.appendChild(pageInfoRow);
+      
+      // Render enabled buttons by category horizontally
+      Object.keys(defaultToolbarConfig).forEach(category => {
+        const enabledButtons = Object.keys(defaultToolbarConfig[category]).filter(buttonKey => {
+          return toolbarSettings[buttonKey] !== undefined ? toolbarSettings[buttonKey] : defaultToolbarConfig[category][buttonKey].enabled;
+        });
+        
+        if (enabledButtons.length > 0) {
+          const section = document.createElement('div');
+          section.className = 'toolbar-section';
+          
+          const label = document.createElement('span');
+          label.className = 'toolbar-section-label';
+          label.textContent = category + ':';
+          section.appendChild(label);
+          
+          enabledButtons.forEach(buttonKey => {
+            const button = defaultToolbarConfig[category][buttonKey];
+            const btn = document.createElement('button');
+            btn.innerHTML = button.label;
+            btn.onclick = new Function(button.onclick);
+            section.appendChild(btn);
+          });
+          
+          toolbar.appendChild(section);
+        }
+      });
+    }
+
+    function showTemplateSelector() {
+      // Remove any existing template dialog
+      const existingDialog = document.querySelector('.template-dialog');
+      if (existingDialog) {
+        existingDialog.remove();
+      }
+
+      const dialog = document.createElement('div');
+      dialog.className = 'template-dialog';
+      dialog.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0,0,0,0.5);
+        z-index: 5000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      `;
+
+      const content = document.createElement('div');
+      content.style.cssText = `
+        background: var(--hermes-panel-bg);
+        border: 1px solid var(--hermes-panel-border);
+        border-radius: 12px;
+        padding: 30px;
+        width: 700px;
+        max-width: 90vw;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      `;
+
+      let templateHTML = `
+        <h2 style="margin-top: 0; text-align: center; color: var(--hermes-text);">📋 Template Library</h2>
+        <p style="text-align: center; color: var(--hermes-disabled-text); margin-bottom: 30px;">
+          Choose from professional templates for each application mode
+        </p>
+      `;
+
+      // Add templates for each mode
+      Object.keys(modeTemplates).forEach(mode => {
+        const modeName = {
+          'diagram': '📐 Diagram Builder',
+          'mindmap': '🧠 Mind Mapping',
+          'wiki': '📚 Wiki Builder',
+          'project': '📋 Project Manager'
+        }[mode] || mode;
+
+        templateHTML += `
+          <div style="margin-bottom: 30px;">
+            <h3 style="color: var(--hermes-text); border-bottom: 1px solid var(--hermes-border); padding-bottom: 10px;">
+              ${modeName} Templates
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+        `;
+
+        Object.keys(modeTemplates[mode]).forEach(templateKey => {
+          const template = modeTemplates[mode][templateKey];
+          templateHTML += `
+            <div class="template-card" onclick="createTemplateFromMode('${mode}', '${templateKey}')" style="border: 2px solid var(--hermes-border); border-radius: 8px; padding: 15px; cursor: pointer; transition: all 0.2s;">
+              <h4 style="margin-top: 0; color: var(--hermes-text);">${template.title}</h4>
+              <p style="margin-bottom: 10px; color: var(--hermes-disabled-text); font-size: 12px;">
+                ${template.tags.join(', ')}
+              </p>
+              <div style="font-size: 11px; color: var(--hermes-info-text);">
+                Click to create this template
+              </div>
+            </div>
+          `;
+        });
+
+        templateHTML += `
+            </div>
+          </div>
+        `;
+      });
+
+      templateHTML += `
+        <div style="text-align: center; margin-top: 30px;">
+          <button onclick="dialog.remove()" style="padding: 10px 20px; background: var(--hermes-button-bg); border: 1px solid var(--hermes-border); border-radius: 6px; cursor: pointer;">Close</button>
+        </div>
+      `;
+
+      content.innerHTML = templateHTML;
+
+      // Add hover effects
+      const templateCards = content.querySelectorAll('.template-card');
+      templateCards.forEach(card => {
+        card.addEventListener('mouseenter', () => {
+          card.style.borderColor = 'var(--hermes-highlight-bg)';
+          card.style.transform = 'translateY(-2px)';
+          card.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+        });
+        card.addEventListener('mouseleave', () => {
+          card.style.borderColor = 'var(--hermes-border)';
+          card.style.transform = 'translateY(0)';
+          card.style.boxShadow = 'none';
+        });
+      });
+
+      // Close dialog when clicking outside
+      dialog.addEventListener('click', (e) => {
+        if (e.target === dialog) {
+          dialog.remove();
+        }
+      });
+
+      // Close dialog on Escape key
+      const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+          dialog.remove();
+          document.removeEventListener('keydown', handleEscape);
+        }
+      };
+      document.addEventListener('keydown', handleEscape);
+
+      dialog.appendChild(content);
+      document.body.appendChild(dialog);
+    }
+  </script>
+</body>
+</html>
