@@ -86,7 +86,49 @@ window.registerNextNotePlugin({
       }
       
       .diagram-shape.arrow {
-        clip-path: polygon(0% 20%, 60% 20%, 60% 0%, 100% 50%, 60% 100%, 60% 80%, 0% 80%);
+        background: transparent !important;
+        border: none !important;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .arrow-shaft {
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 70%;
+        height: 4px;
+        background: var(--diagram-primary);
+        border-radius: 2px;
+      }
+      
+      .arrow-head {
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 0;
+        height: 0;
+        border-left: 12px solid var(--diagram-primary);
+        border-top: 8px solid transparent;
+        border-bottom: 8px solid transparent;
+      }
+      
+      .arrow-text {
+        position: absolute;
+        top: -20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: white;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 10px;
+        color: var(--diagram-dark);
+        border: 1px solid var(--diagram-primary);
+        white-space: nowrap;
       }
       
       .diagram-connector {
@@ -404,14 +446,30 @@ window.registerNextNotePlugin({
       const shape = document.createElement('div');
       shape.className = `diagram-shape ${shapeData.type}`;
       shape.id = `shape-${shapeData.id}`;
-      shape.innerHTML = `<div class="shape-text">${shapeData.text}</div>`;
+      
+      // Special handling for arrow shapes
+      if (shapeData.type === 'arrow') {
+        shape.innerHTML = `
+          <div class="arrow-shaft"></div>
+          <div class="arrow-head"></div>
+          <div class="arrow-text">${shapeData.text}</div>
+        `;
+        shape.style.width = shapeData.width + 'px';
+        shape.style.height = shapeData.height + 'px';
+        shape.style.backgroundColor = 'transparent';
+        shape.style.border = 'none';
+      } else {
+        // Regular shapes
+        shape.innerHTML = `<div class="shape-text">${shapeData.text}</div>`;
+        shape.style.width = shapeData.width + 'px';
+        shape.style.height = shapeData.height + 'px';
+        shape.style.backgroundColor = shapeData.color || 'white';
+        shape.style.borderColor = shapeData.borderColor || 'var(--diagram-primary)';
+        shape.style.fontSize = (shapeData.fontSize || 12) + 'px';
+      }
+      
       shape.style.left = shapeData.x + 'px';
       shape.style.top = shapeData.y + 'px';
-      shape.style.width = shapeData.width + 'px';
-      shape.style.height = shapeData.height + 'px';
-      shape.style.backgroundColor = shapeData.color || 'white';
-      shape.style.borderColor = shapeData.borderColor || 'var(--diagram-primary)';
-      shape.style.fontSize = (shapeData.fontSize || 12) + 'px';
       shape.dataset.shapeId = shapeData.id;
       
       // Add event listeners
@@ -659,14 +717,35 @@ window.registerNextNotePlugin({
 
     function createShapeAtPosition(x, y, type) {
       const canvasRect = canvas.getBoundingClientRect();
+      
+      // Set appropriate dimensions for different shape types
+      let width, height, offsetX, offsetY;
+      
+      if (type === 'circle') {
+        width = 80;
+        height = 80;
+        offsetX = 40;
+        offsetY = 40;
+      } else if (type === 'arrow') {
+        width = 100;
+        height = 20;
+        offsetX = 50;
+        offsetY = 10;
+      } else {
+        width = 120;
+        height = 60;
+        offsetX = 60;
+        offsetY = 30;
+      }
+      
       const shapeData = {
         id: 'shape_' + Date.now(),
         type: type,
-        text: type.charAt(0).toUpperCase() + type.slice(1),
-        x: x - canvasRect.left - (type === 'circle' ? 40 : 60), // Center the shape on cursor
-        y: y - canvasRect.top - (type === 'circle' ? 40 : 30),  // Center the shape on cursor
-        width: type === 'circle' ? 80 : 120,
-        height: type === 'circle' ? 80 : 60,
+        text: type === 'arrow' ? '→' : type.charAt(0).toUpperCase() + type.slice(1),
+        x: x - canvasRect.left - offsetX,
+        y: y - canvasRect.top - offsetY,
+        width: width,
+        height: height,
         color: '#ffffff',
         borderColor: '#2c3e50',
         fontSize: 12
@@ -703,7 +782,17 @@ window.registerNextNotePlugin({
         shapeData.text = text;
         const shape = document.getElementById(`shape-${selectedShape}`);
         if (shape) {
-          shape.querySelector('.shape-text').textContent = text;
+          if (shapeData.type === 'arrow') {
+            const arrowText = shape.querySelector('.arrow-text');
+            if (arrowText) {
+              arrowText.textContent = text;
+            }
+          } else {
+            const shapeText = shape.querySelector('.shape-text');
+            if (shapeText) {
+              shapeText.textContent = text;
+            }
+          }
         }
         saveDiagramData();
       }
