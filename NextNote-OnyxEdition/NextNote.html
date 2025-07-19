@@ -198,6 +198,7 @@
       <button onclick="showCommandPalette()">🔍 Search</button>
       <button onclick="showModeSwitcher()">🎭 Modes</button>
       <button onclick="showTemplateSelector()">📋 Templates</button>
+      <button onclick="showVisioLibrary()">📐 Visio Library</button>
       <div class="theme-select">
         <select id="themeSelect"></select>
       </div>
@@ -255,7 +256,8 @@
       "plugin-wikibuilder.js",
       "plugin-mindmap.js",
       "plugin-diagrambuilder.js",
-      "plugin-googledrive.js"
+      "plugin-googledrive.js",
+      "plugin-visio-library.js"
       // Add new plugin .js files here to hotload them!
     ];
     plugins.forEach(filename => {
@@ -1632,7 +1634,7 @@
           </div>
           
           <div class="mode-card" onclick="switchToMode('wiki')" style="border: 2px solid var(--hermes-border); border-radius: 8px; padding: 20px; cursor: pointer; transition: all 0.2s;">
-            <h3 style="margin-top: 0;">📚 Wiki Builder</h3>
+            <h3 style="margin-top: 0;">�� Wiki Builder</h3>
             <p style="margin-bottom: 15px; color: var(--hermes-disabled-text);">Create interconnected knowledge bases with wiki-style linking</p>
             <div style="font-size: 12px; color: var(--hermes-info-text);">
               ✅ Wiki links [[Page Name]]<br>
@@ -2050,6 +2052,7 @@ Use [[Page Name]] to create links to other pages!
     window.switchToMode = switchToMode;
     window.showTemplateSelector = showTemplateSelector;
     window.createTemplateFromMode = createTemplateFromMode;
+    window.showVisioLibrary = showVisioLibrary;
 
     // Plugin support functions
     window.renderSections = renderSections;
