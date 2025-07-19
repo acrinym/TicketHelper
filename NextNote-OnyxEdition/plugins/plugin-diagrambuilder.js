@@ -261,12 +261,8 @@ window.registerNextNotePlugin({
       diagramMode = !diagramMode;
       if (diagramMode) {
         enableDiagramMode();
-        diagramToggle.textContent = '📝 Note Mode';
-        diagramToggle.style.background = '#e74c3c';
       } else {
         disableDiagramMode();
-        diagramToggle.textContent = '📐 Diagram';
-        diagramToggle.style.background = 'var(--diagram-primary)';
       }
     }
 

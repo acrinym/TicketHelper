@@ -191,12 +191,8 @@ window.registerNextNotePlugin({
       mindmapMode = !mindmapMode;
       if (mindmapMode) {
         enableMindmapMode();
-        mindmapToggle.textContent = '📝 Note Mode';
-        mindmapToggle.style.background = '#e74c3c';
       } else {
         disableMindmapMode();
-        mindmapToggle.textContent = '🧠 Mindmap';
-        mindmapToggle.style.background = 'var(--mindmap-primary)';
       }
     }
 
@@ -698,8 +694,7 @@ window.registerNextNotePlugin({
       const mindmapText = convertMindmapToText();
       
       // Create a new page with the mindmap
-      const sections = app.sections();
-      if (sections.length > 0) {
+      if (window.sections && window.sections.length > 0) {
         const newPage = {
           id: crypto.randomUUID(),
           title: 'Mindmap - ' + new Date().toLocaleDateString(),
@@ -709,12 +704,22 @@ window.registerNextNotePlugin({
           modified: new Date().toISOString()
         };
         
-        sections[0].pages.push(newPage);
-        app.saveData();
-        app.renderSections();
-        app.selectPage(newPage.id, sections[0].id);
+        window.sections[0].pages.push(newPage);
+        
+        // Save data and render
+        if (window.saveData) {
+          window.saveData();
+        }
+        if (window.renderSections) {
+          window.renderSections();
+        }
+        if (window.selectPage) {
+          window.selectPage(window.sections[0].id, newPage.id);
+        }
         
         alert('Mindmap saved as note!');
+      } else {
+        alert('No sections available. Please create a section first.');
       }
     }
 

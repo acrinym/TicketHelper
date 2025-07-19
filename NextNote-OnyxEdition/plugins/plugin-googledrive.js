@@ -175,12 +175,8 @@ window.registerNextNotePlugin({
       driveMode = !driveMode;
       if (driveMode) {
         enableDriveMode();
-        driveToggle.textContent = '📝 Note Mode';
-        driveToggle.style.background = '#ea4335';
       } else {
         disableDriveMode();
-        driveToggle.textContent = '☁️ Drive';
-        driveToggle.style.background = 'var(--drive-primary)';
       }
     }
 

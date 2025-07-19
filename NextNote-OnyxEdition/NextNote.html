@@ -718,11 +718,13 @@
       
       // Show save indicator
       const saveBtn = document.querySelector('button[onclick="saveCurrentPage()"]');
-      const originalText = saveBtn.textContent;
-      saveBtn.textContent = '✓ Saved';
-      setTimeout(() => {
-        saveBtn.textContent = originalText;
-      }, 1000);
+      if (saveBtn) {
+        const originalText = saveBtn.textContent;
+        saveBtn.textContent = '✓ Saved';
+        setTimeout(() => {
+          saveBtn.textContent = originalText;
+        }, 1000);
+      }
       
       // Emit event for plugins
       if (window.NextNoteApp && window.NextNoteApp.emit) {
