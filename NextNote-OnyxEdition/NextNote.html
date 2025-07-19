@@ -10,6 +10,7 @@
 </head>
 <body>
   <div id="sidebar">
+    <div class="sidebar-resize-handle" id="sidebarResizeHandle"></div>
     <div class="sidebar-section">
       <h3>📚 Sections</h3>
       <input id="newSectionInput" placeholder="New Section Name" style="width: 100%; margin-bottom: 8px; padding: 6px; border-radius: 4px; border: 1px solid var(--hermes-border);"/>
@@ -26,6 +27,8 @@
   </div>
   <div id="main">
     <div id="toolbar">
+      <button class="toolbar-settings-btn" onclick="showToolbarCustomization()" title="Customize Toolbar">⚙️</button>
+      
       <!-- Page Info Row -->
       <div class="toolbar-row">
         <span id="currentPageName" style="font-weight: bold; color: var(--hermes-text);">No Page Selected</span>
@@ -38,64 +41,14 @@
         </div>
       </div>
       
-      <!-- Core Actions Row -->
-      <div class="toolbar-row">
-        <div class="toolbar-section">
-          <span class="toolbar-section-label">Core:</span>
-          <button onclick="saveCurrentPage()">💾 Save</button>
-          <button onclick="togglePreview()">👁️ Preview</button>
-          <button onclick="showCommandPalette()">🔍 Search</button>
-        </div>
-        
-        <div class="toolbar-section">
-          <span class="toolbar-section-label">Import/Export:</span>
-          <button onclick="exportMarkdown()">📝 Export MD</button>
-          <input type="file" id="importFile" style="display:none" onchange="importMarkdown(event)"/>
-          <button onclick="document.getElementById('importFile').click()">📥 Import MD</button>
-        </div>
-      </div>
+      <!-- Toolbar content will be generated dynamically -->
       
-      <!-- Media Row -->
-      <div class="toolbar-row">
-        <div class="toolbar-section">
-          <span class="toolbar-section-label">Media:</span>
-          <button onclick="document.getElementById('imgInput').click()">🖼️ Image</button>
-          <input type="file" id="imgInput" accept="image/*" style="display:none" onchange="insertImage(event)"/>
-          <button onclick="document.getElementById('audioInput').click()">🎵 Audio</button>
-          <input type="file" id="audioInput" accept="audio/*" style="display:none" onchange="insertAudio(event)"/>
-          <button onclick="document.getElementById('gifInput').click()">🎬 GIF</button>
-          <input type="file" id="gifInput" accept="image/gif" style="display:none" onchange="insertGIF(event)"/>
-          <button onclick="document.getElementById('videoInput').click()">🎥 Video</button>
-          <input type="file" id="videoInput" accept="video/*" style="display:none" onchange="insertVideo(event)"/>
-        </div>
-      </div>
-      
-      <!-- Features Row -->
-      <div class="toolbar-row">
-        <div class="toolbar-section">
-          <span class="toolbar-section-label">Features:</span>
-          <button onclick="showReminderDialog()">⏰ Reminder</button>
-          <button onclick="showResourceManager()">📁 Resources</button>
-        </div>
-      </div>
-      
-      <!-- Modes Row -->
-      <div class="toolbar-row">
-        <div class="toolbar-section">
-          <span class="toolbar-section-label">Modes:</span>
-          <button onclick="showModeSwitcher()">🎭 Modes</button>
-          <button onclick="showTemplateSelector()">📋 Templates</button>
-          <button onclick="showFissioLibrary()">📐 Fissio</button>
-          <button onclick="showRitualMode()">🧙‍♂️ Ritual</button>
-        </div>
-        
-        <div class="toolbar-section">
-          <span class="toolbar-section-label">Tools:</span>
-          <button onclick="toggleMindmapMode()">🧠 Mindmap</button>
-          <button onclick="toggleDiagramMode()">📐 Diagram</button>
-          <button onclick="toggleDriveMode()">☁️ Drive</button>
-        </div>
-      </div>
+      <!-- Hidden file inputs -->
+      <input type="file" id="importFile" style="display:none" onchange="importMarkdown(event)"/>
+      <input type="file" id="imgInput" accept="image/*" style="display:none" onchange="insertImage(event)"/>
+      <input type="file" id="audioInput" accept="audio/*" style="display:none" onchange="insertAudio(event)"/>
+      <input type="file" id="gifInput" accept="image/gif" style="display:none" onchange="insertGIF(event)"/>
+      <input type="file" id="videoInput" accept="video/*" style="display:none" onchange="insertVideo(event)"/>
     </div>
     <div id="editor">
       <div id="quillEditorContainer"></div>
@@ -124,6 +77,26 @@
       <input type="file" id="resourceInput" multiple style="display:none" onchange="addResources(event)">
       <button onclick="document.getElementById('resourceInput').click()">📁 Add Files</button>
       <button onclick="hideResourceManager()" style="margin-left:10px;">Close</button>
+    </div>
+  </div>
+
+  <!-- Toolbar Customization Dialog -->
+  <div id="toolbarCustomizeDialog" class="toolbar-customize-dialog">
+    <div class="toolbar-customize-content">
+      <h2 style="margin-top: 0; color: var(--hermes-text);">⚙️ Customize Toolbar</h2>
+      <p style="margin-bottom: 20px; color: var(--hermes-disabled-text);">
+        Enable or disable toolbar buttons to customize your workspace
+      </p>
+      
+      <div id="toolbarCustomizeContent">
+        <!-- Content will be generated dynamically -->
+      </div>
+      
+      <div style="margin-top: 20px; text-align: center;">
+        <button onclick="saveToolbarSettings()" style="background: var(--hermes-highlight-bg); color: var(--hermes-highlight-text); padding: 8px 16px; margin-right: 10px;">Save Settings</button>
+        <button onclick="resetToolbarSettings()" style="background: var(--hermes-warning-text); color: white; padding: 8px 16px; margin-right: 10px;">Reset to Default</button>
+        <button onclick="hideToolbarCustomization()" style="background: var(--hermes-button-bg); padding: 8px 16px;">Cancel</button>
+      </div>
     </div>
   </div>
   <!-- External Libraries -->
@@ -256,6 +229,43 @@
       }
     };
 
+    // Toolbar customization settings
+    let toolbarSettings = JSON.parse(localStorage.getItem('nextnote_toolbar_settings') || '{}');
+    
+    // Default toolbar configuration
+    const defaultToolbarConfig = {
+      'Core': {
+        'save': { enabled: true, label: '💾 Save', onclick: 'saveCurrentPage()' },
+        'preview': { enabled: true, label: '👁️ Preview', onclick: 'togglePreview()' },
+        'search': { enabled: true, label: '🔍 Search', onclick: 'showCommandPalette()' }
+      },
+      'Import/Export': {
+        'export': { enabled: true, label: '📝 Export MD', onclick: 'exportMarkdown()' },
+        'import': { enabled: true, label: '📥 Import MD', onclick: 'document.getElementById(\'importFile\').click()' }
+      },
+      'Media': {
+        'image': { enabled: true, label: '🖼️ Image', onclick: 'document.getElementById(\'imgInput\').click()' },
+        'audio': { enabled: true, label: '🎵 Audio', onclick: 'document.getElementById(\'audioInput\').click()' },
+        'gif': { enabled: true, label: '🎬 GIF', onclick: 'document.getElementById(\'gifInput\').click()' },
+        'video': { enabled: true, label: '🎥 Video', onclick: 'document.getElementById(\'videoInput\').click()' }
+      },
+      'Features': {
+        'reminder': { enabled: true, label: '⏰ Reminder', onclick: 'showReminderDialog()' },
+        'resources': { enabled: true, label: '📁 Resources', onclick: 'showResourceManager()' }
+      },
+      'Modes': {
+        'modes': { enabled: true, label: '🎭 Modes', onclick: 'showModeSwitcher()' },
+        'templates': { enabled: true, label: '📋 Templates', onclick: 'showTemplateSelector()' },
+        'fissio': { enabled: true, label: '📐 Fissio', onclick: 'showFissioLibrary()' },
+        'ritual': { enabled: true, label: '🧙‍♂️ Ritual', onclick: 'showRitualMode()' }
+      },
+      'Tools': {
+        'mindmap': { enabled: true, label: '🧠 Mindmap', onclick: 'toggleMindmapMode()' },
+        'diagram': { enabled: true, label: '📐 Diagram', onclick: 'toggleDiagramMode()' },
+        'drive': { enabled: true, label: '☁️ Drive', onclick: 'toggleDriveMode()' }
+      }
+    };
+
     // Initialize the application
     document.addEventListener('DOMContentLoaded', function() {
       initializeQuill();
@@ -266,6 +276,8 @@
       setupKeyboardShortcuts();
       setupFuzzySearch(); // Call the new function here
       initializeReminders(); // Initialize reminders
+      setupSidebarResize(); // Setup resizable sidebar
+      renderToolbar(); // Render toolbar with custom settings
     });
 
     // Initialize Quill editor
@@ -913,6 +925,59 @@
         if (palette) {
           palette.style.display = 'none';
         }
+      }
+    }
+
+    // Sidebar resize functionality
+    function setupSidebarResize() {
+      const sidebar = document.getElementById('sidebar');
+      const resizeHandle = document.getElementById('sidebarResizeHandle');
+      
+      if (!resizeHandle || !sidebar) return;
+      
+      let isResizing = false;
+      let startX, startWidth;
+      
+      resizeHandle.addEventListener('mousedown', function(e) {
+        isResizing = true;
+        startX = e.clientX;
+        startWidth = parseInt(getComputedStyle(sidebar).width, 10);
+        
+        resizeHandle.classList.add('resizing');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+        
+        e.preventDefault();
+      });
+      
+      document.addEventListener('mousemove', function(e) {
+        if (!isResizing) return;
+        
+        const width = startWidth + (e.clientX - startX);
+        const minWidth = 200;
+        const maxWidth = 500;
+        
+        if (width >= minWidth && width <= maxWidth) {
+          sidebar.style.width = width + 'px';
+        }
+      });
+      
+      document.addEventListener('mouseup', function() {
+        if (isResizing) {
+          isResizing = false;
+          resizeHandle.classList.remove('resizing');
+          document.body.style.cursor = '';
+          document.body.style.userSelect = '';
+          
+          // Save sidebar width
+          localStorage.setItem('nextnote_sidebar_width', sidebar.style.width);
+        }
+      });
+      
+      // Load saved sidebar width
+      const savedWidth = localStorage.getItem('nextnote_sidebar_width');
+      if (savedWidth) {
+        sidebar.style.width = savedWidth;
       }
     }
 
@@ -2703,6 +2768,129 @@ This page was last modified on ${new Date().toLocaleDateString()}.
         const dialog = document.querySelector('.template-dialog');
         if (dialog) dialog.remove();
       }
+    }
+
+    // Toolbar customization functions
+    function showToolbarCustomization() {
+      const dialog = document.getElementById('toolbarCustomizeDialog');
+      const content = document.getElementById('toolbarCustomizeContent');
+      
+      if (!dialog || !content) return;
+      
+      // Generate customization interface
+      let html = '';
+      
+      Object.keys(defaultToolbarConfig).forEach(category => {
+        html += `
+          <div class="toolbar-category">
+            <h3>${category}</h3>
+        `;
+        
+        Object.keys(defaultToolbarConfig[category]).forEach(buttonKey => {
+          const button = defaultToolbarConfig[category][buttonKey];
+          const isEnabled = toolbarSettings[buttonKey] !== undefined ? toolbarSettings[buttonKey] : button.enabled;
+          
+          html += `
+            <div class="toolbar-button-item">
+              <label>
+                <input type="checkbox" id="toolbar_${buttonKey}" ${isEnabled ? 'checked' : ''}>
+                ${button.label}
+              </label>
+              <span class="toolbar-button-preview">${button.onclick}</span>
+            </div>
+          `;
+        });
+        
+        html += '</div>';
+      });
+      
+      content.innerHTML = html;
+      dialog.style.display = 'flex';
+    }
+
+    function hideToolbarCustomization() {
+      const dialog = document.getElementById('toolbarCustomizeDialog');
+      if (dialog) {
+        dialog.style.display = 'none';
+      }
+    }
+
+    function saveToolbarSettings() {
+      // Collect all checkbox states
+      Object.keys(defaultToolbarConfig).forEach(category => {
+        Object.keys(defaultToolbarConfig[category]).forEach(buttonKey => {
+          const checkbox = document.getElementById(`toolbar_${buttonKey}`);
+          if (checkbox) {
+            toolbarSettings[buttonKey] = checkbox.checked;
+          }
+        });
+      });
+      
+      // Save to localStorage
+      localStorage.setItem('nextnote_toolbar_settings', JSON.stringify(toolbarSettings));
+      
+      // Re-render toolbar
+      renderToolbar();
+      
+      // Hide dialog
+      hideToolbarCustomization();
+      
+      alert('Toolbar settings saved!');
+    }
+
+    function resetToolbarSettings() {
+      if (confirm('Reset toolbar to default settings?')) {
+        toolbarSettings = {};
+        localStorage.removeItem('nextnote_toolbar_settings');
+        renderToolbar();
+        hideToolbarCustomization();
+        alert('Toolbar reset to default settings!');
+      }
+    }
+
+    function renderToolbar() {
+      const toolbar = document.getElementById('toolbar');
+      if (!toolbar) return;
+      
+      // Keep the settings button and page info row
+      const settingsBtn = toolbar.querySelector('.toolbar-settings-btn');
+      const pageInfoRow = toolbar.querySelector('.toolbar-row');
+      
+      // Clear toolbar content except settings button and page info
+      toolbar.innerHTML = '';
+      if (settingsBtn) toolbar.appendChild(settingsBtn);
+      if (pageInfoRow) toolbar.appendChild(pageInfoRow);
+      
+      // Render enabled buttons by category
+      Object.keys(defaultToolbarConfig).forEach(category => {
+        const enabledButtons = Object.keys(defaultToolbarConfig[category]).filter(buttonKey => {
+          return toolbarSettings[buttonKey] !== undefined ? toolbarSettings[buttonKey] : defaultToolbarConfig[category][buttonKey].enabled;
+        });
+        
+        if (enabledButtons.length > 0) {
+          const row = document.createElement('div');
+          row.className = 'toolbar-row';
+          
+          const section = document.createElement('div');
+          section.className = 'toolbar-section';
+          
+          const label = document.createElement('span');
+          label.className = 'toolbar-section-label';
+          label.textContent = category + ':';
+          section.appendChild(label);
+          
+          enabledButtons.forEach(buttonKey => {
+            const button = defaultToolbarConfig[category][buttonKey];
+            const btn = document.createElement('button');
+            btn.innerHTML = button.label;
+            btn.onclick = new Function(button.onclick);
+            section.appendChild(btn);
+          });
+          
+          row.appendChild(section);
+          toolbar.appendChild(row);
+        }
+      });
     }
 
     function showTemplateSelector() {

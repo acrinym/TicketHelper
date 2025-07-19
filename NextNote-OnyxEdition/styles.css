@@ -39,6 +39,8 @@ body {
 /* Sidebar */
 #sidebar {
   width: 280px; 
+  min-width: 200px;
+  max-width: 500px;
   background: var(--hermes-panel-bg);
   color: var(--hermes-panel-text); 
   overflow-y: auto;
@@ -47,6 +49,36 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  position: relative;
+}
+
+/* Resize handle */
+.sidebar-resize-handle {
+  position: absolute;
+  right: -3px;
+  top: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  background: transparent;
+  transition: background-color 0.2s;
+}
+
+.sidebar-resize-handle:hover,
+.sidebar-resize-handle.resizing {
+  background: var(--hermes-highlight-bg);
+}
+
+.sidebar-resize-handle::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 30px;
+  background: var(--hermes-border);
+  border-radius: 1px;
 }
 
 .sidebar-section {
@@ -76,6 +108,100 @@ body {
   display: flex; 
   flex-direction: column;
   gap: 8px;
+  position: relative;
+}
+
+/* Toolbar settings button */
+.toolbar-settings-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: var(--hermes-button-bg);
+  border: 1px solid var(--hermes-border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--hermes-text);
+  transition: all 0.2s;
+}
+
+.toolbar-settings-btn:hover {
+  background: var(--hermes-button-hover-bg);
+}
+
+/* Toolbar customization dialog */
+.toolbar-customize-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.5);
+  z-index: 5000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.toolbar-customize-content {
+  background: var(--hermes-panel-bg);
+  border: 1px solid var(--hermes-panel-border);
+  border-radius: 8px;
+  padding: 20px;
+  width: 600px;
+  max-width: 90vw;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.toolbar-category {
+  margin-bottom: 20px;
+  padding: 15px;
+  border: 1px solid var(--hermes-border);
+  border-radius: 6px;
+  background: var(--hermes-input-bg);
+}
+
+.toolbar-category h3 {
+  margin: 0 0 10px 0;
+  color: var(--hermes-text);
+  font-size: 14px;
+  border-bottom: 1px solid var(--hermes-border);
+  padding-bottom: 5px;
+}
+
+.toolbar-button-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px;
+  margin: 2px 0;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.toolbar-button-item:hover {
+  background: var(--hermes-button-hover-bg);
+}
+
+.toolbar-button-item label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  flex: 1;
+}
+
+.toolbar-button-item input[type="checkbox"] {
+  margin: 0;
+}
+
+.toolbar-button-preview {
+  font-size: 12px;
+  color: var(--hermes-disabled-text);
+  margin-left: 10px;
 }
 
 .toolbar-row {
