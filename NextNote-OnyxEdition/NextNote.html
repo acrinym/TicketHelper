@@ -32,30 +32,121 @@
       --hermes-link-hover-color: #0056b3;
     }
     body {
-      display: flex; margin:0; height:100vh;
-      background: var(--hermes-bg); color: var(--hermes-text);
-      font-family: sans-serif;
+      display: flex; 
+      margin: 0; 
+      height: 100vh;
+      background: var(--hermes-bg); 
+      color: var(--hermes-text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      overflow: hidden; /* Prevent body scroll */
+    }
+    
+    /* Responsive design */
+    @media (max-width: 1200px) {
+      #sidebar {
+        width: 250px;
+      }
+      .toolbar-section {
+        flex-wrap: wrap;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      body {
+        flex-direction: column;
+      }
+      #sidebar {
+        width: 100%;
+        height: 200px;
+        min-height: auto;
+      }
+      #main {
+        flex: 1;
+      }
+      .toolbar-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .toolbar-section {
+        justify-content: center;
+      }
     }
     #sidebar {
-      width: 250px; background: var(--hermes-panel-bg);
-      color: var(--hermes-panel-text); overflow-y:auto;
-      border-right:1px solid var(--hermes-panel-border); padding:10px;
+      width: 280px; 
+      background: var(--hermes-panel-bg);
+      color: var(--hermes-panel-text); 
+      overflow-y: auto;
+      border-right: 1px solid var(--hermes-panel-border); 
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    
+    .sidebar-section {
+      margin-bottom: 20px;
+    }
+    
+    .sidebar-section h3 {
+      margin: 0 0 10px 0;
+      padding-bottom: 5px;
+      border-bottom: 2px solid var(--hermes-highlight-bg);
+      color: var(--hermes-text);
+      font-size: 14px;
     }
     #main {
       flex:1; display:flex; flex-direction:column;
     }
     #toolbar {
-      padding:10px; background:var(--hermes-panel-bg);
-      border-bottom:1px solid var(--hermes-panel-border);
-      display:flex; gap:5px; align-items:center; flex-wrap:wrap;
+      padding: 10px; 
+      background: var(--hermes-panel-bg);
+      border-bottom: 1px solid var(--hermes-panel-border);
+      display: flex; 
+      flex-direction: column;
+      gap: 8px;
     }
-    #editor { flex:1; display:flex; flex-direction: column; }
+    
+    .toolbar-row {
+      display: flex; 
+      gap: 5px; 
+      align-items: center; 
+      flex-wrap: wrap;
+    }
+    
+    .toolbar-section {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      padding: 2px 8px;
+      background: var(--hermes-input-bg);
+      border-radius: 4px;
+      border: 1px solid var(--hermes-border);
+    }
+    
+    .toolbar-section-label {
+      font-size: 11px;
+      color: var(--hermes-disabled-text);
+      font-weight: bold;
+      margin-right: 5px;
+    }
+    #editor { 
+      flex: 1; 
+      display: flex; 
+      flex-direction: column; 
+      min-height: 0; /* Important for proper flex behavior */
+    }
     #quillEditorContainer {
-      flex:1; padding:10px; overflow:auto;
-      background: var(--hermes-input-bg); color: var(--hermes-input-text);
-      border:1px solid var(--hermes-input-border);
+      flex: 1; 
+      padding: 20px; 
+      overflow: auto;
+      background: var(--hermes-input-bg); 
+      color: var(--hermes-input-text);
+      border: 1px solid var(--hermes-input-border);
       display: flex;
       flex-direction: column;
+      margin: 10px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     #quillEditorContainer .ql-container {
       flex: 1;
@@ -92,28 +183,45 @@
       width:100%; margin-bottom:5px;
     }
     .section, .page-title {
-      margin-bottom:5px; padding:5px;
+      margin-bottom: 8px; 
+      padding: 8px;
+      border-radius: 6px;
     }
     .section {
-      border:1px solid var(--hermes-panel-border);
+      border: 1px solid var(--hermes-panel-border);
+      background: var(--hermes-input-bg);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     .section-header {
-      display:flex; justify-content:space-between; align-items:center;
-      background: var(--hermes-accent-bar-bg); padding:5px;
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center;
+      background: var(--hermes-accent-bar-bg); 
+      padding: 8px;
+      border-radius: 4px;
+      margin-bottom: 8px;
     }
     .section-header span {
-      font-weight:bold; cursor:pointer;
+      font-weight: bold; 
+      cursor: pointer;
+      color: var(--hermes-text);
     }
     .pages {
-      margin:5px 0 10px 10px; min-height:20px;
+      margin: 5px 0 10px 10px; 
+      min-height: 20px;
     }
     .page-title {
-      display:flex; justify-content:space-between;
-      background:var(--hermes-input-bg);
-      border:1px solid var(--hermes-panel-border); cursor:pointer;
+      display: flex; 
+      justify-content: space-between;
+      background: var(--hermes-input-bg);
+      border: 1px solid var(--hermes-panel-border); 
+      cursor: pointer;
+      padding: 6px 8px;
+      transition: all 0.2s ease;
     }
     .page-title span {
-      flex:1; padding:3px;
+      flex: 1; 
+      padding: 2px;
     }
     .delete-btn { background:none; border:none; color:var(--hermes-error-text); cursor:pointer; }
     .theme-select { margin-left:auto; }
@@ -170,38 +278,81 @@
 </head>
 <body>
   <div id="sidebar">
-    <h3>Sections</h3>
-    <input id="newSectionInput" placeholder="New Section Name"/>
-    <button onclick="addSection()">+ Add Section</button>
-    <hr/>
-    <div id="sections"></div>
+    <div class="sidebar-section">
+      <h3>📚 Sections</h3>
+      <input id="newSectionInput" placeholder="New Section Name" style="width: 100%; margin-bottom: 8px; padding: 6px; border-radius: 4px; border: 1px solid var(--hermes-border);"/>
+      <button onclick="addSection()" style="width: 100%; padding: 8px; background: var(--hermes-highlight-bg); color: var(--hermes-highlight-text); border: none; border-radius: 4px; cursor: pointer;">+ Add Section</button>
+    </div>
+    
+    <div class="sidebar-section">
+      <h3>📄 Pages</h3>
+      <div id="sections"></div>
+    </div>
+    
+    <!-- Plugin panels will be inserted here -->
+    <div id="pluginPanels"></div>
   </div>
   <div id="main">
     <div id="toolbar">
-      <span id="currentPageName">No Page Selected</span>
-      <span id="pageMeta" style="margin-left:10px; color:var(--hermes-disabled-text); font-size:12px;"></span>
-      <button onclick="saveCurrentPage()">💾 Save</button>
-      <button onclick="togglePreview()">👁️ Preview</button>
-      <button onclick="document.getElementById('imgInput').click()">🖼️ Image</button>
-      <input type="file" id="imgInput" accept="image/*" style="display:none" onchange="insertImage(event)"/>
-      <button onclick="document.getElementById('audioInput').click()">🎵 Audio</button>
-      <input type="file" id="audioInput" accept="audio/*" style="display:none" onchange="insertAudio(event)"/>
-      <button onclick="document.getElementById('gifInput').click()">🎬 GIF</button>
-      <input type="file" id="gifInput" accept="image/gif" style="display:none" onchange="insertGIF(event)"/>
-      <button onclick="document.getElementById('videoInput').click()">🎥 Video</button>
-      <input type="file" id="videoInput" accept="video/*" style="display:none" onchange="insertVideo(event)"/>
-      <button onclick="showReminderDialog()">⏰ Reminder</button>
-      <button onclick="exportMarkdown()">📝 Export MD</button>
-      <input type="file" id="importFile" style="display:none" onchange="importMarkdown(event)"/>
-      <button onclick="document.getElementById('importFile').click()">📥 Import MD</button>
-      <button onclick="showResourceManager()">📁 Resources</button>
-      <button onclick="showCommandPalette()">🔍 Search</button>
-      <button onclick="showModeSwitcher()">🎭 Modes</button>
-      <button onclick="showTemplateSelector()">📋 Templates</button>
-      <button onclick="showFissioLibrary()">📐 Fissio Library</button>
-      <button onclick="showRitualMode()">🧙‍♂️ Ritual Mode</button>
-      <div class="theme-select">
-        <select id="themeSelect"></select>
+      <!-- Page Info Row -->
+      <div class="toolbar-row">
+        <span id="currentPageName" style="font-weight: bold; color: var(--hermes-text);">No Page Selected</span>
+        <span id="pageMeta" style="margin-left:10px; color:var(--hermes-disabled-text); font-size:12px;"></span>
+        <div style="margin-left: auto;">
+          <div class="toolbar-section">
+            <span class="toolbar-section-label">Theme:</span>
+            <select id="themeSelect"></select>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Core Actions Row -->
+      <div class="toolbar-row">
+        <div class="toolbar-section">
+          <span class="toolbar-section-label">Core:</span>
+          <button onclick="saveCurrentPage()">💾 Save</button>
+          <button onclick="togglePreview()">👁️ Preview</button>
+          <button onclick="showCommandPalette()">🔍 Search</button>
+        </div>
+        
+        <div class="toolbar-section">
+          <span class="toolbar-section-label">Import/Export:</span>
+          <button onclick="exportMarkdown()">📝 Export MD</button>
+          <input type="file" id="importFile" style="display:none" onchange="importMarkdown(event)"/>
+          <button onclick="document.getElementById('importFile').click()">📥 Import MD</button>
+        </div>
+      </div>
+      
+      <!-- Media Row -->
+      <div class="toolbar-row">
+        <div class="toolbar-section">
+          <span class="toolbar-section-label">Media:</span>
+          <button onclick="document.getElementById('imgInput').click()">🖼️ Image</button>
+          <input type="file" id="imgInput" accept="image/*" style="display:none" onchange="insertImage(event)"/>
+          <button onclick="document.getElementById('audioInput').click()">🎵 Audio</button>
+          <input type="file" id="audioInput" accept="audio/*" style="display:none" onchange="insertAudio(event)"/>
+          <button onclick="document.getElementById('gifInput').click()">🎬 GIF</button>
+          <input type="file" id="gifInput" accept="image/gif" style="display:none" onchange="insertGIF(event)"/>
+          <button onclick="document.getElementById('videoInput').click()">🎥 Video</button>
+          <input type="file" id="videoInput" accept="video/*" style="display:none" onchange="insertVideo(event)"/>
+        </div>
+      </div>
+      
+      <!-- Features Row -->
+      <div class="toolbar-row">
+        <div class="toolbar-section">
+          <span class="toolbar-section-label">Features:</span>
+          <button onclick="showReminderDialog()">⏰ Reminder</button>
+          <button onclick="showResourceManager()">📁 Resources</button>
+        </div>
+        
+        <div class="toolbar-section">
+          <span class="toolbar-section-label">Modes:</span>
+          <button onclick="showModeSwitcher()">🎭 Modes</button>
+          <button onclick="showTemplateSelector()">📋 Templates</button>
+          <button onclick="showFissioLibrary()">📐 Fissio</button>
+          <button onclick="showRitualMode()">🧙‍♂️ Ritual</button>
+        </div>
       </div>
     </div>
     <div id="editor">
@@ -758,7 +909,16 @@
       currentSection = section;
       currentPage = page;
       
-      quill.setContents(quill.clipboard.convert(page.content));
+      // Convert markdown to HTML if needed, then set in Quill
+      let htmlContent;
+      if (page.content && page.content.includes('#')) {
+        // Likely markdown content, convert to HTML
+        htmlContent = marked.parse(page.content);
+      } else {
+        // Already HTML content
+        htmlContent = page.content || '';
+      }
+      quill.setContents(quill.clipboard.convert(htmlContent));
       document.getElementById('currentPageName').textContent = page.title;
       
       // Update page metadata display
@@ -1590,7 +1750,14 @@
 
     // Mode switcher functionality
     function showModeSwitcher() {
+      // Remove any existing mode dialog
+      const existingDialog = document.querySelector('.mode-dialog');
+      if (existingDialog) {
+        existingDialog.remove();
+      }
+
       const dialog = document.createElement('div');
+      dialog.className = 'mode-dialog';
       dialog.style.cssText = `
         position: fixed;
         top: 0;
@@ -1732,6 +1899,22 @@
           card.style.boxShadow = 'none';
         });
       });
+
+      // Close dialog when clicking outside
+      dialog.addEventListener('click', (e) => {
+        if (e.target === dialog) {
+          dialog.remove();
+        }
+      });
+
+      // Close dialog on Escape key
+      const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+          dialog.remove();
+          document.removeEventListener('keydown', handleEscape);
+        }
+      };
+      document.addEventListener('keydown', handleEscape);
 
       dialog.appendChild(content);
       document.body.appendChild(dialog);
@@ -1982,7 +2165,7 @@ Use [[Page Name]] to create links to other pages!
       }
       
       // Close the mode switcher dialog
-      const dialog = document.querySelector('div[style*="position: fixed"]');
+      const dialog = document.querySelector('.mode-dialog');
       if (dialog) dialog.remove();
     }
 
@@ -2061,7 +2244,16 @@ Use [[Page Name]] to create links to other pages!
     window.renderSections = renderSections;
     window.refreshCurrentPage = function() {
       if (currentPage && quill) {
-        quill.setContents(quill.clipboard.convert(currentPage.content));
+        // Convert markdown to HTML if needed, then set in Quill
+        let htmlContent;
+        if (currentPage.content && currentPage.content.includes('#')) {
+          // Likely markdown content, convert to HTML
+          htmlContent = marked.parse(currentPage.content);
+        } else {
+          // Already HTML content
+          htmlContent = currentPage.content || '';
+        }
+        quill.setContents(quill.clipboard.convert(htmlContent));
         updatePageMetadata(currentPage);
       }
     };
@@ -2105,7 +2297,16 @@ Use [[Page Name]] to create links to other pages!
       getEditorContent: () => quill ? quill.root.innerHTML : '',
       setEditorContent: (content) => {
         if (quill) {
-          quill.root.innerHTML = content;
+          // Convert markdown to HTML if needed, then set in Quill
+          let htmlContent;
+          if (content && content.includes('#')) {
+            // Likely markdown content, convert to HTML
+            htmlContent = marked.parse(content);
+          } else {
+            // Already HTML content
+            htmlContent = content || '';
+          }
+          quill.setContents(quill.clipboard.convert(htmlContent));
         }
       },
 
@@ -2453,51 +2654,51 @@ Use these shapes in Diagram Builder mode:
 ### User Class
 \`\`\`
 +------------------+
-|      User        |
+\\|      User        \\|
 +------------------+
-| - id: String     |
-| - name: String   |
-| - email: String  |
-| - password: String|
+\\| - id: String     \\|
+\\| - name: String   \\|
+\\| - email: String  \\|
+\\| - password: String\\|
 +------------------+
-| + login()        |
-| + logout()       |
-| + updateProfile()|
-| + deleteAccount()|
+\\| + login()        \\|
+\\| + logout()       \\|
+\\| + updateProfile()\\|
+\\| + deleteAccount()\\|
 +------------------+
 \`\`\`
 
 ### Product Class
 \`\`\`
 +------------------+
-|     Product      |
+\\|     Product      \\|
 +------------------+
-| - id: String     |
-| - name: String   |
-| - price: Double  |
-| - category: String|
+\\| - id: String     \\|
+\\| - name: String   \\|
+\\| - price: Double  \\|
+\\| - category: String\\|
 +------------------+
-| + create()       |
-| + update()       |
-| + delete()       |
-| + getPrice()     |
+\\| + create()       \\|
+\\| + update()       \\|
+\\| + delete()       \\|
+\\| + getPrice()     \\|
 +------------------+
 \`\`\`
 
 ### Order Class
 \`\`\`
 +------------------+
-|      Order       |
+\\|      Order       \\|
 +------------------+
-| - id: String     |
-| - userId: String |
-| - total: Double  |
-| - status: String |
+\\| - id: String     \\|
+\\| - userId: String \\|
+\\| - total: Double  \\|
+\\| - status: String \\|
 +------------------+
-| + placeOrder()   |
-| + cancelOrder()  |
-| + updateStatus() |
-| + calculateTotal()|
+\\| + placeOrder()   \\|
+\\| + cancelOrder()  \\|
+\\| + updateStatus() \\|
+\\| + calculateTotal()\\|
 +------------------+
 \`\`\`
 
@@ -2731,11 +2932,22 @@ This page was last modified on ${new Date().toLocaleDateString()}.
         renderSections();
         selectPage(currentSection.id, newPage.id);
         alert(`✅ ${template.title} template created!`);
+        
+        // Close the template dialog
+        const dialog = document.querySelector('.template-dialog');
+        if (dialog) dialog.remove();
       }
     }
 
     function showTemplateSelector() {
+      // Remove any existing template dialog
+      const existingDialog = document.querySelector('.template-dialog');
+      if (existingDialog) {
+        existingDialog.remove();
+      }
+
       const dialog = document.createElement('div');
+      dialog.className = 'template-dialog';
       dialog.style.cssText = `
         position: fixed;
         top: 0;
@@ -2829,6 +3041,22 @@ This page was last modified on ${new Date().toLocaleDateString()}.
           card.style.boxShadow = 'none';
         });
       });
+
+      // Close dialog when clicking outside
+      dialog.addEventListener('click', (e) => {
+        if (e.target === dialog) {
+          dialog.remove();
+        }
+      });
+
+      // Close dialog on Escape key
+      const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+          dialog.remove();
+          document.removeEventListener('keydown', handleEscape);
+        }
+      };
+      document.addEventListener('keydown', handleEscape);
 
       dialog.appendChild(content);
       document.body.appendChild(dialog);

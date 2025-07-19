@@ -83,9 +83,12 @@ window.registerNextNotePlugin({
       // Gather all unique tags from all pages
       const tags = new Set();
       const notebook = getNotebook();
-      (notebook.sections || []).forEach(section => {
-        (section.pages || []).forEach(page => {
-          (page.tags || []).forEach(tag => tags.add(tag));
+      const sections = Array.isArray(notebook.sections) ? notebook.sections : [];
+      sections.forEach(section => {
+        const pages = Array.isArray(section.pages) ? section.pages : [];
+        pages.forEach(page => {
+          const pageTags = Array.isArray(page.tags) ? page.tags : [];
+          pageTags.forEach(tag => tags.add(tag));
         });
       });
       return Array.from(tags).sort();
@@ -94,9 +97,12 @@ window.registerNextNotePlugin({
     function getPagesByTag(tag) {
       const notebook = getNotebook();
       let results = [];
-      (notebook.sections || []).forEach(section => {
-        (section.pages || []).forEach(page => {
-          if ((page.tags || []).includes(tag)) {
+      const sections = Array.isArray(notebook.sections) ? notebook.sections : [];
+      sections.forEach(section => {
+        const pages = Array.isArray(section.pages) ? section.pages : [];
+        pages.forEach(page => {
+          const pageTags = Array.isArray(page.tags) ? page.tags : [];
+          if (pageTags.includes(tag)) {
             results.push({
               section: section,
               page: page
@@ -137,9 +143,12 @@ window.registerNextNotePlugin({
       const notebook = getNotebook();
       const pageEls = document.querySelectorAll(".page-title");
       pageEls.forEach(el => el.style.background = "");
-      (notebook.sections || []).forEach(section => {
-        (section.pages || []).forEach(page => {
-          if ((page.tags || []).includes(tag)) {
+      const sections = Array.isArray(notebook.sections) ? notebook.sections : [];
+      sections.forEach(section => {
+        const pages = Array.isArray(section.pages) ? section.pages : [];
+        pages.forEach(page => {
+          const pageTags = Array.isArray(page.tags) ? page.tags : [];
+          if (pageTags.includes(tag)) {
             const el = document.getElementById(`page-${page.id}`);
             if (el) {
               el.style.background = "#fff8c9";
@@ -178,7 +187,8 @@ window.registerNextNotePlugin({
         tagEditor.innerHTML = `<b>Tags:</b> `;
       }
       // Existing tags
-      (page.tags || []).forEach(tag => {
+      const pageTags = Array.isArray(page.tags) ? page.tags : [];
+      pageTags.forEach(tag => {
         const chip = document.createElement("span");
         chip.className = "tag-chip";
         chip.textContent = tag;
@@ -243,8 +253,10 @@ window.registerNextNotePlugin({
       if (typeof originalSelectPage === "function") originalSelectPage(pageId, sectionId);
       const notebook = getNotebook();
       let page = null;
-      (notebook.sections || []).forEach(section => {
-        (section.pages || []).forEach(p => {
+      const sections = Array.isArray(notebook.sections) ? notebook.sections : [];
+      sections.forEach(section => {
+        const pages = Array.isArray(section.pages) ? section.pages : [];
+        pages.forEach(p => {
           if (p.id === pageId) page = p;
         });
       });

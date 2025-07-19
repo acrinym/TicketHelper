@@ -42,8 +42,10 @@ window.registerNextNotePlugin({
     function getFavoritePages() {
       const notebook = getNotebook();
       const favorites = [];
-      (notebook.sections || []).forEach(section => {
-        (section.pages || []).forEach(page => {
+      const sections = Array.isArray(notebook.sections) ? notebook.sections : [];
+      sections.forEach(section => {
+        const pages = Array.isArray(section.pages) ? section.pages : [];
+        pages.forEach(page => {
           if (page.favorited) {
             favorites.push({section, page});
           }
@@ -97,8 +99,10 @@ window.registerNextNotePlugin({
     favBtn.onclick = function() {
       const notebook = getNotebook();
       let page = null;
-      (notebook.sections || []).forEach(section => {
-        (section.pages || []).forEach(p => {
+      const sections = Array.isArray(notebook.sections) ? notebook.sections : [];
+      sections.forEach(section => {
+        const pages = Array.isArray(section.pages) ? section.pages : [];
+        pages.forEach(p => {
           if (p.id === window.currentPage?.id) page = p;
         });
       });
@@ -111,8 +115,10 @@ window.registerNextNotePlugin({
       if (typeof origSelectPage === "function") origSelectPage(pageId, sectionId);
       const notebook = getNotebook();
       let page = null;
-      (notebook.sections || []).forEach(section => {
-        (section.pages || []).forEach(p => {
+      const sections = Array.isArray(notebook.sections) ? notebook.sections : [];
+      sections.forEach(section => {
+        const pages = Array.isArray(section.pages) ? section.pages : [];
+        pages.forEach(p => {
           if (p.id === pageId) page = p;
         });
       });
