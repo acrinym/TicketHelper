@@ -66,7 +66,10 @@ window.registerNextNotePlugin({
     function getNotebook() {
       if (window.notebook) return window.notebook;
       if (window._resourceNotebook) return window._resourceNotebook;
-      return { sections: window.sections || [], resources: [], settings: {} };
+      if (window.sections && Array.isArray(window.sections)) {
+        return { sections: window.sections, resources: [], settings: {} };
+      }
+      return { sections: [], resources: [], settings: {} };
     }
 
     function getTags() {

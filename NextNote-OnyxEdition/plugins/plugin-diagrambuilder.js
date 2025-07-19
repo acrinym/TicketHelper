@@ -848,8 +848,7 @@ window.registerNextNotePlugin({
       const diagramText = convertDiagramToText();
       
       // Create a new page with the diagram
-      const sections = app.sections();
-      if (sections.length > 0) {
+      if (currentSection) {
         const newPage = {
           id: crypto.randomUUID(),
           title: 'Diagram - ' + new Date().toLocaleDateString(),
@@ -859,12 +858,14 @@ window.registerNextNotePlugin({
           modified: new Date().toISOString()
         };
         
-        sections[0].pages.push(newPage);
-        app.saveData();
-        app.renderSections();
-        app.selectPage(newPage.id, sections[0].id);
+        currentSection.pages.push(newPage);
+        saveData();
+        renderSections();
+        selectPage(currentSection.id, newPage.id);
         
         alert('Diagram saved as note!');
+      } else {
+        alert('Please create a section first!');
       }
     }
 

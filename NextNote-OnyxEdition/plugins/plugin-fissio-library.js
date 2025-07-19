@@ -90,7 +90,7 @@ window.registerNextNotePlugin({
           box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
     `;
-    document.head.appendChild(visioStyle);
+    document.head.appendChild(fissioStyle);
 
     // Comprehensive Fissio Template Library
     const fissioTemplates = {

@@ -613,6 +613,807 @@ window.registerNextNotePlugin({
 *"The moon is a loyal companion. It never leaves. It's always there, watching, steadfast, knowing us in our light and dark moments."* 🌙`;
     }
 
+    function createSeasonalTemplate() {
+      return `# 🍂 Seasonal Celebrations
+
+## 🌸 Spring Equinox (Ostara)
+**Date**: March 20-21
+**Theme**: New beginnings, fertility, growth
+**Activities**: 
+- [Spring cleaning rituals]
+- [Planting seeds]
+- [Egg decorating]
+- [Nature walks]
+
+## ☀️ Summer Solstice (Litha)
+**Date**: June 20-21
+**Theme**: Peak energy, abundance, celebration
+**Activities**:
+- [Bonfire celebrations]
+- [Herb gathering]
+- [Sun rituals]
+- [Outdoor feasts]
+
+## 🍁 Autumn Equinox (Mabon)
+**Date**: September 22-23
+**Theme**: Harvest, gratitude, balance
+**Activities**:
+- [Harvest celebrations]
+- [Gratitude rituals]
+- [Apple picking]
+- [Thanksgiving feasts]
+
+## ❄️ Winter Solstice (Yule)
+**Date**: December 21-22
+**Theme**: Rebirth, hope, light returning
+**Activities**:
+- [Yule log burning]
+- [Evergreen decorations]
+- [Candle lighting]
+- [Family gatherings]
+
+---
+*"The wheel turns, and we turn with it."* 🌿`;
+    }
+
+    function createDreamJournalTemplate() {
+      return `# 💭 Dream Journal
+
+## 🌙 Dream Entry
+**Date**: ${new Date().toLocaleDateString()}
+**Time**: [When you went to sleep/woke up]
+**Moon Phase**: [Current moon phase]
+**Dream Type**: [Lucid, Regular, Nightmare, etc.]
+
+### 📝 Dream Content
+**Setting**: [Where the dream took place]
+**Characters**: [Who was in the dream]
+**Plot**: [What happened in the dream]
+**Emotions**: [How you felt during the dream]
+
+### 🔍 Dream Analysis
+**Symbols**: [Recurring symbols or themes]
+**Personal Meaning**: [What this dream means to you]
+**Archetypes**: [Jungian archetypes present]
+**Messages**: [What the dream is trying to tell you]
+
+### 📊 Dream Patterns
+**Recurring Themes**: [Themes that appear often]
+**Emotional Patterns**: [Emotional states in dreams]
+**Color Themes**: [Colors that appear frequently]
+**Location Patterns**: [Places that appear often]
+
+---
+*"Dreams are the royal road to the unconscious."* - Carl Jung 💫`;
+    }
+
+    function createMeditationTemplate() {
+      return `# 🧘 Meditation Practice
+
+## 🎯 Session Details
+**Date**: ${new Date().toLocaleDateString()}
+**Time**: [Start time - End time]
+**Duration**: [Minutes]
+**Type**: [Mindfulness, Loving-kindness, Vipassana, etc.]
+
+### 🧠 Pre-Meditation State
+**Energy Level**: [1-10]
+**Mental State**: [Calm, Anxious, Distracted, etc.]
+**Physical Comfort**: [Comfortable, Uncomfortable, etc.]
+**Intentions**: [What you hope to achieve]
+
+### 🌊 During Meditation
+**Focus Object**: [Breath, Mantra, Visualization, etc.]
+**Distractions**: [What distracted you]
+**Breakthroughs**: [Any insights or realizations]
+**Challenges**: [What was difficult]
+
+### 📈 Post-Meditation
+**Energy Level**: [1-10]
+**Mental Clarity**: [1-10]
+**Emotional State**: [How you feel]
+**Insights**: [Any insights gained]
+
+### 📊 Progress Tracking
+**Consistency**: [Days this week/month]
+**Improvements**: [What's getting better]
+**Challenges**: [What's still difficult]
+**Goals**: [What you want to improve]
+
+---
+*"Meditation is not about stopping thoughts, but recognizing that we are more than our thoughts and our feelings."* 🧘‍♀️`;
+    }
+
+    function createEnergyWorkTemplate() {
+      return `# ⚡ Energy Work Log
+
+## 🔮 Session Overview
+**Date**: ${new Date().toLocaleDateString()}
+**Time**: [Start time - End time]
+**Type**: [Reiki, Chakra work, Aura cleansing, etc.]
+**Practitioner**: [Self or practitioner name]
+
+### 🎯 Focus Areas
+**Primary Focus**: [Main area of work]
+**Secondary Focus**: [Additional areas]
+**Intention**: [What you want to achieve]
+**Outcome**: [What actually happened]
+
+### 🌈 Chakra Work
+**Root Chakra**: [State and notes]
+**Sacral Chakra**: [State and notes]
+**Solar Plexus**: [State and notes]
+**Heart Chakra**: [State and notes]
+**Throat Chakra**: [State and notes]
+**Third Eye**: [State and notes]
+**Crown Chakra**: [State and notes]
+
+### ✨ Energy Sensations
+**Physical**: [What you felt in your body]
+**Emotional**: [What emotions came up]
+**Mental**: [What thoughts appeared]
+**Spiritual**: [What spiritual insights]
+
+### 📊 Results
+**Immediate Effects**: [What happened right away]
+**Long-term Effects**: [What continued to happen]
+**Integration**: [How you integrated the work]
+**Follow-up**: [What you need to do next]
+
+---
+*"Energy flows where attention goes."* ⚡`;
+    }
+
+    function createSigilLibraryTemplate() {
+      return `# 📚 Sigil Library
+
+## ✨ Sigil Collection
+**Total Sigils**: [Number of sigils created]
+**Active Sigils**: [Number currently active]
+**Completed Sigils**: [Number that have manifested]
+
+### 📋 Sigil Index
+**1. [Sigil Name]**
+- **Created**: [Date]
+- **Intention**: [Brief description]
+- **Status**: [Active/Completed/Archived]
+- **Results**: [What happened]
+
+**2. [Sigil Name]**
+- **Created**: [Date]
+- **Intention**: [Brief description]
+- **Status**: [Active/Completed/Archived]
+- **Results**: [What happened]
+
+### 🎯 Categories
+**Protection**: [Number of protection sigils]
+**Manifestation**: [Number of manifestation sigils]
+**Healing**: [Number of healing sigils]
+**Transformation**: [Number of transformation sigils]
+
+### 📊 Effectiveness Tracking
+**Success Rate**: [Percentage of successful sigils]
+**Average Time**: [Average time to manifestation]
+**Best Categories**: [Which types work best]
+**Areas for Improvement**: [What needs work]
+
+---
+*"Your sigil library is your magical toolkit."* 📚`;
+    }
+
+    function createSigilActivationTemplate() {
+      return `# 🔥 Sigil Activation
+
+## ✨ Sigil Details
+**Sigil Name**: [Name of the sigil]
+**Created Date**: [When it was created]
+**Intention**: [Original intention]
+**Activation Date**: ${new Date().toLocaleDateString()}
+
+### 🎯 Activation Method
+**Method**: [Fire, Water, Earth, Air, etc.]
+**Materials**: [What you used]
+**Location**: [Where you activated it]
+**Time**: [When you activated it]
+
+### 🔮 Activation Ritual
+**Preparation**: [How you prepared]
+**Opening**: [How you opened the ritual]
+**Activation**: [How you activated the sigil]
+**Closing**: [How you closed the ritual]
+
+### 📊 Activation Results
+**Immediate Effects**: [What happened right away]
+**Energy Sensations**: [What you felt]
+**Signs & Omens**: [What you noticed]
+**Confirmation**: [How you know it worked]
+
+### 📝 Notes
+[Any additional notes about the activation]
+
+---
+*"Activation is the moment when intention becomes reality."* 🔥`;
+    }
+
+    function createSigilResultsTemplate() {
+      return `# 📊 Sigil Results
+
+## ✨ Sigil Information
+**Sigil Name**: [Name of the sigil]
+**Created Date**: [When it was created]
+**Activated Date**: [When it was activated]
+**Intention**: [Original intention]
+
+### 📈 Results Tracking
+**Date**: ${new Date().toLocaleDateString()}
+**Time Since Activation**: [Days/weeks/months]
+**Current Status**: [In Progress/Manifesting/Complete]
+
+### 🎯 Manifestation Progress
+**Signs of Manifestation**: [What you've noticed]
+**Partial Results**: [What has partially manifested]
+**Full Results**: [What has fully manifested]
+**Unexpected Results**: [What you didn't expect]
+
+### 📊 Effectiveness Analysis
+**Effectiveness Rating**: [1-10 scale]
+**Speed of Manifestation**: [Fast/Medium/Slow]
+**Quality of Results**: [Better than expected/As expected/Less than expected]
+**Side Effects**: [Any unexpected effects]
+
+### 🔮 Lessons Learned
+**What Worked**: [What helped the manifestation]
+**What Didn't Work**: [What hindered the manifestation]
+**Improvements**: [What you'd do differently]
+**Future Applications**: [How to apply these lessons]
+
+---
+*"Results are the feedback loop of magical practice."* 📊`;
+    }
+
+    function createSpellComponentsTemplate() {
+      return `# 🌿 Spell Components
+
+## 🎯 Spell Information
+**Spell Name**: [Name of the spell]
+**Type**: [Type of spell]
+**Date Created**: ${new Date().toLocaleDateString()}
+
+### 🌿 Herbs & Plants
+**Primary Herbs**:
+- [Herb 1]: [Correspondence and use]
+- [Herb 2]: [Correspondence and use]
+- [Herb 3]: [Correspondence and use]
+
+**Supporting Herbs**:
+- [Herb 1]: [Correspondence and use]
+- [Herb 2]: [Correspondence and use]
+
+### 💎 Crystals & Stones
+**Primary Crystals**:
+- [Crystal 1]: [Properties and placement]
+- [Crystal 2]: [Properties and placement]
+
+**Supporting Stones**:
+- [Stone 1]: [Properties and placement]
+
+### 🕯️ Candles & Fire
+**Candle Colors**:
+- [Color 1]: [Meaning and purpose]
+- [Color 2]: [Meaning and purpose]
+
+**Number of Candles**: [How many and why]
+
+### 🌊 Water & Liquids
+**Types of Water**:
+- [Water type 1]: [Source and use]
+- [Water type 2]: [Source and use]
+
+**Other Liquids**:
+- [Liquid 1]: [Use and purpose]
+
+### 📝 Notes
+[Additional notes about components]
+
+---
+*"The right components amplify your intention."* 🌿`;
+    }
+
+    function createSpellTimingTemplate() {
+      return `# ⏰ Spell Timing
+
+## 🎯 Spell Information
+**Spell Name**: [Name of the spell]
+**Type**: [Type of spell]
+**Date Created**: ${new Date().toLocaleDateString()}
+
+### 🌙 Moon Phase Timing
+**Optimal Moon Phase**: [New/Waxing/Full/Waning]
+**Moon Sign**: [Best zodiac sign for this spell]
+**Moon Age**: [Optimal days since new moon]
+
+### ⭐ Astrological Timing
+**Planetary Hour**: [Best planetary hour]
+**Day of Week**: [Best day for this spell]
+**Zodiac Sign**: [Best sign for this spell]
+**Planetary Aspects**: [Important planetary aspects]
+
+### 🕐 Time of Day
+**Best Time**: [Morning/Afternoon/Evening/Night]
+**Specific Time**: [Exact time if applicable]
+**Duration**: [How long the spell should take]
+
+### 📅 Seasonal Timing
+**Best Season**: [Spring/Summer/Fall/Winter]
+**Specific Date**: [If there's a specific date]
+**Holiday Alignment**: [If it aligns with a holiday]
+
+### 🔮 Timing Considerations
+**Personal Timing**: [Your personal energy cycles]
+**External Factors**: [Weather, events, etc.]
+**Preparation Time**: [Time needed to prepare]
+
+---
+*"Timing is everything in magical practice."* ⏰`;
+    }
+
+    function createSpellResultsTemplate() {
+      return `# 📈 Spell Results
+
+## 🎯 Spell Information
+**Spell Name**: [Name of the spell]
+**Cast Date**: [When you cast it]
+**Type**: [Type of spell]
+**Intention**: [What you intended]
+
+### 📊 Results Tracking
+**Date**: ${new Date().toLocaleDateString()}
+**Time Since Casting**: [Days/weeks/months]
+**Current Status**: [In Progress/Manifesting/Complete]
+
+### 🎯 Manifestation Progress
+**Immediate Effects**: [What happened right away]
+**Short-term Results**: [What happened in the first week]
+**Medium-term Results**: [What happened in the first month]
+**Long-term Results**: [What's still happening]
+
+### 📈 Effectiveness Analysis
+**Effectiveness Rating**: [1-10 scale]
+**Speed of Manifestation**: [Fast/Medium/Slow]
+**Quality of Results**: [Better than expected/As expected/Less than expected]
+**Unexpected Results**: [What you didn't expect]
+
+### 🔮 Lessons Learned
+**What Worked**: [What helped the spell work]
+**What Didn't Work**: [What hindered the spell]
+**Improvements**: [What you'd do differently]
+**Future Applications**: [How to apply these lessons]
+
+---
+*"Results guide the evolution of your practice."* 📈`;
+    }
+
+    function createVowCreationTemplate() {
+      return `# 🔥 Vow Creation
+
+## 🎯 Vow Information
+**Vow Name**: [Name of the vow]
+**Date Created**: ${new Date().toLocaleDateString()}
+**Type**: [Type of vow - personal, spiritual, etc.]
+
+### 🔮 Vow Intent
+**Primary Intention**: [Main purpose of the vow]
+**Secondary Goals**: [Additional outcomes]
+**Timeline**: [How long the vow will last]
+**Scope**: [What the vow covers]
+
+### 📝 Vow Statement
+**Formal Statement**: [The actual vow words]
+**Personal Meaning**: [What it means to you]
+**Spiritual Significance**: [Why it matters spiritually]
+**Practical Application**: [How to live it daily]
+
+### 🎯 Commitment Level
+**Duration**: [How long you're committing]
+**Intensity**: [How deeply you're committing]
+**Flexibility**: [How flexible the vow is]
+**Accountability**: [How you'll hold yourself accountable]
+
+### 📊 Success Metrics
+**How You'll Measure Success**: [Specific metrics]
+**Milestones**: [Key points along the way]
+**Celebration Points**: [When to celebrate progress]
+**Completion Criteria**: [What constitutes completion]
+
+---
+*"A vow is a promise to your highest self."* 🔥`;
+    }
+
+    function createVowTrackingTemplate() {
+      return `# 📋 Vow Tracking
+
+## 🔥 Vow Information
+**Vow Name**: [Name of the vow]
+**Start Date**: [When you began]
+**Duration**: [How long it's supposed to last]
+**Current Status**: [Active/Completed/Broken]
+
+### 📊 Progress Tracking
+**Date**: ${new Date().toLocaleDateString()}
+**Days Since Start**: [Number of days]
+**Progress Percentage**: [How far along you are]
+
+### ✅ Daily/Weekly Check-ins
+**Date**: [Date of check-in]
+**Did I honor my vow today?**: [Yes/No/Partially]
+**Challenges faced**: [What was difficult]
+**Successes**: [What went well]
+**Adjustments needed**: [What needs to change]
+
+### 📈 Milestone Tracking
+**Milestone 1**: [Description and date achieved]
+**Milestone 2**: [Description and date achieved]
+**Milestone 3**: [Description and date achieved]
+
+### 🔮 Reflection
+**How has this vow changed me?**: [Personal growth]
+**What am I learning?**: [Insights gained]
+**What's getting easier?**: [Progress areas]
+**What's still challenging?**: [Growth areas]
+
+---
+*"Tracking keeps you accountable to your highest self."* 📋`;
+    }
+
+    function createVowReflectionTemplate() {
+      return `# 🤔 Vow Reflection
+
+## 🔥 Vow Information
+**Vow Name**: [Name of the vow]
+**Start Date**: [When you began]
+**End Date**: [When it ended or will end]
+**Duration**: [Total time committed]
+
+### 📝 Deep Reflection
+**What did I learn about myself?**: [Self-discovery]
+**How did this vow change me?**: [Personal transformation]
+**What was the most challenging part?**: [Growth areas]
+**What was the most rewarding part?**: [Success areas]
+
+### 🔮 Spiritual Insights
+**What did I learn about commitment?**: [Commitment insights]
+**How did this affect my spiritual practice?**: [Spiritual growth]
+**What did I learn about discipline?**: [Discipline insights]
+**How did this strengthen my character?**: [Character development]
+
+### 📊 Impact Analysis
+**On my daily life**: [Daily life changes]
+**On my relationships**: [Relationship impacts]
+**On my goals**: [Goal achievement]
+**On my future**: [Future implications]
+
+### 🎯 Lessons for Future Vows
+**What would I do differently?**: [Improvements]
+**What worked really well?**: [Success factors]
+**What type of vow should I take next?**: [Future planning]
+**How can I apply these lessons?**: [Application]
+
+---
+*"Reflection turns experience into wisdom."* 🤔`;
+    }
+
+    function createVowCompletionTemplate() {
+      return `# ✅ Vow Completion
+
+## 🔥 Vow Information
+**Vow Name**: [Name of the vow]
+**Start Date**: [When you began]
+**Completion Date**: ${new Date().toLocaleDateString()}
+**Total Duration**: [How long it lasted]
+
+### 🎉 Completion Celebration
+**How I'm celebrating**: [Celebration plans]
+**What I'm grateful for**: [Gratitude list]
+**Who I want to thank**: [People to thank]
+**How I'm honoring this achievement**: [Honoring methods]
+
+### 📊 Final Results
+**Did I complete the vow?**: [Yes/No/Partially]
+**What I accomplished**: [Specific achievements]
+**What I learned**: [Key learnings]
+**How I grew**: [Personal growth]
+
+### 🔮 Spiritual Completion
+**Ritual of completion**: [Completion ritual]
+**Release ceremony**: [How to release the vow]
+**Integration period**: [How to integrate the experience]
+**Next steps**: [What comes next]
+
+### 📝 Legacy
+**How this vow will continue to serve me**: [Ongoing benefits]
+**What I want to remember**: [Key memories]
+**How this shapes my future**: [Future impact]
+**What I'm taking forward**: [What to carry forward]
+
+---
+*"Completion is not the end, but the beginning of something new."* ✅`;
+    }
+
+    function createLiminalSpacesTemplate() {
+      return `# 🚪 Liminal Spaces
+
+## 🧭 Current Liminal Space
+**Date**: ${new Date().toLocaleDateString()}
+**Type**: [Career change, relationship shift, spiritual awakening, etc.]
+**Duration**: [How long you've been here]
+
+### 🎯 What's Ending
+**Old Identity**: [Who you were]
+**Old Patterns**: [What's falling away]
+**Old Beliefs**: [What you're letting go of]
+**Old Relationships**: [What's changing]
+
+### 🌱 What's Beginning
+**New Identity**: [Who you're becoming]
+**New Patterns**: [What's emerging]
+**New Beliefs**: [What you're embracing]
+**New Relationships**: [What's forming]
+
+### 🚪 The Threshold Experience
+**Sensations**: [What it feels like]
+**Challenges**: [What's difficult]
+**Gifts**: [What you're learning]
+**Signs**: [What you're noticing]
+
+### 📍 Navigation Tools
+**Daily Practices**: [What helps you navigate]
+**Support Systems**: [Who/what supports you]
+**Signs of Progress**: [How you know you're moving forward]
+**Patience Practices**: [How to be patient]
+
+---
+*"Liminal spaces are where transformation happens."* 🚪`;
+    }
+
+    function createIntegrationTemplate() {
+      return `# 🔄 Integration Periods
+
+## 🧭 Current Integration
+**Date**: ${new Date().toLocaleDateString()}
+**What I'm Integrating**: [Insights, experiences, changes]
+**Duration**: [How long this integration will take]
+
+### 📝 What Needs Integration
+**Insights**: [What I learned]
+**Experiences**: [What I experienced]
+**Changes**: [What changed]
+**Growth**: [How I grew]
+
+### 🔄 Integration Process
+**Daily Integration**: [How to integrate daily]
+**Weekly Reflection**: [Weekly integration practices]
+**Monthly Review**: [Monthly integration check-ins]
+**Ongoing Process**: [Continuous integration]
+
+### 🎯 Integration Tools
+**Journaling**: [How to journal about integration]
+**Meditation**: [Meditation for integration]
+**Movement**: [Physical practices for integration]
+**Community**: [How community supports integration]
+
+### 📊 Integration Tracking
+**Progress**: [How integration is going]
+**Challenges**: [What's difficult to integrate]
+**Breakthroughs**: [Integration breakthroughs]
+**Completion**: [When integration feels complete]
+
+---
+*"Integration turns experience into wisdom."* 🔄`;
+    }
+
+    function createTransformationTemplate() {
+      return `# 📅 Transformation Timeline
+
+## 🎯 Personal Evolution
+**Start Date**: [When your transformation began]
+**Current Date**: ${new Date().toLocaleDateString()}
+**Total Duration**: [How long the transformation has been happening]
+
+### 📍 Major Milestones
+**Milestone 1**: [Date and description]
+**Milestone 2**: [Date and description]
+**Milestone 3**: [Date and description]
+**Milestone 4**: [Date and description]
+
+### 🔄 Transformation Phases
+**Phase 1 - Awakening**: [When and what happened]
+**Phase 2 - Initiation**: [When and what happened]
+**Phase 3 - Integration**: [When and what happened]
+**Phase 4 - Mastery**: [When and what happened]
+
+### 📊 Growth Metrics
+**Personal Growth**: [How you've grown personally]
+**Spiritual Growth**: [How you've grown spiritually]
+**Professional Growth**: [How you've grown professionally]
+**Relationship Growth**: [How your relationships have grown]
+
+### 🎯 Future Transformation
+**Next Phase**: [What's coming next]
+**Goals**: [Transformation goals]
+**Preparation**: [How to prepare]
+**Timeline**: [Expected timeline]
+
+---
+*"Transformation is a journey, not a destination."* 📅`;
+    }
+
+    function createTarotTemplate() {
+      return `# 🎴 Tarot Reading
+
+## 🔮 Reading Information
+**Date**: ${new Date().toLocaleDateString()}
+**Time**: [Time of reading]
+**Deck Used**: [Which tarot deck]
+**Spread**: [Type of spread used]
+
+### 🎯 Question/Intention
+**Primary Question**: [Your main question]
+**Secondary Questions**: [Additional questions]
+**Intention**: [What you hope to learn]
+**Focus Area**: [Area of life to focus on]
+
+### 🃏 Cards Drawn
+**Card 1**: [Card name and position]
+- **Upright/Reversed**: [Orientation]
+- **Meaning**: [Traditional meaning]
+- **Personal Interpretation**: [What it means to you]
+
+**Card 2**: [Card name and position]
+- **Upright/Reversed**: [Orientation]
+- **Meaning**: [Traditional meaning]
+- **Personal Interpretation**: [What it means to you]
+
+**Card 3**: [Card name and position]
+- **Upright/Reversed**: [Orientation]
+- **Meaning**: [Traditional meaning]
+- **Personal Interpretation**: [What it means to you]
+
+### 📝 Reading Summary
+**Overall Message**: [Main message of the reading]
+**Key Insights**: [Key insights gained]
+**Action Items**: [What to do next]
+**Timeline**: [When to expect things]
+
+---
+*"The cards are a mirror reflecting your inner wisdom."* 🎴`;
+    }
+
+    function createAstrologyTemplate() {
+      return `# ⭐ Astrology Chart
+
+## 🌟 Chart Information
+**Date**: ${new Date().toLocaleDateString()}
+**Birth Date**: [Your birth date]
+**Birth Time**: [Your birth time]
+**Birth Location**: [Your birth location]
+
+### 🏠 Houses
+**1st House (Ascendant)**: [Sign and degree]
+**2nd House**: [Sign and degree]
+**3rd House**: [Sign and degree]
+**4th House (IC)**: [Sign and degree]
+**5th House**: [Sign and degree]
+**6th House**: [Sign and degree]
+**7th House (Descendant)**: [Sign and degree]
+**8th House**: [Sign and degree]
+**9th House**: [Sign and degree]
+**10th House (MC)**: [Sign and degree]
+**11th House**: [Sign and degree]
+**12th House**: [Sign and degree]
+
+### 🪐 Planets
+**Sun**: [Sign, house, and aspects]
+**Moon**: [Sign, house, and aspects]
+**Mercury**: [Sign, house, and aspects]
+**Venus**: [Sign, house, and aspects]
+**Mars**: [Sign, house, and aspects]
+**Jupiter**: [Sign, house, and aspects]
+**Saturn**: [Sign, house, and aspects]
+**Uranus**: [Sign, house, and aspects]
+**Neptune**: [Sign, house, and aspects]
+**Pluto**: [Sign, house, and aspects]
+
+### 📊 Chart Analysis
+**Dominant Elements**: [Fire, Earth, Air, Water]
+**Dominant Modalities**: [Cardinal, Fixed, Mutable]
+**Key Aspects**: [Important planetary aspects]
+**Life Themes**: [Major life themes]
+
+---
+*"Your birth chart is your cosmic blueprint."* ⭐`;
+    }
+
+    function createRuneTemplate() {
+      return `# ᚠ Rune Casting
+
+## 🔮 Casting Information
+**Date**: ${new Date().toLocaleDateString()}
+**Time**: [Time of casting]
+**Rune Set**: [Which rune set used]
+**Method**: [How you cast the runes]
+
+### 🎯 Question/Intention
+**Primary Question**: [Your main question]
+**Focus Area**: [Area of life to focus on]
+**Intention**: [What you hope to learn]
+
+### ᚠ Runes Drawn
+**Rune 1**: [Rune name]
+- **Meaning**: [Traditional meaning]
+- **Personal Interpretation**: [What it means to you]
+- **Position**: [Where it appeared]
+
+**Rune 2**: [Rune name]
+- **Meaning**: [Traditional meaning]
+- **Personal Interpretation**: [What it means to you]
+- **Position**: [Where it appeared]
+
+**Rune 3**: [Rune name]
+- **Meaning**: [Traditional meaning]
+- **Personal Interpretation**: [What it means to you]
+- **Position**: [Where it appeared]
+
+### 📝 Reading Summary
+**Overall Message**: [Main message of the casting]
+**Key Insights**: [Key insights gained]
+**Guidance**: [What guidance you received]
+**Action Items**: [What to do next]
+
+---
+*"The runes speak the language of the ancient ones."* ᚠ`;
+    }
+
+    function createOracleTemplate() {
+      return `# 🔮 Oracle Reading
+
+## 🔮 Reading Information
+**Date**: ${new Date().toLocaleDateString()}
+**Time**: [Time of reading]
+**Deck Used**: [Which oracle deck]
+**Spread**: [Type of spread used]
+
+### 🎯 Question/Intention
+**Primary Question**: [Your main question]
+**Secondary Questions**: [Additional questions]
+**Intention**: [What you hope to learn]
+**Focus Area**: [Area of life to focus on]
+
+### 🔮 Cards Drawn
+**Card 1**: [Card name and position]
+- **Meaning**: [Traditional meaning]
+- **Personal Interpretation**: [What it means to you]
+- **Message**: [Specific message for you]
+
+**Card 2**: [Card name and position]
+- **Meaning**: [Traditional meaning]
+- **Personal Interpretation**: [What it means to you]
+- **Message**: [Specific message for you]
+
+**Card 3**: [Card name and position]
+- **Meaning**: [Traditional meaning]
+- **Personal Interpretation**: [What it means to you]
+- **Message**: [Specific message for you]
+
+### 📝 Reading Summary
+**Overall Message**: [Main message of the reading]
+**Key Insights**: [Key insights gained]
+**Guidance**: [What guidance you received]
+**Action Items**: [What to do next]
+
+---
+*"Oracle cards are messengers from the divine."* 🔮`;
+    }
+
     // Make functions globally available
     window.toggleRitualMode = toggleRitualMode;
     window.showRitualMode = showRitualMode;
