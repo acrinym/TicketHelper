@@ -118,20 +118,7 @@ window.registerNextNotePlugin({
         color: #c5221f;
       }
       
-      .drive-mode-toggle {
-        position: fixed;
-        top: 200px;
-        right: 20px;
-        z-index: 1000;
-        background: var(--drive-primary);
-        color: white;
-        border: none;
-        padding: 10px 15px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-weight: bold;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-      }
+      /* Floating button removed - functionality integrated into main toolbar */
       
       .drive-auth-modal {
         position: fixed;
@@ -181,12 +168,8 @@ window.registerNextNotePlugin({
     let selectedDriveFile = null;
     let isAuthenticated = false;
 
-    // Create drive mode toggle button
-    const driveToggle = document.createElement('button');
-    driveToggle.className = 'drive-mode-toggle';
-    driveToggle.textContent = '☁️ Drive';
-    driveToggle.onclick = toggleDriveMode;
-    document.body.appendChild(driveToggle);
+    // Drive functionality is now integrated into the main toolbar
+    // No floating button needed
 
     function toggleDriveMode() {
       driveMode = !driveMode;

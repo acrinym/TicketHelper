@@ -100,26 +100,7 @@ window.registerNextNotePlugin({
         line-height: 1.4;
       }
       
-      .ritual-mode-toggle {
-        position: fixed;
-        top: 320px;
-        right: 20px;
-        z-index: 1000;
-        background: linear-gradient(135deg, var(--ritual-primary), var(--ritual-secondary));
-        color: white;
-        border: none;
-        padding: 12px 18px;
-        border-radius: 8px;
-        cursor: pointer;
-        font-weight: bold;
-        box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
-        transition: all 0.3s;
-      }
-      
-      .ritual-mode-toggle:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
-      }
+      /* Floating button removed - functionality integrated into main toolbar */
       
       .sigil-canvas {
         border: 2px solid var(--ritual-mystic);
@@ -303,12 +284,8 @@ window.registerNextNotePlugin({
       }
     };
 
-    // Create Ritual Mode toggle button
-    const ritualToggle = document.createElement('button');
-    ritualToggle.className = 'ritual-mode-toggle';
-    ritualToggle.textContent = '🧙‍♂️ Ritual Mode';
-    ritualToggle.onclick = toggleRitualMode;
-    document.body.appendChild(ritualToggle);
+    // Ritual Mode functionality is now integrated into the main toolbar
+    // No floating button needed
 
     function toggleRitualMode() {
       const existing = document.querySelector('.ritual-mode-panel');

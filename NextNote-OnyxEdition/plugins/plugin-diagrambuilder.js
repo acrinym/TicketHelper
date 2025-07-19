@@ -222,20 +222,7 @@ window.registerNextNotePlugin({
         color: var(--diagram-dark);
       }
       
-      .diagram-mode-toggle {
-        position: fixed;
-        top: 140px;
-        right: 20px;
-        z-index: 1000;
-        background: var(--diagram-primary);
-        color: white;
-        border: none;
-        padding: 10px 15px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-weight: bold;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-      }
+      /* Floating button removed - functionality integrated into main toolbar */
       
       .diagram-connector-point {
         position: absolute;
@@ -267,12 +254,8 @@ window.registerNextNotePlugin({
     let isConnecting = false;
     let connectionStart = null;
 
-    // Create diagram mode toggle button
-    const diagramToggle = document.createElement('button');
-    diagramToggle.className = 'diagram-mode-toggle';
-    diagramToggle.textContent = '📐 Diagram';
-    diagramToggle.onclick = toggleDiagramMode;
-    document.body.appendChild(diagramToggle);
+    // Diagram functionality is now integrated into the main toolbar
+    // No floating button needed
 
     function toggleDiagramMode() {
       diagramMode = !diagramMode;

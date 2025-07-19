@@ -142,20 +142,7 @@ window.registerNextNotePlugin({
         background: #e9ecef;
       }
       
-      .mindmap-mode-toggle {
-        position: fixed;
-        top: 80px;
-        right: 20px;
-        z-index: 1000;
-        background: var(--mindmap-primary);
-        color: white;
-        border: none;
-        padding: 10px 15px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-weight: bold;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-      }
+      /* Floating button removed - functionality integrated into main toolbar */
       
       .mindmap-node-menu {
         position: absolute;
@@ -197,12 +184,8 @@ window.registerNextNotePlugin({
     let nodes = [];
     let connections = [];
 
-    // Create mindmap mode toggle button
-    const mindmapToggle = document.createElement('button');
-    mindmapToggle.className = 'mindmap-mode-toggle';
-    mindmapToggle.textContent = '🧠 Mindmap';
-    mindmapToggle.onclick = toggleMindmapMode;
-    document.body.appendChild(mindmapToggle);
+    // Mindmap functionality is now integrated into the main toolbar
+    // No floating button needed
 
     function toggleMindmapMode() {
       mindmapMode = !mindmapMode;

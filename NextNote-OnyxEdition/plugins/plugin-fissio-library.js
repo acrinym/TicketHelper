@@ -75,20 +75,7 @@ window.registerNextNotePlugin({
           color: #666;
         }
         
-        .fissio-library-toggle {
-          position: fixed;
-          top: 260px;
-          right: 20px;
-          z-index: 1000;
-          background: var(--fissio-primary);
-          color: white;
-          border: none;
-          padding: 10px 15px;
-          border-radius: 6px;
-          cursor: pointer;
-          font-weight: bold;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        }
+              /* Floating button removed - functionality integrated into main toolbar */
     `;
     document.head.appendChild(fissioStyle);
 
@@ -348,12 +335,8 @@ window.registerNextNotePlugin({
       }
     };
 
-    // Create Fissio Library toggle button
-    const fissioToggle = document.createElement('button');
-    fissioToggle.className = 'fissio-library-toggle';
-    fissioToggle.textContent = '📐 Fissio Library';
-    fissioToggle.onclick = toggleFissioLibrary;
-    document.body.appendChild(fissioToggle);
+    // Fissio Library functionality is now integrated into the main toolbar
+    // No floating button needed
 
     function toggleFissioLibrary() {
       const existing = document.querySelector('.fissio-library-panel');
