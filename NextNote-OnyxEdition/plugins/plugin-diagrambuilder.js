@@ -305,6 +305,7 @@ window.registerNextNotePlugin({
         <button onclick="setTool('arrow')">➡️ Arrow</button>
         <button onclick="setTool('text')">📝 Text</button>
         <button onclick="setTool('connector')">🔗 Connector</button>
+        <button onclick="showSelectedProperties()" id="propertiesBtn" disabled>⚙️ Properties</button>
         <button onclick="deleteSelected()" class="danger">🗑️ Delete</button>
         <button onclick="exportDiagram()">📤 Export</button>
         <button onclick="importDiagram()">📥 Import</button>
@@ -569,7 +570,11 @@ window.registerNextNotePlugin({
       const shape = document.getElementById(`shape-${shapeId}`);
       if (shape) {
         shape.classList.add('selected');
-        showProperties(shapeId);
+        // Enable properties button
+        const propertiesBtn = document.getElementById('propertiesBtn');
+        if (propertiesBtn) {
+          propertiesBtn.disabled = false;
+        }
       }
     }
 
@@ -585,6 +590,12 @@ window.registerNextNotePlugin({
         selectedConnector = null;
       }
       hideProperties();
+      
+      // Disable properties button
+      const propertiesBtn = document.getElementById('propertiesBtn');
+      if (propertiesBtn) {
+        propertiesBtn.disabled = true;
+      }
     }
 
     function showProperties(shapeId) {
@@ -605,6 +616,12 @@ window.registerNextNotePlugin({
     function hideProperties() {
       const properties = document.querySelector('.diagram-properties');
       properties.classList.remove('show');
+    }
+
+    function showSelectedProperties() {
+      if (selectedShape) {
+        showProperties(selectedShape);
+      }
     }
 
     // Diagram utility functions
@@ -646,8 +663,8 @@ window.registerNextNotePlugin({
         id: 'shape_' + Date.now(),
         type: type,
         text: type.charAt(0).toUpperCase() + type.slice(1),
-        x: x - canvasRect.left,
-        y: y - canvasRect.top,
+        x: x - canvasRect.left - (type === 'circle' ? 40 : 60), // Center the shape on cursor
+        y: y - canvasRect.top - (type === 'circle' ? 40 : 30),  // Center the shape on cursor
         width: type === 'circle' ? 80 : 120,
         height: type === 'circle' ? 80 : 60,
         color: '#ffffff',
@@ -885,6 +902,7 @@ window.registerNextNotePlugin({
     window.updateSelectedColor = updateSelectedColor;
     window.updateSelectedBorder = updateSelectedBorder;
     window.updateSelectedFont = updateSelectedFont;
+    window.showSelectedProperties = showSelectedProperties;
     window.toggleDiagramMode = toggleDiagramMode;
   }
 }); 
