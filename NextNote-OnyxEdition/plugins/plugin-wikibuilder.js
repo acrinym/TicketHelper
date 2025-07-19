@@ -164,23 +164,14 @@ window.registerNextNotePlugin({
     let wikiCategories = JSON.parse(localStorage.getItem('nextnote_wiki_categories') || '[]');
     let wikiHistory = JSON.parse(localStorage.getItem('nextnote_wiki_history') || '[]');
 
-    // Create wiki mode toggle button
-    const wikiToggle = document.createElement('button');
-    wikiToggle.className = 'wiki-mode-toggle';
-    wikiToggle.textContent = '📚 Wiki Mode';
-    wikiToggle.onclick = toggleWikiMode;
-    document.body.appendChild(wikiToggle);
+    // Wiki plugin initialized - no floating button needed
 
     function toggleWikiMode() {
       wikiMode = !wikiMode;
       if (wikiMode) {
         enableWikiMode();
-        wikiToggle.textContent = '📝 Note Mode';
-        wikiToggle.style.background = '#e74c3c';
       } else {
         disableWikiMode();
-        wikiToggle.textContent = '📚 Wiki Mode';
-        wikiToggle.style.background = 'var(--wiki-primary)';
       }
     }
 
@@ -194,14 +185,16 @@ window.registerNextNotePlugin({
       addWikiNavigation();
       
       // Add wiki features to current page
-      if (app.currentPage()) {
-        addWikiFeaturesToPage(app.currentPage());
+      if (window.currentPage) {
+        addWikiFeaturesToPage(window.currentPage);
       }
       
       // Listen for page changes
-      app.on('pageSelected', function(data) {
-        addWikiFeaturesToPage(data.page);
-      });
+      if (window.NextNoteApp && window.NextNoteApp.on) {
+        window.NextNoteApp.on('pageSelected', function(data) {
+          addWikiFeaturesToPage(data.page);
+        });
+      }
     }
 
     function disableWikiMode() {
@@ -313,7 +306,7 @@ window.registerNextNotePlugin({
 
     function findRelatedPages(page) {
       const related = [];
-      const sections = app.sections();
+      const sections = window.sections || [];
       
       sections.forEach(section => {
         section.pages.forEach(p => {
@@ -348,7 +341,7 @@ window.registerNextNotePlugin({
     }
 
     function updateWikiCategories() {
-      const sections = app.sections();
+      const sections = window.sections || [];
       const allTags = new Set();
       
       sections.forEach(section => {

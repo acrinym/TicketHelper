@@ -244,10 +244,10 @@
         'import': { enabled: true, label: '📥 Import MD', onclick: 'document.getElementById(\'importFile\').click()' }
       },
       'Media': {
-        'image': { enabled: true, label: '🖼️ Image', onclick: 'document.getElementById(\'imgInput\').click()' },
-        'audio': { enabled: true, label: '🎵 Audio', onclick: 'document.getElementById(\'audioInput\').click()' },
-        'gif': { enabled: true, label: '🎬 GIF', onclick: 'document.getElementById(\'gifInput\').click()' },
-        'video': { enabled: true, label: '🎥 Video', onclick: 'document.getElementById(\'videoInput\').click()' }
+        'image': { enabled: true, label: '🖼️ Image', onclick: 'triggerFileInput(\'imgInput\')' },
+        'audio': { enabled: true, label: '🎵 Audio', onclick: 'triggerFileInput(\'audioInput\')' },
+        'gif': { enabled: true, label: '🎬 GIF', onclick: 'triggerFileInput(\'gifInput\')' },
+        'video': { enabled: true, label: '🎥 Video', onclick: 'triggerFileInput(\'videoInput\')' }
       },
       'Features': {
         'reminder': { enabled: true, label: '⏰ Reminder', onclick: 'showReminderDialog()' },
@@ -747,6 +747,17 @@
       }
     }
 
+    // Trigger file input safely
+    function triggerFileInput(inputId) {
+      const input = document.getElementById(inputId);
+      if (input) {
+        input.click();
+      } else {
+        console.error(`File input with id '${inputId}' not found`);
+        alert(`File input not found. Please refresh the page.`);
+      }
+    }
+
     // Insert image - Modern approach using clipboard API
     function insertImage(event) {
       const file = event.target.files[0];
@@ -779,6 +790,119 @@
       
       reader.onerror = function() {
         alert('Error reading image file');
+      };
+      
+      reader.readAsDataURL(file);
+    }
+
+    // Insert audio
+    function insertAudio(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      // Check if file is an audio file
+      if (!file.type.startsWith('audio/')) {
+        alert('Please select an audio file');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const range = quill.getSelection();
+          const audioHtml = `<audio controls src="${e.target.result}"></audio>`;
+          
+          if (range) {
+            quill.clipboard.dangerouslyPasteHTML(range.index, audioHtml);
+          } else {
+            quill.clipboard.dangerouslyPasteHTML(quill.getLength(), audioHtml);
+          }
+          
+          // Clear the input for future use
+          event.target.value = '';
+        } catch (error) {
+          console.error('Error inserting audio:', error);
+          alert('Error inserting audio. Please try again.');
+        }
+      };
+      
+      reader.onerror = function() {
+        alert('Error reading audio file');
+      };
+      
+      reader.readAsDataURL(file);
+    }
+
+    // Insert video
+    function insertVideo(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      // Check if file is a video file
+      if (!file.type.startsWith('video/')) {
+        alert('Please select a video file');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const range = quill.getSelection();
+          const videoHtml = `<video controls src="${e.target.result}" style="max-width: 100%; height: auto;"></video>`;
+          
+          if (range) {
+            quill.clipboard.dangerouslyPasteHTML(range.index, videoHtml);
+          } else {
+            quill.clipboard.dangerouslyPasteHTML(quill.getLength(), videoHtml);
+          }
+          
+          // Clear the input for future use
+          event.target.value = '';
+        } catch (error) {
+          console.error('Error inserting video:', error);
+          alert('Error inserting video. Please try again.');
+        }
+      };
+      
+      reader.onerror = function() {
+        alert('Error reading video file');
+      };
+      
+      reader.readAsDataURL(file);
+    }
+
+    // Insert GIF
+    function insertGif(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      // Check if file is a GIF
+      if (file.type !== 'image/gif') {
+        alert('Please select a GIF file');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const range = quill.getSelection();
+          if (range) {
+            quill.insertEmbed(range.index, 'image', e.target.result);
+          } else {
+            // Insert at the end if no selection
+            quill.insertEmbed(quill.getLength(), 'image', e.target.result);
+          }
+          
+          // Clear the input for future use
+          event.target.value = '';
+        } catch (error) {
+          console.error('Error inserting GIF:', error);
+          alert('Error inserting GIF. Please try again.');
+        }
+      };
+      
+      reader.onerror = function() {
+        alert('Error reading GIF file');
       };
       
       reader.readAsDataURL(file);
@@ -2010,7 +2134,11 @@ Use [[Page Name]] to create links to other pages!
     window.selectPage = selectPage;
     window.saveCurrentPage = saveCurrentPage;
     window.togglePreview = togglePreview;
-    window.insertImage = insertImage;
+          window.insertImage = insertImage;
+      window.insertAudio = insertAudio;
+      window.insertVideo = insertVideo;
+      window.insertGif = insertGif;
+      window.triggerFileInput = triggerFileInput;
     window.exportMarkdown = exportMarkdown;
     window.importMarkdown = importMarkdown;
     window.togglePages = togglePages;
