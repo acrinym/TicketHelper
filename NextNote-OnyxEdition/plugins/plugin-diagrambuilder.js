@@ -120,20 +120,24 @@ window.registerNextNotePlugin({
         display: flex;
         align-items: center;
         justify-content: center;
+        overflow: visible;
       }
       
-      .arrow-shaft {
+      /* Right arrow (default) */
+      .diagram-shape.arrow::before {
+        content: '';
         position: absolute;
         left: 0;
         top: 50%;
         transform: translateY(-50%);
-        width: 70%;
+        width: 80%;
         height: 4px;
         background: var(--diagram-primary);
         border-radius: 2px;
       }
       
-      .arrow-head {
+      .diagram-shape.arrow::after {
+        content: '';
         position: absolute;
         right: 0;
         top: 50%;
@@ -143,6 +147,81 @@ window.registerNextNotePlugin({
         border-left: 12px solid var(--diagram-primary);
         border-top: 8px solid transparent;
         border-bottom: 8px solid transparent;
+      }
+      
+      /* Left arrow */
+      .diagram-shape.arrow.left::before {
+        left: 20%;
+        width: 80%;
+      }
+      
+      .diagram-shape.arrow.left::after {
+        right: auto;
+        left: 0;
+        border-left: none;
+        border-right: 12px solid var(--diagram-primary);
+      }
+      
+      /* Bidirectional arrow */
+      .diagram-shape.arrow.bidirectional::before {
+        left: 15%;
+        width: 70%;
+      }
+      
+      .diagram-shape.arrow.bidirectional::after {
+        right: 0;
+        border-left: 12px solid var(--diagram-primary);
+      }
+      
+      .diagram-shape.arrow.bidirectional .arrow-head-left {
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 0;
+        height: 0;
+        border-right: 12px solid var(--diagram-primary);
+        border-top: 8px solid transparent;
+        border-bottom: 8px solid transparent;
+      }
+      
+      /* Vertical arrows */
+      .diagram-shape.arrow.up::before {
+        left: 50%;
+        top: 20%;
+        transform: translateX(-50%);
+        width: 4px;
+        height: 80%;
+      }
+      
+      .diagram-shape.arrow.up::after {
+        right: auto;
+        left: 50%;
+        top: 0;
+        transform: translateX(-50%);
+        border-left: 8px solid transparent;
+        border-right: 8px solid transparent;
+        border-bottom: 12px solid var(--diagram-primary);
+        border-top: none;
+      }
+      
+      .diagram-shape.arrow.down::before {
+        left: 50%;
+        top: 0;
+        transform: translateX(-50%);
+        width: 4px;
+        height: 80%;
+      }
+      
+      .diagram-shape.arrow.down::after {
+        right: auto;
+        left: 50%;
+        bottom: 0;
+        transform: translateX(-50%);
+        border-left: 8px solid transparent;
+        border-right: 8px solid transparent;
+        border-top: 12px solid var(--diagram-primary);
+        border-bottom: none;
       }
       
       .arrow-text {
@@ -157,6 +236,7 @@ window.registerNextNotePlugin({
         color: var(--diagram-dark);
         border: 1px solid var(--diagram-primary);
         white-space: nowrap;
+        z-index: 10;
       }
       
       .diagram-connector {
@@ -389,6 +469,10 @@ window.registerNextNotePlugin({
         <button onclick="setTool('diamond')">💎 Diamond</button>
         <button onclick="setTool('hexagon')">⬡ Hexagon</button>
         <button onclick="setTool('arrow')">➡️ Arrow</button>
+        <button onclick="setTool('arrow-left')">⬅️ Left</button>
+        <button onclick="setTool('arrow-bidirectional')">⬌ Bidirectional</button>
+        <button onclick="setTool('arrow-up')">⬆️ Up</button>
+        <button onclick="setTool('arrow-down')">⬇️ Down</button>
         <button onclick="setTool('text')">📝 Text</button>
         <button onclick="setTool('connector')">🔗 Connector</button>
         <button onclick="showSelectedProperties()" id="propertiesBtn" disabled>⚙️ Properties</button>
@@ -432,6 +516,10 @@ window.registerNextNotePlugin({
         <button onclick="setTool('diamond')">💎 Diamond</button>
         <button onclick="setTool('hexagon')">⬡ Hexagon</button>
         <button onclick="setTool('arrow')">➡️ Arrow</button>
+        <button onclick="setTool('arrow-left')">⬅️ Left</button>
+        <button onclick="setTool('arrow-bidirectional')">⬌ Bidirectional</button>
+        <button onclick="setTool('arrow-up')">⬆️ Up</button>
+        <button onclick="setTool('arrow-down')">⬇️ Down</button>
         <button onclick="setTool('text')">📝 Text</button>
         <button onclick="setTool('connector')">🔗 Connect</button>
       `;
@@ -502,11 +590,18 @@ window.registerNextNotePlugin({
       
       // Special handling for arrow shapes
       if (shapeData.type === 'arrow') {
-        shape.innerHTML = `
-          <div class="arrow-shaft"></div>
-          <div class="arrow-head"></div>
-          <div class="arrow-text">${shapeData.text}</div>
-        `;
+        const arrowDirection = shapeData.direction || 'right';
+        shape.className = `diagram-shape ${shapeData.type} ${arrowDirection}`;
+        
+        if (arrowDirection === 'bidirectional') {
+          shape.innerHTML = `
+            <div class="arrow-head-left"></div>
+            <div class="arrow-text">${shapeData.text}</div>
+          `;
+        } else {
+          shape.innerHTML = `<div class="arrow-text">${shapeData.text}</div>`;
+        }
+        
         shape.style.width = shapeData.width + 'px';
         shape.style.height = shapeData.height + 'px';
         shape.style.backgroundColor = 'transparent';
@@ -776,6 +871,7 @@ window.registerNextNotePlugin({
       
       // Set appropriate dimensions for different shape types
       let width, height, offsetX, offsetY;
+      let arrowDirection = 'right';
       
       if (type === 'circle') {
         width = 80;
@@ -787,6 +883,35 @@ window.registerNextNotePlugin({
         height = 20;
         offsetX = 50;
         offsetY = 10;
+        arrowDirection = 'right';
+      } else if (type === 'arrow-left') {
+        width = 100;
+        height = 20;
+        offsetX = 50;
+        offsetY = 10;
+        arrowDirection = 'left';
+        type = 'arrow';
+      } else if (type === 'arrow-bidirectional') {
+        width = 100;
+        height = 20;
+        offsetX = 50;
+        offsetY = 10;
+        arrowDirection = 'bidirectional';
+        type = 'arrow';
+      } else if (type === 'arrow-up') {
+        width = 20;
+        height = 100;
+        offsetX = 10;
+        offsetY = 50;
+        arrowDirection = 'up';
+        type = 'arrow';
+      } else if (type === 'arrow-down') {
+        width = 20;
+        height = 100;
+        offsetX = 10;
+        offsetY = 50;
+        arrowDirection = 'down';
+        type = 'arrow';
       } else {
         width = 120;
         height = 60;
@@ -809,6 +934,11 @@ window.registerNextNotePlugin({
         borderColor: '#2c3e50',
         fontSize: 12
       };
+      
+      // Add arrow direction if it's an arrow
+      if (type === 'arrow') {
+        shapeData.direction = arrowDirection;
+      }
       
       // Save to undo stack before adding shape
       saveToUndoStack();
