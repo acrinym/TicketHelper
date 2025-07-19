@@ -103,10 +103,39 @@ window.registerNextNotePlugin({
       .diagram-shape.diamond {
         transform: rotate(45deg);
         border-radius: 4px;
+        min-width: 60px;
+        min-height: 60px;
+        width: 60px !important;
+        height: 60px !important;
       }
       
       .diagram-shape.diamond .shape-text {
         transform: rotate(-45deg);
+        font-weight: bold;
+        font-size: 10px;
+        line-height: 1;
+      }
+      
+      .connector-svg path {
+        cursor: pointer;
+        transition: stroke-width 0.2s;
+      }
+      
+      .connector-svg path:hover {
+        stroke-width: 4px !important;
+      }
+      
+      .diagram-shape.text {
+        background: transparent !important;
+        border: 2px dashed var(--diagram-primary) !important;
+        min-width: 100px;
+        min-height: 30px;
+        padding: 4px 8px;
+      }
+      
+      .diagram-shape.text .shape-text {
+        font-weight: bold;
+        color: var(--diagram-primary);
       }
       
       .diagram-shape.hexagon {
@@ -514,8 +543,10 @@ window.registerNextNotePlugin({
       svgLayer.style.left = '0';
       svgLayer.style.width = '100%';
       svgLayer.style.height = '100%';
-      svgLayer.style.pointerEvents = 'none';
+      svgLayer.style.pointerEvents = 'auto';
       svgLayer.style.zIndex = '5';
+      svgLayer.setAttribute('viewBox', '0 0 1000 1000');
+      svgLayer.setAttribute('preserveAspectRatio', 'none');
       
       // Add SVG definitions for arrowheads
       const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
@@ -659,6 +690,14 @@ window.registerNextNotePlugin({
         shape.style.height = shapeData.height + 'px';
         shape.style.backgroundColor = 'transparent';
         shape.style.border = 'none';
+      } else if (shapeData.type === 'text') {
+        // Text shapes
+        shape.innerHTML = `<div class="shape-text">${shapeData.text}</div>`;
+        shape.style.width = shapeData.width + 'px';
+        shape.style.height = shapeData.height + 'px';
+        shape.style.fontSize = (shapeData.fontSize || 14) + 'px';
+        shape.style.backgroundColor = 'transparent';
+        shape.style.borderColor = 'var(--diagram-primary)';
       } else {
         // Regular shapes
         shape.innerHTML = `<div class="shape-text">${shapeData.text}</div>`;
@@ -737,24 +776,24 @@ window.registerNextNotePlugin({
       
       if (!fromShape || !toShape) return;
       
-      const fromRect = fromShape.getBoundingClientRect();
-      const toRect = toShape.getBoundingClientRect();
       const canvasRect = canvas.getBoundingClientRect();
+      const svgRect = canvas.svgLayer.getBoundingClientRect();
       
       // Calculate connection points (edge of shapes, not center)
       const fromPoint = getConnectionPoint(fromShape, toShape, 'from');
       const toPoint = getConnectionPoint(toShape, fromShape, 'to');
       
-      const fromX = fromPoint.x - canvasRect.left;
-      const fromY = fromPoint.y - canvasRect.top;
-      const toX = toPoint.x - canvasRect.left;
-      const toY = toPoint.y - canvasRect.top;
+      // Convert to SVG coordinates
+      const fromX = ((fromPoint.x - canvasRect.left) / canvasRect.width) * 1000;
+      const fromY = ((fromPoint.y - canvasRect.top) / canvasRect.height) * 1000;
+      const toX = ((toPoint.x - canvasRect.left) / canvasRect.width) * 1000;
+      const toY = ((toPoint.y - canvasRect.top) / canvasRect.height) * 1000;
       
       // Create bezier curve path
       const dx = toX - fromX;
       const dy = toY - fromY;
       const distance = Math.sqrt(dx * dx + dy * dy);
-      const controlOffset = Math.min(distance * 0.3, 50); // Bezier control point offset
+      const controlOffset = Math.min(distance * 0.3, 100); // Bezier control point offset
       
       const pathData = `M ${fromX} ${fromY} C ${fromX + controlOffset} ${fromY} ${toX - controlOffset} ${toY} ${toX} ${toY}`;
       
@@ -981,14 +1020,14 @@ window.registerNextNotePlugin({
       if (tool !== 'select' && tool !== 'connector') {
         canvas.style.cursor = 'crosshair';
         canvas.onclick = function(e) {
-          if (e.target === canvas) {
+          if (e.target === canvas || e.target.classList.contains('grid-overlay')) {
             createShapeAtPosition(e.clientX, e.clientY, tool);
           }
         };
       } else {
         canvas.style.cursor = 'default';
         canvas.onclick = function(e) {
-          if (e.target === canvas) {
+          if (e.target === canvas || e.target.classList.contains('grid-overlay')) {
             deselectAll();
           }
         };
@@ -1041,6 +1080,11 @@ window.registerNextNotePlugin({
         offsetY = 50;
         arrowDirection = 'down';
         type = 'arrow';
+      } else if (type === 'text') {
+        width = 120;
+        height = 40;
+        offsetX = 60;
+        offsetY = 20;
       } else {
         width = 120;
         height = 60;
@@ -1054,14 +1098,14 @@ window.registerNextNotePlugin({
       const shapeData = {
         id: 'shape_' + Date.now(),
         type: type,
-        text: type === 'arrow' ? '→' : type.charAt(0).toUpperCase() + type.slice(1),
+        text: type === 'arrow' ? '→' : (type === 'text' ? 'Text Label' : type.charAt(0).toUpperCase() + type.slice(1)),
         x: snappedPos.x,
         y: snappedPos.y,
         width: width,
         height: height,
         color: '#ffffff',
         borderColor: '#2c3e50',
-        fontSize: 12
+        fontSize: type === 'text' ? 14 : 12
       };
       
       // Add arrow direction if it's an arrow
