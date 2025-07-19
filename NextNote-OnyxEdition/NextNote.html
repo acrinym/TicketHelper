@@ -31,12 +31,12 @@
       
       <!-- Page Info Row -->
       <div class="toolbar-row">
-        <span id="currentPageName" style="font-weight: bold; color: var(--hermes-text);">No Page Selected</span>
-        <span id="pageMeta" style="margin-left:10px; color:var(--hermes-disabled-text); font-size:12px;"></span>
+        <span id="currentPageName" style="font-weight: bold; color: var(--hermes-text); font-size: 12px;">No Page Selected</span>
+        <span id="pageMeta" style="margin-left:8px; color:var(--hermes-disabled-text); font-size:11px;"></span>
         <div style="margin-left: auto;">
           <div class="toolbar-section">
             <span class="toolbar-section-label">Theme:</span>
-            <select id="themeSelect"></select>
+            <select id="themeSelect" style="font-size: 10px; padding: 2px 4px;"></select>
           </div>
         </div>
       </div>
@@ -2861,16 +2861,13 @@ This page was last modified on ${new Date().toLocaleDateString()}.
       if (settingsBtn) toolbar.appendChild(settingsBtn);
       if (pageInfoRow) toolbar.appendChild(pageInfoRow);
       
-      // Render enabled buttons by category
+      // Render enabled buttons by category horizontally
       Object.keys(defaultToolbarConfig).forEach(category => {
         const enabledButtons = Object.keys(defaultToolbarConfig[category]).filter(buttonKey => {
           return toolbarSettings[buttonKey] !== undefined ? toolbarSettings[buttonKey] : defaultToolbarConfig[category][buttonKey].enabled;
         });
         
         if (enabledButtons.length > 0) {
-          const row = document.createElement('div');
-          row.className = 'toolbar-row';
-          
           const section = document.createElement('div');
           section.className = 'toolbar-section';
           
@@ -2887,8 +2884,7 @@ This page was last modified on ${new Date().toLocaleDateString()}.
             section.appendChild(btn);
           });
           
-          row.appendChild(section);
-          toolbar.appendChild(row);
+          toolbar.appendChild(section);
         }
       });
     }

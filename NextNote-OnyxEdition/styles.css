@@ -102,13 +102,16 @@ body {
 
 /* Toolbar */
 #toolbar {
-  padding: 10px; 
+  padding: 8px 10px; 
   background: var(--hermes-panel-bg);
   border-bottom: 1px solid var(--hermes-panel-border);
   display: flex; 
-  flex-direction: column;
-  gap: 8px;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
   position: relative;
+  flex-wrap: wrap;
+  min-height: 40px;
 }
 
 /* Toolbar settings button */
@@ -207,21 +210,22 @@ body {
 .toolbar-row {
   display: flex; 
   gap: 8px; 
-  align-items: flex-start; 
+  align-items: center; 
   flex-wrap: wrap;
-  margin-bottom: 4px;
+  margin: 0;
 }
 
 .toolbar-section {
   display: flex;
   gap: 3px;
   align-items: center;
-  padding: 4px 8px;
+  padding: 2px 6px;
   background: var(--hermes-input-bg);
   border-radius: 4px;
   border: 1px solid var(--hermes-border);
   flex-wrap: wrap;
   min-width: 0;
+  flex-shrink: 0;
 }
 
 .toolbar-section-label {
@@ -312,10 +316,12 @@ button:hover, select:hover {
 
 /* Toolbar buttons should be compact */
 #toolbar button {
-  padding: 4px 8px;
-  font-size: 11px;
+  padding: 3px 6px;
+  font-size: 10px;
   min-width: 0;
   flex-shrink: 0;
+  white-space: nowrap;
+  max-width: 120px;
 }
 
 /* Toolbar sections should wrap properly */
@@ -325,12 +331,29 @@ button:hover, select:hover {
 }
 
 .toolbar-section-label {
-  font-size: 10px;
+  font-size: 9px;
   color: var(--hermes-disabled-text);
   font-weight: bold;
-  margin-right: 5px;
+  margin-right: 4px;
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+/* Page info styling */
+#currentPageName {
+  font-size: 12px !important;
+  font-weight: bold;
+  color: var(--hermes-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+#pageMeta {
+  font-size: 11px !important;
+  color: var(--hermes-disabled-text);
+  white-space: nowrap;
 }
 
 /* Sections and Pages */
@@ -433,8 +456,11 @@ button:hover, select:hover {
     flex-wrap: wrap;
   }
   #toolbar button {
-    font-size: 10px;
-    padding: 3px 6px;
+    font-size: 9px;
+    padding: 2px 4px;
+  }
+  .toolbar-section-label {
+    font-size: 8px;
   }
 }
 
@@ -450,31 +476,39 @@ button:hover, select:hover {
   #main {
     flex: 1;
   }
-  .toolbar-row {
+  #toolbar {
     flex-direction: column;
     align-items: stretch;
+    gap: 4px;
   }
   .toolbar-section {
     justify-content: center;
   }
   #toolbar button {
-    font-size: 11px;
-    padding: 4px 8px;
+    font-size: 10px;
+    padding: 3px 6px;
   }
 }
 
 @media (max-width: 480px) {
+  #toolbar {
+    padding: 4px 6px;
+  }
   .toolbar-section {
     flex-direction: column;
     align-items: stretch;
+    padding: 4px;
   }
   .toolbar-section-label {
     text-align: center;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
+    font-size: 9px;
   }
   #toolbar button {
     width: 100%;
     margin: 1px 0;
+    font-size: 11px;
+    padding: 4px 8px;
   }
 }
 
