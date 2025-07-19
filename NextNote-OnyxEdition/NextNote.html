@@ -199,6 +199,7 @@
       <button onclick="showModeSwitcher()">🎭 Modes</button>
       <button onclick="showTemplateSelector()">📋 Templates</button>
       <button onclick="showFissioLibrary()">📐 Fissio Library</button>
+      <button onclick="showRitualMode()">🧙‍♂️ Ritual Mode</button>
       <div class="theme-select">
         <select id="themeSelect"></select>
       </div>
@@ -257,7 +258,8 @@
       "plugin-mindmap.js",
       "plugin-diagrambuilder.js",
       "plugin-googledrive.js",
-      "plugin-fissio-library.js"
+      "plugin-fissio-library.js",
+      "plugin-ritual-mode.js"
       // Add new plugin .js files here to hotload them!
     ];
     plugins.forEach(filename => {
@@ -2053,6 +2055,7 @@ Use [[Page Name]] to create links to other pages!
     window.showTemplateSelector = showTemplateSelector;
     window.createTemplateFromMode = createTemplateFromMode;
     window.showFissioLibrary = showFissioLibrary;
+    window.showRitualMode = showRitualMode;
 
     // Plugin support functions
     window.renderSections = renderSections;
