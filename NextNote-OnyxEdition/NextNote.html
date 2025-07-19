@@ -6,275 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
   <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-  <style>
-    :root {
-      --hermes-bg: #fff;
-      --hermes-text: #333;
-      --hermes-border: #ccc;
-      --hermes-button-bg: #e9e9e9;
-      --hermes-button-text: #333;
-      --hermes-button-hover-bg: #dcdcdc;
-      --hermes-panel-bg: #f4f4f4;
-      --hermes-panel-text: #333;
-      --hermes-panel-border: #ccc;
-      --hermes-input-bg: #fff;
-      --hermes-input-text: #333;
-      --hermes-input-border: #ccc;
-      --hermes-accent-bar-bg: #eee;
-      --hermes-highlight-bg: #007bff;
-      --hermes-highlight-text: #fff;
-      --hermes-disabled-text: #aaa;
-      --hermes-error-text: #dc3545;
-      --hermes-success-text: #28a745;
-      --hermes-warning-text: #ffc107;
-      --hermes-info-text: #17a2b8;
-      --hermes-link-color: #007bff;
-      --hermes-link-hover-color: #0056b3;
-    }
-    body {
-      display: flex; 
-      margin: 0; 
-      height: 100vh;
-      background: var(--hermes-bg); 
-      color: var(--hermes-text);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      overflow: hidden; /* Prevent body scroll */
-    }
-    
-    /* Responsive design */
-    @media (max-width: 1200px) {
-      #sidebar {
-        width: 250px;
-      }
-      .toolbar-section {
-        flex-wrap: wrap;
-      }
-    }
-    
-    @media (max-width: 768px) {
-      body {
-        flex-direction: column;
-      }
-      #sidebar {
-        width: 100%;
-        height: 200px;
-        min-height: auto;
-      }
-      #main {
-        flex: 1;
-      }
-      .toolbar-row {
-        flex-direction: column;
-        align-items: stretch;
-      }
-      .toolbar-section {
-        justify-content: center;
-      }
-    }
-    #sidebar {
-      width: 280px; 
-      background: var(--hermes-panel-bg);
-      color: var(--hermes-panel-text); 
-      overflow-y: auto;
-      border-right: 1px solid var(--hermes-panel-border); 
-      padding: 15px;
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-    }
-    
-    .sidebar-section {
-      margin-bottom: 20px;
-    }
-    
-    .sidebar-section h3 {
-      margin: 0 0 10px 0;
-      padding-bottom: 5px;
-      border-bottom: 2px solid var(--hermes-highlight-bg);
-      color: var(--hermes-text);
-      font-size: 14px;
-    }
-    #main {
-      flex:1; display:flex; flex-direction:column;
-    }
-    #toolbar {
-      padding: 10px; 
-      background: var(--hermes-panel-bg);
-      border-bottom: 1px solid var(--hermes-panel-border);
-      display: flex; 
-      flex-direction: column;
-      gap: 8px;
-    }
-    
-    .toolbar-row {
-      display: flex; 
-      gap: 5px; 
-      align-items: center; 
-      flex-wrap: wrap;
-    }
-    
-    .toolbar-section {
-      display: flex;
-      gap: 5px;
-      align-items: center;
-      padding: 2px 8px;
-      background: var(--hermes-input-bg);
-      border-radius: 4px;
-      border: 1px solid var(--hermes-border);
-    }
-    
-    .toolbar-section-label {
-      font-size: 11px;
-      color: var(--hermes-disabled-text);
-      font-weight: bold;
-      margin-right: 5px;
-    }
-    #editor { 
-      flex: 1; 
-      display: flex; 
-      flex-direction: column; 
-      min-height: 0; /* Important for proper flex behavior */
-    }
-    #quillEditorContainer {
-      flex: 1; 
-      padding: 20px; 
-      overflow: auto;
-      background: var(--hermes-input-bg); 
-      color: var(--hermes-input-text);
-      border: 1px solid var(--hermes-input-border);
-      display: flex;
-      flex-direction: column;
-      margin: 10px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    #quillEditorContainer .ql-container {
-      flex: 1;
-      overflow-y: auto;
-      border: none;
-    }
-    .ql-toolbar {
-      border: 1px solid var(--hermes-panel-border);
-      background: var(--hermes-accent-bar-bg);
-      padding: 5px;
-      margin-bottom: 5px;
-      border-radius: 4px;
-    }
-    .ql-container.ql-snow {
-      border: 1px solid var(--hermes-input-border);
-      background: var(--hermes-input-bg);
-      color: var(--hermes-input-text);
-    }
-    #preview {
-      flex:1; padding:10px; overflow:auto;
-      border:1px solid var(--hermes-input-border);
-      background: var(--hermes-input-bg);
-      color: var(--hermes-input-text);
-    }
-    button, select {
-      background: var(--hermes-button-bg); color: var(--hermes-button-text);
-      border:1px solid var(--hermes-border); padding:5px;
-      cursor:pointer;
-    }
-    button:hover, select:hover {
-      background: var(--hermes-button-hover-bg);
-    }
-    #sidebar button, #sidebar input {
-      width:100%; margin-bottom:5px;
-    }
-    .section, .page-title {
-      margin-bottom: 8px; 
-      padding: 8px;
-      border-radius: 6px;
-    }
-    .section {
-      border: 1px solid var(--hermes-panel-border);
-      background: var(--hermes-input-bg);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    .section-header {
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center;
-      background: var(--hermes-accent-bar-bg); 
-      padding: 8px;
-      border-radius: 4px;
-      margin-bottom: 8px;
-    }
-    .section-header span {
-      font-weight: bold; 
-      cursor: pointer;
-      color: var(--hermes-text);
-    }
-    .pages {
-      margin: 5px 0 10px 10px; 
-      min-height: 20px;
-    }
-    .page-title {
-      display: flex; 
-      justify-content: space-between;
-      background: var(--hermes-input-bg);
-      border: 1px solid var(--hermes-panel-border); 
-      cursor: pointer;
-      padding: 6px 8px;
-      transition: all 0.2s ease;
-    }
-    .page-title span {
-      flex: 1; 
-      padding: 2px;
-    }
-    .delete-btn { background:none; border:none; color:var(--hermes-error-text); cursor:pointer; }
-    .theme-select { margin-left:auto; }
-    
-    /* Command palette styling */
-    .command-result {
-      padding: 8px 12px;
-      cursor: pointer;
-      border-bottom: 1px solid #eee;
-      transition: background-color 0.2s;
-    }
-    .command-result:hover {
-      background-color: #f5f5f5;
-    }
-    .command-result:last-child {
-      border-bottom: none;
-    }
-    
-    /* Resource manager styling */
-    #resourceList {
-      max-height: 400px;
-      overflow-y: auto;
-    }
-    
-    /* Improved button styling */
-    button {
-      border-radius: 4px;
-      transition: all 0.2s;
-    }
-    button:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    
-    /* Section and page styling improvements */
-    .section-header {
-      border-radius: 4px 4px 0 0;
-    }
-    .page-title {
-      border-radius: 4px;
-      margin: 2px 0;
-      transition: background-color 0.2s;
-    }
-    .page-title:hover {
-      background-color: var(--hermes-button-hover-bg);
-    }
-    
-    /* Active page indicator */
-    .page-title.active {
-      background-color: var(--hermes-highlight-bg);
-      color: var(--hermes-highlight-text);
-    }
-  </style>
+  <link href="styles.css" rel="stylesheet">
 </head>
 <body>
   <div id="sidebar">
@@ -345,13 +77,20 @@
           <button onclick="showReminderDialog()">⏰ Reminder</button>
           <button onclick="showResourceManager()">📁 Resources</button>
         </div>
-        
+      </div>
+      
+      <!-- Modes Row -->
+      <div class="toolbar-row">
         <div class="toolbar-section">
           <span class="toolbar-section-label">Modes:</span>
           <button onclick="showModeSwitcher()">🎭 Modes</button>
           <button onclick="showTemplateSelector()">📋 Templates</button>
           <button onclick="showFissioLibrary()">📐 Fissio</button>
           <button onclick="showRitualMode()">🧙‍♂️ Ritual</button>
+        </div>
+        
+        <div class="toolbar-section">
+          <span class="toolbar-section-label">Tools:</span>
           <button onclick="toggleMindmapMode()">🧠 Mindmap</button>
           <button onclick="toggleDiagramMode()">📐 Diagram</button>
           <button onclick="toggleDriveMode()">☁️ Drive</button>
@@ -994,16 +733,40 @@
       }
     }
 
-    // Insert image
+    // Insert image - Modern approach using clipboard API
     function insertImage(event) {
       const file = event.target.files[0];
       if (!file) return;
       
+      // Check if file is an image
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+      
       const reader = new FileReader();
       reader.onload = function(e) {
-        const range = quill.getSelection();
-        quill.insertEmbed(range.index, 'image', e.target.result);
+        try {
+          const range = quill.getSelection();
+          if (range) {
+            quill.insertEmbed(range.index, 'image', e.target.result);
+          } else {
+            // Insert at the end if no selection
+            quill.insertEmbed(quill.getLength(), 'image', e.target.result);
+          }
+          
+          // Clear the input for future use
+          event.target.value = '';
+        } catch (error) {
+          console.error('Error inserting image:', error);
+          alert('Error inserting image. Please try again.');
+        }
       };
+      
+      reader.onerror = function() {
+        alert('Error reading image file');
+      };
+      
       reader.readAsDataURL(file);
     }
 
