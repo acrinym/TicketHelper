@@ -506,6 +506,42 @@ window.registerNextNotePlugin({
       gridOverlay.className = 'grid-overlay';
       canvas.appendChild(gridOverlay);
       
+      // Add SVG layer for connectors
+      const svgLayer = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svgLayer.className = 'connector-svg';
+      svgLayer.style.position = 'absolute';
+      svgLayer.style.top = '0';
+      svgLayer.style.left = '0';
+      svgLayer.style.width = '100%';
+      svgLayer.style.height = '100%';
+      svgLayer.style.pointerEvents = 'none';
+      svgLayer.style.zIndex = '5';
+      
+      // Add SVG definitions for arrowheads
+      const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+      defs.innerHTML = `
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+          <polygon points="0 0, 10 3.5, 0 7" fill="var(--diagram-primary)"/>
+        </marker>
+        <marker id="arrowhead-filled" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+          <polygon points="0 0, 10 3.5, 0 7" fill="var(--diagram-primary)" stroke="var(--diagram-primary)" stroke-width="1"/>
+        </marker>
+        <marker id="arrowhead-open" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+          <polygon points="0 0, 10 3.5, 0 7" fill="none" stroke="var(--diagram-primary)" stroke-width="2"/>
+        </marker>
+        <marker id="arrowhead-diamond" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+          <polygon points="0 2, 5 0, 10 2, 5 7" fill="var(--diagram-primary)"/>
+        </marker>
+        <filter id="arrow-shadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="2" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.3)"/>
+        </filter>
+      `;
+      svgLayer.appendChild(defs);
+      canvas.appendChild(svgLayer);
+      
+      // Store SVG layer reference
+      canvas.svgLayer = svgLayer;
+      
       // Add shape palette
       const palette = document.createElement('div');
       palette.className = 'diagram-palette';
@@ -525,7 +561,7 @@ window.registerNextNotePlugin({
       `;
       canvas.appendChild(palette);
       
-      // Add properties panel
+      // Add enhanced properties panel with arrow options
       const properties = document.createElement('div');
       properties.className = 'diagram-properties';
       properties.innerHTML = `
@@ -542,6 +578,23 @@ window.registerNextNotePlugin({
         <input type="color" id="shapeBorder" onchange="updateSelectedBorder()">
         <label>Font Size:</label>
         <input type="number" id="shapeFontSize" onchange="updateSelectedFont()">
+        <hr style="margin: 10px 0;">
+        <h5 style="margin: 0 0 5px 0;">Arrow Properties</h5>
+        <label>Style:</label>
+        <select id="arrowStyle" onchange="updateArrowStyle()">
+          <option value="solid">Solid</option>
+          <option value="dashed">Dashed</option>
+          <option value="dotted">Dotted</option>
+        </select>
+        <label>Head Style:</label>
+        <select id="arrowHeadStyle" onchange="updateArrowHeadStyle()">
+          <option value="arrowhead">▶ Filled</option>
+          <option value="arrowhead-open">▷ Open</option>
+          <option value="arrowhead-diamond">◆ Diamond</option>
+        </select>
+        <label>Thickness:</label>
+        <input type="range" id="arrowThickness" min="1" max="8" value="2" onchange="updateArrowThickness()">
+        <span id="thicknessValue">2px</span>
       `;
       canvas.appendChild(properties);
       
@@ -637,15 +690,45 @@ window.registerNextNotePlugin({
     }
 
     function createConnector(connectorData) {
-      const connector = document.createElement('div');
-      connector.className = `diagram-connector ${connectorData.style}`;
-      connector.id = `connector-${connectorData.id}`;
-      connector.dataset.connectorId = connectorData.id;
+      const svgLayer = canvas.svgLayer;
+      if (!svgLayer) return;
       
-      canvas.appendChild(connector);
-      connectors.push(connector);
+      // Create SVG path element
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.id = `connector-${connectorData.id}`;
+      path.dataset.connectorId = connectorData.id;
+      path.setAttribute('stroke', connectorData.color || 'var(--diagram-primary)');
+      path.setAttribute('stroke-width', connectorData.thickness || '2');
+      path.setAttribute('fill', 'none');
+      path.setAttribute('marker-end', `url(#${connectorData.headStyle || 'arrowhead'})`);
+      path.setAttribute('filter', 'url(#arrow-shadow)');
       
-      updateConnector(connector, connectorData);
+      // Set line style
+      if (connectorData.style === 'dashed') {
+        path.setAttribute('stroke-dasharray', '5,5');
+      } else if (connectorData.style === 'dotted') {
+        path.setAttribute('stroke-dasharray', '2,2');
+      }
+      
+      // Add hover effect
+      path.addEventListener('mouseenter', function() {
+        this.setAttribute('stroke-width', (parseInt(this.getAttribute('stroke-width')) + 1).toString());
+        this.style.cursor = 'pointer';
+      });
+      
+      path.addEventListener('mouseleave', function() {
+        this.setAttribute('stroke-width', connectorData.thickness || '2');
+      });
+      
+      path.addEventListener('click', function(e) {
+        e.stopPropagation();
+        selectConnector(connectorData.id);
+      });
+      
+      svgLayer.appendChild(path);
+      connectors.push(path);
+      
+      updateConnector(path, connectorData);
     }
 
     function updateConnector(connector, connectorData) {
@@ -658,18 +741,58 @@ window.registerNextNotePlugin({
       const toRect = toShape.getBoundingClientRect();
       const canvasRect = canvas.getBoundingClientRect();
       
-      const fromX = fromRect.left + fromRect.width / 2 - canvasRect.left;
-      const fromY = fromRect.top + fromRect.height / 2 - canvasRect.top;
-      const toX = toRect.left + toRect.width / 2 - canvasRect.left;
-      const toY = toRect.top + toRect.height / 2 - canvasRect.top;
+      // Calculate connection points (edge of shapes, not center)
+      const fromPoint = getConnectionPoint(fromShape, toShape, 'from');
+      const toPoint = getConnectionPoint(toShape, fromShape, 'to');
       
-      const length = Math.sqrt(Math.pow(toX - fromX, 2) + Math.pow(toY - fromY, 2));
-      const angle = Math.atan2(toY - fromY, toX - fromX) * 180 / Math.PI;
+      const fromX = fromPoint.x - canvasRect.left;
+      const fromY = fromPoint.y - canvasRect.top;
+      const toX = toPoint.x - canvasRect.left;
+      const toY = toPoint.y - canvasRect.top;
       
-      connector.style.width = length + 'px';
-      connector.style.left = fromX + 'px';
-      connector.style.top = fromY + 'px';
-      connector.style.transform = `rotate(${angle}deg)`;
+      // Create bezier curve path
+      const dx = toX - fromX;
+      const dy = toY - fromY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const controlOffset = Math.min(distance * 0.3, 50); // Bezier control point offset
+      
+      const pathData = `M ${fromX} ${fromY} C ${fromX + controlOffset} ${fromY} ${toX - controlOffset} ${toY} ${toX} ${toY}`;
+      
+      connector.setAttribute('d', pathData);
+    }
+    
+    function getConnectionPoint(shape, targetShape, type) {
+      const shapeRect = shape.getBoundingClientRect();
+      const targetRect = targetShape.getBoundingClientRect();
+      
+      const shapeCenterX = shapeRect.left + shapeRect.width / 2;
+      const shapeCenterY = shapeRect.top + shapeRect.height / 2;
+      const targetCenterX = targetRect.left + targetRect.width / 2;
+      const targetCenterY = targetRect.top + targetRect.height / 2;
+      
+      // Calculate direction from shape to target
+      const dx = targetCenterX - shapeCenterX;
+      const dy = targetCenterY - shapeCenterY;
+      
+      // Find intersection with shape boundary
+      const angle = Math.atan2(dy, dx);
+      const halfWidth = shapeRect.width / 2;
+      const halfHeight = shapeRect.height / 2;
+      
+      let x, y;
+      
+      // Find intersection with shape edge
+      if (Math.abs(Math.cos(angle)) * halfHeight > Math.abs(Math.sin(angle)) * halfWidth) {
+        // Intersects with left or right edge
+        x = shapeCenterX + (Math.cos(angle) > 0 ? halfWidth : -halfWidth);
+        y = shapeCenterY + Math.tan(angle) * (x - shapeCenterX);
+      } else {
+        // Intersects with top or bottom edge
+        y = shapeCenterY + (Math.sin(angle) > 0 ? halfHeight : -halfHeight);
+        x = shapeCenterX + (y - shapeCenterY) / Math.tan(angle);
+      }
+      
+      return { x, y };
     }
 
     function addConnectionPoints(shape, shapeData) {
@@ -795,7 +918,13 @@ window.registerNextNotePlugin({
       }
       if (selectedConnector) {
         const connector = document.getElementById(`connector-${selectedConnector}`);
-        if (connector) connector.classList.remove('selected');
+        if (connector) {
+          // Reset connector to original thickness
+          const connectorData = diagramData.connectors.find(c => c.id === selectedConnector);
+          if (connectorData) {
+            connector.setAttribute('stroke-width', connectorData.thickness || '2');
+          }
+        }
         selectedConnector = null;
       }
       hideProperties();
@@ -1051,6 +1180,91 @@ window.registerNextNotePlugin({
           shape.style.fontSize = fontSize + 'px';
         }
         saveDiagramData();
+      }
+    }
+    
+    // Arrow property update functions
+    function updateArrowStyle() {
+      if (!selectedConnector) return;
+      
+      const style = document.getElementById('arrowStyle').value;
+      const connectorData = diagramData.connectors.find(c => c.id === selectedConnector);
+      if (connectorData) {
+        connectorData.style = style;
+        const connector = document.getElementById(`connector-${selectedConnector}`);
+        if (connector) {
+          if (style === 'dashed') {
+            connector.setAttribute('stroke-dasharray', '5,5');
+          } else if (style === 'dotted') {
+            connector.setAttribute('stroke-dasharray', '2,2');
+          } else {
+            connector.removeAttribute('stroke-dasharray');
+          }
+        }
+        saveDiagramData();
+      }
+    }
+    
+    function updateArrowHeadStyle() {
+      if (!selectedConnector) return;
+      
+      const headStyle = document.getElementById('arrowHeadStyle').value;
+      const connectorData = diagramData.connectors.find(c => c.id === selectedConnector);
+      if (connectorData) {
+        connectorData.headStyle = headStyle;
+        const connector = document.getElementById(`connector-${selectedConnector}`);
+        if (connector) {
+          connector.setAttribute('marker-end', `url(#${headStyle})`);
+        }
+        saveDiagramData();
+      }
+    }
+    
+    function updateArrowThickness() {
+      if (!selectedConnector) return;
+      
+      const thickness = document.getElementById('arrowThickness').value;
+      const connectorData = diagramData.connectors.find(c => c.id === selectedConnector);
+      if (connectorData) {
+        connectorData.thickness = thickness;
+        const connector = document.getElementById(`connector-${selectedConnector}`);
+        if (connector) {
+          connector.setAttribute('stroke-width', thickness);
+        }
+        saveDiagramData();
+      }
+      
+      // Update thickness display
+      document.getElementById('thicknessValue').textContent = thickness + 'px';
+    }
+    
+    function selectConnector(connectorId) {
+      deselectAll();
+      selectedConnector = connectorId;
+      const connector = document.getElementById(`connector-${connectorId}`);
+      if (connector) {
+        connector.setAttribute('stroke-width', (parseInt(connector.getAttribute('stroke-width')) + 2).toString());
+        showConnectorProperties(connectorId);
+      }
+    }
+    
+    function showConnectorProperties(connectorId) {
+      const connectorData = diagramData.connectors.find(c => c.id === connectorId);
+      if (!connectorData) return;
+      
+      const properties = document.querySelector('.diagram-properties');
+      properties.classList.add('show');
+      
+      // Update arrow-specific properties
+      const arrowStyle = document.getElementById('arrowStyle');
+      const arrowHeadStyle = document.getElementById('arrowHeadStyle');
+      const arrowThickness = document.getElementById('arrowThickness');
+      
+      if (arrowStyle) arrowStyle.value = connectorData.style || 'solid';
+      if (arrowHeadStyle) arrowHeadStyle.value = connectorData.headStyle || 'arrowhead';
+      if (arrowThickness) {
+        arrowThickness.value = connectorData.thickness || '2';
+        document.getElementById('thicknessValue').textContent = (connectorData.thickness || '2') + 'px';
       }
     }
 
@@ -1385,5 +1599,11 @@ window.registerNextNotePlugin({
     window.resetZoom = resetZoom;
     window.exportAsPNG = exportAsPNG;
     window.exportAsSVG = exportAsSVG;
+    
+    // Arrow enhancement exports
+    window.updateArrowStyle = updateArrowStyle;
+    window.updateArrowHeadStyle = updateArrowHeadStyle;
+    window.updateArrowThickness = updateArrowThickness;
+    window.selectConnector = selectConnector;
   }
 }); 
