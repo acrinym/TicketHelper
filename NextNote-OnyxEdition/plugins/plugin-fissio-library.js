@@ -1,99 +1,99 @@
-// plugins/plugin-visio-library.js
+// plugins/plugin-fissio-library.js
 
 window.registerNextNotePlugin({
-  name: "VisioLibrary",
+  name: "FissioLibrary",
   onLoad: function(app) {
-    // Visio Library specific styling
-    const visioStyle = document.createElement("style");
-    visioStyle.textContent = `
-      .visio-library {
-        --visio-primary: #0078d4;
-        --visio-secondary: #106ebe;
-        --visio-accent: #d13438;
-        --visio-success: #107c10;
-        --visio-warning: #ff8c00;
-        --visio-light: #f3f2f1;
-        --visio-dark: #323130;
-      }
-      
-      .visio-library-panel {
-        background: white;
-        border: 2px solid var(--visio-primary);
-        border-radius: 8px;
-        padding: 15px;
-        margin: 15px 0;
-        max-height: 400px;
-        overflow-y: auto;
-      }
-      
-      .visio-category {
-        margin-bottom: 20px;
-      }
-      
-      .visio-category h3 {
-        color: var(--visio-primary);
-        border-bottom: 1px solid var(--visio-primary);
-        padding-bottom: 5px;
-        margin-bottom: 10px;
-      }
-      
-      .visio-template-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 10px;
-      }
-      
-      .visio-template-item {
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        padding: 10px;
-        cursor: pointer;
-        transition: all 0.2s;
-        background: #f8f9fa;
-      }
-      
-      .visio-template-item:hover {
-        border-color: var(--visio-primary);
-        background: #e3f2fd;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      }
-      
-      .visio-template-icon {
-        font-size: 24px;
-        margin-bottom: 5px;
-      }
-      
-      .visio-template-name {
-        font-weight: 500;
-        margin-bottom: 3px;
-        color: var(--visio-dark);
-      }
-      
-      .visio-template-desc {
-        font-size: 11px;
-        color: #666;
-      }
-      
-      .visio-library-toggle {
-        position: fixed;
-        top: 260px;
-        right: 20px;
-        z-index: 1000;
-        background: var(--visio-primary);
-        color: white;
-        border: none;
-        padding: 10px 15px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-weight: bold;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-      }
+          // Fissio Library specific styling
+      const fissioStyle = document.createElement("style");
+      fissioStyle.textContent = `
+        .fissio-library {
+          --fissio-primary: #6366f1;
+          --fissio-secondary: #4f46e5;
+          --fissio-accent: #ef4444;
+          --fissio-success: #10b981;
+          --fissio-warning: #f59e0b;
+          --fissio-light: #f8fafc;
+          --fissio-dark: #1e293b;
+        }
+        
+        .fissio-library-panel {
+          background: white;
+          border: 2px solid var(--fissio-primary);
+          border-radius: 8px;
+          padding: 15px;
+          margin: 15px 0;
+          max-height: 400px;
+          overflow-y: auto;
+        }
+        
+        .fissio-category {
+          margin-bottom: 20px;
+        }
+        
+        .fissio-category h3 {
+          color: var(--fissio-primary);
+          border-bottom: 1px solid var(--fissio-primary);
+          padding-bottom: 5px;
+          margin-bottom: 10px;
+        }
+        
+        .fissio-template-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+          gap: 10px;
+        }
+        
+        .fissio-template-item {
+          border: 1px solid #ddd;
+          border-radius: 6px;
+          padding: 10px;
+          cursor: pointer;
+          transition: all 0.2s;
+          background: #f8f9fa;
+        }
+        
+        .fissio-template-item:hover {
+          border-color: var(--fissio-primary);
+          background: #eef2ff;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .fissio-template-icon {
+          font-size: 24px;
+          margin-bottom: 5px;
+        }
+        
+        .fissio-template-name {
+          font-weight: 500;
+          margin-bottom: 3px;
+          color: var(--fissio-dark);
+        }
+        
+        .fissio-template-desc {
+          font-size: 11px;
+          color: #666;
+        }
+        
+        .fissio-library-toggle {
+          position: fixed;
+          top: 260px;
+          right: 20px;
+          z-index: 1000;
+          background: var(--fissio-primary);
+          color: white;
+          border: none;
+          padding: 10px 15px;
+          border-radius: 6px;
+          cursor: pointer;
+          font-weight: bold;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
     `;
     document.head.appendChild(visioStyle);
 
-    // Comprehensive Visio Template Library
-    const visioTemplates = {
+    // Comprehensive Fissio Template Library
+    const fissioTemplates = {
       'Business': {
         'Organization Chart': {
           icon: '👥',
@@ -348,44 +348,44 @@ window.registerNextNotePlugin({
       }
     };
 
-    // Create Visio Library toggle button
-    const visioToggle = document.createElement('button');
-    visioToggle.className = 'visio-library-toggle';
-    visioToggle.textContent = '📐 Visio Library';
-    visioToggle.onclick = toggleVisioLibrary;
-    document.body.appendChild(visioToggle);
+    // Create Fissio Library toggle button
+    const fissioToggle = document.createElement('button');
+    fissioToggle.className = 'fissio-library-toggle';
+    fissioToggle.textContent = '📐 Fissio Library';
+    fissioToggle.onclick = toggleFissioLibrary;
+    document.body.appendChild(fissioToggle);
 
-    function toggleVisioLibrary() {
-      const existing = document.querySelector('.visio-library-panel');
+    function toggleFissioLibrary() {
+      const existing = document.querySelector('.fissio-library-panel');
       if (existing) {
         existing.remove();
         return;
       }
       
-      showVisioLibrary();
+      showFissioLibrary();
     }
 
-    function showVisioLibrary() {
+    function showFissioLibrary() {
       const panel = document.createElement('div');
-      panel.className = 'visio-library-panel';
+      panel.className = 'fissio-library-panel';
       
-      let html = '<h2 style="margin-top: 0; color: var(--visio-primary);">📐 Open Source Visio Library</h2>';
-      html += '<p style="margin-bottom: 20px; color: #666;">Every Visio template, completely free and open source!</p>';
+      let html = '<h2 style="margin-top: 0; color: var(--fissio-primary);">📐 Fissio Professional Diagram Library</h2>';
+      html += '<p style="margin-bottom: 20px; color: #666;">50+ Professional diagram templates, completely free and open source!</p>';
       
-      Object.keys(visioTemplates).forEach(category => {
+      Object.keys(fissioTemplates).forEach(category => {
         html += `
-          <div class="visio-category">
+          <div class="fissio-category">
             <h3>${category}</h3>
-            <div class="visio-template-grid">
+            <div class="fissio-template-grid">
         `;
         
-        Object.keys(visioTemplates[category]).forEach(templateName => {
-          const template = visioTemplates[category][templateName];
+        Object.keys(fissioTemplates[category]).forEach(templateName => {
+          const template = fissioTemplates[category][templateName];
           html += `
-            <div class="visio-template-item" onclick="createVisioTemplate('${category}', '${templateName}')">
-              <div class="visio-template-icon">${template.icon}</div>
-              <div class="visio-template-name">${templateName}</div>
-              <div class="visio-template-desc">${template.description}</div>
+            <div class="fissio-template-item" onclick="createFissioTemplate('${category}', '${templateName}')">
+              <div class="fissio-template-icon">${template.icon}</div>
+              <div class="fissio-template-name">${templateName}</div>
+              <div class="fissio-template-desc">${template.description}</div>
             </div>
           `;
         });
@@ -400,8 +400,8 @@ window.registerNextNotePlugin({
       toolbar.parentNode.insertBefore(panel, toolbar.nextSibling);
     }
 
-    function createVisioTemplate(category, templateName) {
-      const template = visioTemplates[category][templateName];
+    function createFissioTemplate(category, templateName) {
+      const template = fissioTemplates[category][templateName];
       if (!template || !template.template) return;
       
       if (currentSection) {
@@ -409,7 +409,7 @@ window.registerNextNotePlugin({
           id: crypto.randomUUID(),
           title: templateName,
           content: template.template,
-          tags: ['visio', 'diagram', category.toLowerCase(), templateName.toLowerCase()],
+          tags: ['fissio', 'diagram', category.toLowerCase(), templateName.toLowerCase()],
           created: new Date().toISOString(),
           modified: new Date().toISOString()
         };
@@ -657,8 +657,8 @@ Use these shapes in Diagram Builder mode:
     }
 
     // Make functions globally available
-    window.toggleVisioLibrary = toggleVisioLibrary;
-    window.showVisioLibrary = showVisioLibrary;
-    window.createVisioTemplate = createVisioTemplate;
+    window.toggleFissioLibrary = toggleFissioLibrary;
+    window.showFissioLibrary = showFissioLibrary;
+    window.createFissioTemplate = createFissioTemplate;
   }
 }); 

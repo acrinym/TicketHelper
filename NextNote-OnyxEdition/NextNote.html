@@ -198,7 +198,7 @@
       <button onclick="showCommandPalette()">🔍 Search</button>
       <button onclick="showModeSwitcher()">🎭 Modes</button>
       <button onclick="showTemplateSelector()">📋 Templates</button>
-      <button onclick="showVisioLibrary()">📐 Visio Library</button>
+      <button onclick="showFissioLibrary()">📐 Fissio Library</button>
       <div class="theme-select">
         <select id="themeSelect"></select>
       </div>
@@ -257,7 +257,7 @@
       "plugin-mindmap.js",
       "plugin-diagrambuilder.js",
       "plugin-googledrive.js",
-      "plugin-visio-library.js"
+      "plugin-fissio-library.js"
       // Add new plugin .js files here to hotload them!
     ];
     plugins.forEach(filename => {
@@ -2052,7 +2052,7 @@ Use [[Page Name]] to create links to other pages!
     window.switchToMode = switchToMode;
     window.showTemplateSelector = showTemplateSelector;
     window.createTemplateFromMode = createTemplateFromMode;
-    window.showVisioLibrary = showVisioLibrary;
+    window.showFissioLibrary = showFissioLibrary;
 
     // Plugin support functions
     window.renderSections = renderSections;

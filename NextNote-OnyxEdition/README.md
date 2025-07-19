@@ -2,6 +2,9 @@
 
 > **Are you tired of paying thousands for Microsoft products?** Here's your open-source solution that replaces OneNote, Visio, Project, and more - **completely free!**
 
+## 📐 **Introducing Fissio: Professional Diagram Library**
+**50+ Professional diagram templates that rival Microsoft Visio - completely free and open source!**
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Platform: Web](https://img.shields.io/badge/Platform-Web-blue.svg)](https://nextnote-onyx.com)
 [![Features: 8 Modes](https://img.shields.io/badge/Features-8%20Modes-green.svg)](https://github.com/yourusername/NextNote-OnyxEdition)
@@ -40,12 +43,12 @@
 - Tags and fuzzy search
 - **Cost Savings: $70/year**
 
-### 📐 **Diagram Builder Mode** (Visio Killer)
+### 📐 **Diagram Builder Mode** (Professional Diagram Killer)
 - **Professional shapes**: Rectangles, circles, diamonds, hexagons
 - **Smart connectors**: Automatic routing with arrow styles
 - **Properties panel**: Text, size, color, font customization
 - **Export options**: JSON, note conversion, image export
-- **📐 COMPREHENSIVE VISIO LIBRARY**: 50+ professional templates
+- **📐 COMPREHENSIVE FISSIO LIBRARY**: 50+ professional templates
 - **Cost Savings: $580/year**
 
 ### 📋 **Project Manager Mode** (Microsoft Project Killer)
@@ -100,8 +103,8 @@
 - **Network Architecture**: IT infrastructure diagrams
 - **UML Class Diagram**: Software architecture
 
-### 📐 **COMPREHENSIVE VISIO LIBRARY** 🚀
-**50+ Professional Templates - Every Visio Diagram Type!**
+### 📐 **COMPREHENSIVE FISSIO LIBRARY** 🚀
+**50+ Professional Templates - Every Professional Diagram Type!**
 
 #### 🏢 **Business Templates**
 - **Organization Chart**: Company hierarchy and reporting structure
@@ -163,7 +166,7 @@
 - **Content Strategy**: Content planning and workflow
 - **Social Media Strategy**: Social media planning
 
-**🎯 Every single Visio template, completely free and open source!**
+**🎯 Every single professional diagram template, completely free and open source!**
 
 ### 📋 **Project Templates**
 - **Software Development**: Complete development workflow
@@ -192,7 +195,7 @@
 13. **Mindmap**: Visual mind mapping
 14. **DiagramBuilder**: Visio-style diagramming
 15. **GoogleDrive**: Cloud sync and backup
-16. **VisioLibrary**: 50+ professional Visio templates
+16. **FissioLibrary**: 50+ professional diagram templates
 
 ## 🛠️ **Technology Stack**
 
