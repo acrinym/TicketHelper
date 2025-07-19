@@ -29,6 +29,34 @@ window.registerNextNotePlugin({
           linear-gradient(rgba(0,0,0,.1) 1px, transparent 1px),
           linear-gradient(90deg, rgba(0,0,0,.1) 1px, transparent 1px);
         background-size: 20px 20px;
+        transform-origin: top left;
+        cursor: grab;
+      }
+      
+      .diagram-canvas.panning {
+        cursor: grabbing;
+      }
+      
+      .diagram-canvas .grid-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: 
+          linear-gradient(rgba(0,0,0,.05) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0,0,0,.05) 1px, transparent 1px);
+        background-size: 20px 20px;
+        pointer-events: none;
+        z-index: 0;
+      }
+      
+      .selection-box {
+        position: absolute;
+        border: 2px dashed var(--diagram-accent);
+        background: rgba(52, 152, 219, 0.1);
+        pointer-events: none;
+        z-index: 1000;
       }
       
       .diagram-shape {
@@ -295,6 +323,22 @@ window.registerNextNotePlugin({
     let currentTool = 'select';
     let isConnecting = false;
     let connectionStart = null;
+    
+    // Enhanced features state
+    let undoStack = [];
+    let redoStack = [];
+    let maxUndoSteps = 50;
+    let gridSize = 20;
+    let snapToGrid = true;
+    let canvasZoom = 1;
+    let canvasPanX = 0;
+    let canvasPanY = 0;
+    let isPanning = false;
+    let panStartX = 0;
+    let panStartY = 0;
+    let selectedShapes = []; // For multi-selection
+    let isMultiSelecting = false;
+    let selectionBox = null;
 
     // Diagram functionality is now integrated into the main toolbar
     // No floating button needed
@@ -349,6 +393,14 @@ window.registerNextNotePlugin({
         <button onclick="setTool('connector')">🔗 Connector</button>
         <button onclick="showSelectedProperties()" id="propertiesBtn" disabled>⚙️ Properties</button>
         <button onclick="deleteSelected()" class="danger">🗑️ Delete</button>
+        <button onclick="undoAction()" id="undoBtn" disabled>↶ Undo</button>
+        <button onclick="redoAction()" id="redoBtn" disabled>↷ Redo</button>
+        <button onclick="toggleSnapToGrid()" id="snapBtn">🔗 Snap</button>
+        <button onclick="zoomIn()">🔍+</button>
+        <button onclick="zoomOut()">🔍-</button>
+        <button onclick="resetZoom()">🔍</button>
+        <button onclick="exportAsPNG()">📷 PNG</button>
+        <button onclick="exportAsSVG()">🎨 SVG</button>
         <button onclick="exportDiagram()">📤 Export</button>
         <button onclick="importDiagram()">📥 Import</button>
         <button onclick="clearDiagram()" class="danger">🗑️ Clear All</button>
@@ -364,6 +416,11 @@ window.registerNextNotePlugin({
     function createDiagramCanvas() {
       canvas = document.createElement('div');
       canvas.className = 'diagram-canvas';
+      
+      // Add grid overlay
+      const gridOverlay = document.createElement('div');
+      gridOverlay.className = 'grid-overlay';
+      canvas.appendChild(gridOverlay);
       
       // Add shape palette
       const palette = document.createElement('div');
@@ -404,12 +461,8 @@ window.registerNextNotePlugin({
       const editor = document.getElementById('quillEditorContainer');
       editor.parentNode.insertBefore(canvas, editor);
       
-      // Add canvas event listeners
-      canvas.addEventListener('click', function(e) {
-        if (e.target === canvas) {
-          deselectAll();
-        }
-      });
+      // Add enhanced canvas event listeners
+      setupCanvasEventListeners();
     }
 
     function loadDiagramData() {
@@ -593,8 +646,11 @@ window.registerNextNotePlugin({
       document.addEventListener('mousemove', function(e) {
         if (!isDragging) return;
         
-        shapeData.x = e.clientX - startX;
-        shapeData.y = e.clientY - startY;
+        // Apply snap to grid during dragging
+        const snappedPos = snapToGridPosition(e.clientX - startX, e.clientY - startY);
+        
+        shapeData.x = snappedPos.x;
+        shapeData.y = snappedPos.y;
         
         shape.style.left = shapeData.x + 'px';
         shape.style.top = shapeData.y + 'px';
@@ -738,18 +794,24 @@ window.registerNextNotePlugin({
         offsetY = 30;
       }
       
+      // Apply snap to grid
+      const snappedPos = snapToGridPosition(x - canvasRect.left - offsetX, y - canvasRect.top - offsetY);
+      
       const shapeData = {
         id: 'shape_' + Date.now(),
         type: type,
         text: type === 'arrow' ? '→' : type.charAt(0).toUpperCase() + type.slice(1),
-        x: x - canvasRect.left - offsetX,
-        y: y - canvasRect.top - offsetY,
+        x: snappedPos.x,
+        y: snappedPos.y,
         width: width,
         height: height,
         color: '#ffffff',
         borderColor: '#2c3e50',
         fontSize: 12
       };
+      
+      // Save to undo stack before adding shape
+      saveToUndoStack();
       
       diagramData.shapes.push(shapeData);
       createShape(shapeData);
@@ -978,6 +1040,196 @@ window.registerNextNotePlugin({
       localStorage.setItem('nextnote_diagram_data', JSON.stringify(diagramData));
     }
 
+    // Enhanced Features Functions
+    
+    function setupCanvasEventListeners() {
+      // Basic click handling
+      canvas.addEventListener('click', function(e) {
+        if (e.target === canvas) {
+          deselectAll();
+        }
+      });
+      
+      // Pan functionality
+      canvas.addEventListener('mousedown', function(e) {
+        if (e.button === 1 || (e.button === 0 && e.altKey)) { // Middle click or Alt+left click
+          e.preventDefault();
+          isPanning = true;
+          panStartX = e.clientX - canvasPanX;
+          panStartY = e.clientY - canvasPanY;
+          canvas.classList.add('panning');
+        }
+      });
+      
+      document.addEventListener('mousemove', function(e) {
+        if (isPanning) {
+          canvasPanX = e.clientX - panStartX;
+          canvasPanY = e.clientY - panStartY;
+          updateCanvasTransform();
+        }
+      });
+      
+      document.addEventListener('mouseup', function() {
+        if (isPanning) {
+          isPanning = false;
+          canvas.classList.remove('panning');
+        }
+      });
+      
+      // Zoom with mouse wheel
+      canvas.addEventListener('wheel', function(e) {
+        if (e.ctrlKey) {
+          e.preventDefault();
+          const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+          const newZoom = Math.max(0.1, Math.min(3, canvasZoom * zoomFactor));
+          setZoom(newZoom, e.offsetX, e.offsetY);
+        }
+      });
+    }
+    
+    function updateCanvasTransform() {
+      canvas.style.transform = `translate(${canvasPanX}px, ${canvasPanY}px) scale(${canvasZoom})`;
+    }
+    
+    function setZoom(zoom, centerX = 0, centerY = 0) {
+      canvasZoom = zoom;
+      updateCanvasTransform();
+    }
+    
+    function zoomIn() {
+      setZoom(Math.min(3, canvasZoom * 1.2));
+    }
+    
+    function zoomOut() {
+      setZoom(Math.max(0.1, canvasZoom / 1.2));
+    }
+    
+    function resetZoom() {
+      canvasZoom = 1;
+      canvasPanX = 0;
+      canvasPanY = 0;
+      updateCanvasTransform();
+    }
+    
+    function toggleSnapToGrid() {
+      snapToGrid = !snapToGrid;
+      const snapBtn = document.getElementById('snapBtn');
+      if (snapBtn) {
+        snapBtn.classList.toggle('active', snapToGrid);
+      }
+    }
+    
+    function snapToGridPosition(x, y) {
+      if (!snapToGrid) return { x, y };
+      return {
+        x: Math.round(x / gridSize) * gridSize,
+        y: Math.round(y / gridSize) * gridSize
+      };
+    }
+    
+    function saveToUndoStack() {
+      const state = JSON.stringify(diagramData);
+      undoStack.push(state);
+      if (undoStack.length > maxUndoSteps) {
+        undoStack.shift();
+      }
+      redoStack = []; // Clear redo stack when new action is performed
+      updateUndoRedoButtons();
+    }
+    
+    function undoAction() {
+      if (undoStack.length === 0) return;
+      
+      const currentState = JSON.stringify(diagramData);
+      redoStack.push(currentState);
+      
+      const previousState = undoStack.pop();
+      diagramData = JSON.parse(previousState);
+      
+      renderDiagram();
+      updateUndoRedoButtons();
+    }
+    
+    function redoAction() {
+      if (redoStack.length === 0) return;
+      
+      const currentState = JSON.stringify(diagramData);
+      undoStack.push(currentState);
+      
+      const nextState = redoStack.pop();
+      diagramData = JSON.parse(nextState);
+      
+      renderDiagram();
+      updateUndoRedoButtons();
+    }
+    
+    function updateUndoRedoButtons() {
+      const undoBtn = document.getElementById('undoBtn');
+      const redoBtn = document.getElementById('redoBtn');
+      
+      if (undoBtn) undoBtn.disabled = undoStack.length === 0;
+      if (redoBtn) redoBtn.disabled = redoStack.length === 0;
+    }
+    
+    function exportAsPNG() {
+      if (!canvas) return;
+      
+      // Create a temporary canvas for rendering
+      const tempCanvas = document.createElement('canvas');
+      const ctx = tempCanvas.getContext('2d');
+      
+      // Get canvas dimensions
+      const rect = canvas.getBoundingClientRect();
+      tempCanvas.width = rect.width;
+      tempCanvas.height = rect.height;
+      
+      // Set background
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+      
+      // Convert canvas to data URL
+      const dataURL = tempCanvas.toDataURL('image/png');
+      
+      // Download
+      const link = document.createElement('a');
+      link.download = 'diagram.png';
+      link.href = dataURL;
+      link.click();
+    }
+    
+    function exportAsSVG() {
+      if (!canvas) return;
+      
+      const svgWidth = 800;
+      const svgHeight = 600;
+      
+      let svg = `<svg width="${svgWidth}" height="${svgHeight}" xmlns="http://www.w3.org/2000/svg">`;
+      svg += `<rect width="100%" height="100%" fill="white"/>`;
+      
+      // Add shapes as SVG elements
+      diagramData.shapes.forEach(shape => {
+        if (shape.type === 'rectangle') {
+          svg += `<rect x="${shape.x}" y="${shape.y}" width="${shape.width}" height="${shape.height}" fill="${shape.color || 'white'}" stroke="${shape.borderColor || '#2c3e50'}" stroke-width="2"/>`;
+          svg += `<text x="${shape.x + shape.width/2}" y="${shape.y + shape.height/2}" text-anchor="middle" dominant-baseline="middle" font-size="12">${shape.text}</text>`;
+        } else if (shape.type === 'circle') {
+          svg += `<circle cx="${shape.x + shape.width/2}" cy="${shape.y + shape.height/2}" r="${Math.min(shape.width, shape.height)/2}" fill="${shape.color || 'white'}" stroke="${shape.borderColor || '#2c3e50'}" stroke-width="2"/>`;
+          svg += `<text x="${shape.x + shape.width/2}" y="${shape.y + shape.height/2}" text-anchor="middle" dominant-baseline="middle" font-size="12">${shape.text}</text>`;
+        }
+        // Add more shape types as needed
+      });
+      
+      svg += '</svg>';
+      
+      // Download
+      const blob = new Blob([svg], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = 'diagram.svg';
+      link.href = url;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
     // Make functions globally available
     window.setTool = setTool;
     window.deleteSelected = deleteSelected;
@@ -993,5 +1245,15 @@ window.registerNextNotePlugin({
     window.updateSelectedFont = updateSelectedFont;
     window.showSelectedProperties = showSelectedProperties;
     window.toggleDiagramMode = toggleDiagramMode;
+    
+    // Enhanced features exports
+    window.undoAction = undoAction;
+    window.redoAction = redoAction;
+    window.toggleSnapToGrid = toggleSnapToGrid;
+    window.zoomIn = zoomIn;
+    window.zoomOut = zoomOut;
+    window.resetZoom = resetZoom;
+    window.exportAsPNG = exportAsPNG;
+    window.exportAsSVG = exportAsSVG;
   }
 }); 
