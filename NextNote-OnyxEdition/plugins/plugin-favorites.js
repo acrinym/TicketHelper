@@ -29,6 +29,13 @@ window.registerNextNotePlugin({
       if (window.sections && Array.isArray(window.sections)) {
         return { sections: window.sections, resources: [], settings: {} };
       }
+      // Try to get sections from global scope
+      if (typeof window.getSections === 'function') {
+        const sections = window.getSections();
+        if (sections && Array.isArray(sections)) {
+          return { sections: sections, resources: [], settings: {} };
+        }
+      }
       return { sections: [], resources: [], settings: {} };
     }
 

@@ -113,7 +113,7 @@ window.registerNextNotePlugin({
         'Value Stream Map': {
           icon: '📈',
           description: 'Lean manufacturing process analysis',
-          template: createValueStreamTemplate()
+          template: createValueStreamMapTemplate()
         },
         'Business Model Canvas': {
           icon: '💼',
@@ -518,6 +518,292 @@ Use these shapes in Diagram Builder mode:
 - ➡️ **Arrows**: Flow direction`;
     }
 
+    function createSwimlaneTemplate() {
+      return `# 🏊 Swimlane Diagram Template
+
+## 🎯 Process Overview
+**Process Name**: [Process Name]
+**Scope**: [Process scope]
+**Last Updated**: ${new Date().toLocaleDateString()}
+
+## 🏊‍♂️ Swimlanes
+
+### Customer
+- **Start**: Customer submits request
+- **Wait**: Customer waits for response
+- **Receive**: Customer receives result
+
+### Sales Team
+- **Review**: Review customer request
+- **Validate**: Validate requirements
+- **Quote**: Generate quote
+
+### Development Team
+- **Analyze**: Analyze requirements
+- **Develop**: Develop solution
+- **Test**: Test solution
+
+### QA Team
+- **Test**: Quality assurance testing
+- **Validate**: Validate solution
+- **Approve**: Approve for delivery
+
+## 🔗 Process Flow
+Customer → Sales Team → Development Team → QA Team → Customer
+
+## 🎨 Diagram Elements
+Use these shapes in Diagram Builder mode:
+- ⬜ **Rectangles**: Process steps
+- 💎 **Diamonds**: Decision points
+- ➡️ **Arrows**: Flow direction
+- 📝 **Text Boxes**: Swimlane labels`;
+    }
+
+    function createValueStreamMapTemplate() {
+      return `# 📈 Value Stream Map Template
+
+## 🎯 Process Overview
+**Process Name**: [Process Name]
+**Scope**: [Process scope]
+**Last Updated**: ${new Date().toLocaleDateString()}
+
+## 📊 Value Stream Components
+
+### Customer Demand
+- **Takt Time**: [Customer demand rate]
+- **Volume**: [Daily/weekly volume]
+- **Variety**: [Product/service variety]
+
+### Process Steps
+1. **Step 1**: [Process name]
+   - **Cycle Time**: [Time per unit]
+   - **Lead Time**: [Total time]
+   - **Value Added**: [Yes/No]
+
+2. **Step 2**: [Process name]
+   - **Cycle Time**: [Time per unit]
+   - **Lead Time**: [Total time]
+   - **Value Added**: [Yes/No]
+
+3. **Step 3**: [Process name]
+   - **Cycle Time**: [Time per unit]
+   - **Lead Time**: [Total time]
+   - **Value Added**: [Yes/No]
+
+## 📈 Metrics
+- **Total Lead Time**: [Sum of all lead times]
+- **Total Cycle Time**: [Sum of cycle times]
+- **Value Added Time**: [Sum of value-added time]
+- **Efficiency**: [Value added / Total time]
+
+## 🎯 Improvement Opportunities
+- **Waste Identification**: [List wastes found]
+- **Bottlenecks**: [Identify bottlenecks]
+- **Improvement Actions**: [List actions]`;
+    }
+
+    function createBusinessModelTemplate() {
+      return `# 💼 Business Model Canvas Template
+
+## 🎯 Business Model Overview
+**Company**: [Company Name]
+**Date**: ${new Date().toLocaleDateString()}
+
+## 🏗️ Business Model Canvas
+
+### Key Partners
+- [Partner 1]: [Role and value]
+- [Partner 2]: [Role and value]
+- [Partner 3]: [Role and value]
+
+### Key Activities
+- [Activity 1]: [Description]
+- [Activity 2]: [Description]
+- [Activity 3]: [Description]
+
+### Key Resources
+- **Human**: [Key people/skills]
+- **Physical**: [Facilities, equipment]
+- **Intellectual**: [IP, patents, data]
+- **Financial**: [Funding sources]
+
+### Value Propositions
+- [Value 1]: [Customer benefit]
+- [Value 2]: [Customer benefit]
+- [Value 3]: [Customer benefit]
+
+### Customer Relationships
+- **Type**: [Personal, automated, etc.]
+- **Channels**: [How you reach customers]
+- **Retention**: [How you keep customers]
+
+### Channels
+- **Direct**: [Direct sales channels]
+- **Indirect**: [Partner channels]
+- **Online**: [Digital channels]
+
+### Customer Segments
+- **Primary**: [Main customer group]
+- **Secondary**: [Secondary customer group]
+- **Niche**: [Specialized segments]
+
+### Cost Structure
+- **Fixed Costs**: [List fixed costs]
+- **Variable Costs**: [List variable costs]
+- **Economies of Scale**: [Cost advantages]
+
+### Revenue Streams
+- **Stream 1**: [Revenue source]
+- **Stream 2**: [Revenue source]
+- **Stream 3**: [Revenue source]`;
+    }
+
+    function createGanttChartTemplate() {
+      return `# 📅 Gantt Chart Template
+
+## 🎯 Project Overview
+**Project Name**: [Project Name]
+**Start Date**: [Start Date]
+**End Date**: [End Date]
+**Last Updated**: ${new Date().toLocaleDateString()}
+
+## 📊 Project Timeline
+
+### Phase 1: Planning (Week 1-2)
+- **Task 1.1**: [Task description]
+  - **Start**: [Date]
+  - **End**: [Date]
+  - **Duration**: [Days]
+  - **Dependencies**: [Prerequisites]
+
+- **Task 1.2**: [Task description]
+  - **Start**: [Date]
+  - **End**: [Date]
+  - **Duration**: [Days]
+  - **Dependencies**: [Prerequisites]
+
+### Phase 2: Development (Week 3-6)
+- **Task 2.1**: [Task description]
+  - **Start**: [Date]
+  - **End**: [Date]
+  - **Duration**: [Days]
+  - **Dependencies**: [Prerequisites]
+
+- **Task 2.2**: [Task description]
+  - **Start**: [Date]
+  - **End**: [Date]
+  - **Duration**: [Days]
+  - **Dependencies**: [Prerequisites]
+
+### Phase 3: Testing (Week 7-8)
+- **Task 3.1**: [Task description]
+  - **Start**: [Date]
+  - **End**: [Date]
+  - **Duration**: [Days]
+  - **Dependencies**: [Prerequisites]
+
+## 👥 Resource Allocation
+- **Team Member 1**: [Assigned tasks]
+- **Team Member 2**: [Assigned tasks]
+- **Team Member 3**: [Assigned tasks]
+
+## 📈 Progress Tracking
+- **Completed**: [Number of completed tasks]
+- **In Progress**: [Number of active tasks]
+- **Pending**: [Number of pending tasks]
+- **Delayed**: [Number of delayed tasks]`;
+    }
+
+    function createPertChartTemplate() {
+      return `# 🎯 PERT Chart Template
+
+## 🎯 Project Overview
+**Project Name**: [Project Name]
+**Start Date**: [Start Date]
+**End Date**: [End Date]
+**Last Updated**: ${new Date().toLocaleDateString()}
+
+## 📊 PERT Analysis
+
+### Critical Path Activities
+1. **Activity A**: [Description]
+   - **Optimistic Time**: [Best case]
+   - **Most Likely Time**: [Expected case]
+   - **Pessimistic Time**: [Worst case]
+   - **Expected Time**: [Calculated]
+   - **Variance**: [Calculated]
+
+2. **Activity B**: [Description]
+   - **Optimistic Time**: [Best case]
+   - **Most Likely Time**: [Expected case]
+   - **Pessimistic Time**: [Worst case]
+   - **Expected Time**: [Calculated]
+   - **Variance**: [Calculated]
+
+3. **Activity C**: [Description]
+   - **Optimistic Time**: [Best case]
+   - **Most Likely Time**: [Expected case]
+   - **Pessimistic Time**: [Worst case]
+   - **Expected Time**: [Calculated]
+   - **Variance**: [Calculated]
+
+## 📈 Project Metrics
+- **Critical Path Duration**: [Total expected time]
+- **Project Variance**: [Total variance]
+- **Standard Deviation**: [Calculated]
+- **Probability of Completion**: [On time probability]
+
+## 🎯 Risk Analysis
+- **High Risk Activities**: [List risky activities]
+- **Mitigation Strategies**: [Risk reduction plans]
+- **Contingency Plans**: [Backup plans]`;
+    }
+
+    function createDecisionTreeTemplate() {
+      return `# 🌳 Decision Tree Template
+
+## 🎯 Decision Overview
+**Decision**: [What decision needs to be made]
+**Date**: ${new Date().toLocaleDateString()}
+
+## 🌳 Decision Tree Structure
+
+### Root Decision
+**Question**: [Main decision question]
+**Options**: [Available choices]
+
+### Branch 1: [Option 1]
+- **Probability**: [Chance of this outcome]
+- **Outcome 1.1**: [Possible result]
+  - **Value**: [Monetary or utility value]
+  - **Probability**: [Chance of this outcome]
+
+- **Outcome 1.2**: [Possible result]
+  - **Value**: [Monetary or utility value]
+  - **Probability**: [Chance of this outcome]
+
+### Branch 2: [Option 2]
+- **Probability**: [Chance of this outcome]
+- **Outcome 2.1**: [Possible result]
+  - **Value**: [Monetary or utility value]
+  - **Probability**: [Chance of this outcome]
+
+- **Outcome 2.2**: [Possible result]
+  - **Value**: [Monetary or utility value]
+  - **Probability**: [Chance of this outcome]
+
+## 📊 Expected Value Analysis
+- **Option 1 Expected Value**: [Calculated value]
+- **Option 2 Expected Value**: [Calculated value]
+- **Recommended Choice**: [Best option]
+
+## 🎯 Sensitivity Analysis
+- **Key Variables**: [What affects the decision]
+- **Break-even Points**: [When options are equal]
+- **Risk Factors**: [What could go wrong]`;
+    }
+
+    // Add more template functions for other categories...
     function createNetworkDiagramTemplate() {
       return `# 🌐 Network Diagram Template
 
@@ -612,48 +898,6 @@ Use these shapes in Diagram Builder mode:
 - ⬜ **Rectangles**: Classes
 - ➡️ **Arrows**: Relationships
 - 📝 **Text Boxes**: Methods and properties`;
-    }
-
-    // Add more template functions for other categories...
-    function createSwimlaneTemplate() {
-      return `# 🏊 Swimlane Diagram Template
-
-## 🎯 Process Overview
-**Process Name**: [Process Name]
-**Scope**: [Process scope]
-**Last Updated**: ${new Date().toLocaleDateString()}
-
-## 🏊‍♂️ Swimlanes
-
-### Customer
-- **Start**: Customer submits request
-- **Wait**: Customer waits for response
-- **Receive**: Customer receives result
-
-### Sales Team
-- **Review**: Review customer request
-- **Validate**: Validate requirements
-- **Quote**: Generate quote
-
-### Development Team
-- **Analyze**: Analyze requirements
-- **Develop**: Develop solution
-- **Test**: Test solution
-
-### QA Team
-- **Test**: Quality assurance testing
-- **Validate**: Validate solution
-- **Approve**: Approve for delivery
-
-## 🔗 Process Flow
-Customer → Sales Team → Development Team → QA Team → Customer
-
-## 🎨 Diagram Elements
-Use these shapes in Diagram Builder mode:
-- ⬜ **Rectangles**: Process steps
-- 💎 **Diamonds**: Decision points
-- ➡️ **Arrows**: Flow direction
-- 📝 **Text Boxes**: Swimlane labels`;
     }
 
     // Make functions globally available

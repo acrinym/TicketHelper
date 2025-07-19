@@ -317,6 +317,10 @@ window.registerNextNotePlugin({
         return;
       }
       
+      // Remove any other mode panels first
+      const otherPanels = document.querySelectorAll('.fissio-library-panel, .mode-switcher-panel, .template-selector-panel');
+      otherPanels.forEach(panel => panel.remove());
+      
       showRitualMode();
     }
 
@@ -359,6 +363,9 @@ window.registerNextNotePlugin({
       const template = ritualTemplates[category][templateName];
       if (!template || !template.template) return;
       
+      // Get current section from global scope
+      const currentSection = window.currentSection || (window.sections && window.sections.length > 0 ? window.sections[0] : null);
+      
       if (currentSection) {
         const newPage = {
           id: crypto.randomUUID(),
@@ -370,11 +377,15 @@ window.registerNextNotePlugin({
         };
         
         currentSection.pages.push(newPage);
-        saveData();
-        renderSections();
-        selectPage(currentSection.id, newPage.id);
+        
+        // Use global functions if available
+        if (window.saveData) window.saveData();
+        if (window.renderSections) window.renderSections();
+        if (window.selectPage) window.selectPage(currentSection.id, newPage.id);
         
         alert(`✨ ${templateName} created! Your sacred digital temple grows.`);
+      } else {
+        alert('Please create a section first!');
       }
     }
 
