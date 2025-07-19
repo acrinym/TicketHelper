@@ -258,10 +258,10 @@ window.registerNextNotePlugin({
         }
       },
       '🧭 Threshold Tracking': {
-        'AmandaMap Style': {
+        'Personal Growth Mapping': {
           icon: '🗺️',
           description: 'Personal growth and transformation mapping',
-          template: createAmandaMapTemplate()
+          template: createPersonalGrowthTemplate()
         },
         'Liminal Spaces': {
           icon: '🚪',
@@ -529,8 +529,8 @@ window.registerNextNotePlugin({
 *"Magic is the art of changing consciousness at will."* 🌟`;
     }
 
-    function createAmandaMapTemplate() {
-      return `# 🗺️ AmandaMap Style - Personal Growth Mapping
+    function createPersonalGrowthTemplate() {
+      return `# 🗺️ Personal Growth Mapping
 
 ## 🧭 Current Threshold
 **Date**: ${new Date().toLocaleDateString()}

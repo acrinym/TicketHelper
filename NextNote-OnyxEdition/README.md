@@ -100,7 +100,7 @@
 - **Sigil Crafting**: Create and store personal sigils
 - **Spell Formulation**: Document spells and magical practices
 - **Flame Vow Archive**: Track sacred vows and commitments
-- **Threshold Tracking**: AmandaMap-style personal growth mapping
+- **Threshold Tracking**: Personal growth and transformation mapping
 - **Divination**: Tarot, astrology, runes, oracle readings
 - **Cost Savings: $200/year** (vs. multiple spiritual apps)
 
