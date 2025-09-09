@@ -199,3 +199,69 @@
 #settingsContent > div.active {
   display: block;
 }
+
+#plugin-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.plugin-panel {
+    border: 1px solid var(--hermes-panel-border);
+    border-radius: 4px;
+    margin-bottom: 5px;
+}
+
+.plugin-panel-header {
+    background: var(--hermes-accent-bar-bg);
+    padding: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.plugin-panel-content {
+    padding: 5px;
+}
+
+.outline-entry {
+    cursor: pointer;
+    margin: 2px 0 2px 0;
+    padding-left: 6px;
+    border-left: 2px solid #bed4ec;
+    font-size: 13px;
+    color: #2c4f74;
+    transition: background 0.12s;
+    border-radius: 3px;
+}
+.outline-entry:hover {
+    background: #ebf1fb;
+}
+.outline-h1 { font-weight: bold; padding-left: 0; border-left: none; }
+.outline-h2 { padding-left: 16px; }
+.outline-h3 { padding-left: 32px; }
+.outline-h4 { padding-left: 48px; }
+.outline-h5 { padding-left: 64px; }
+.outline-h6 { padding-left: 80px; }
+
+.tag-chip {
+    display: inline-block;
+    background: #e0eaff;
+    color: #1557b2;
+    border-radius: 8px;
+    padding: 2px 10px 2px 8px;
+    margin: 0 5px 4px 0;
+    font-size: 13px;
+    line-height: 1.5;
+    cursor: pointer;
+    transition: background 0.12s;
+    border: 1px solid #b5cfff;
+}
+.tag-chip:hover {
+    background: #cbe2ff;
+}
+.tag-delete {
+    margin-left: 4px;
+    font-size: 12px;
+    color: #d02b2b;
+    cursor: pointer;
+}
