@@ -142,132 +142,6 @@ window.registerNextNotePlugin({
         clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
       }
       
-      .diagram-shape.arrow {
-        background: transparent !important;
-        border: none !important;
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: visible;
-      }
-      
-      /* Right arrow (default) */
-      .diagram-shape.arrow::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 80%;
-        height: 4px;
-        background: var(--diagram-primary);
-        border-radius: 2px;
-      }
-      
-      .diagram-shape.arrow::after {
-        content: '';
-        position: absolute;
-        right: 0;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 0;
-        height: 0;
-        border-left: 12px solid var(--diagram-primary);
-        border-top: 8px solid transparent;
-        border-bottom: 8px solid transparent;
-      }
-      
-      /* Left arrow */
-      .diagram-shape.arrow.left::before {
-        left: 20%;
-        width: 80%;
-      }
-      
-      .diagram-shape.arrow.left::after {
-        right: auto;
-        left: 0;
-        border-left: none;
-        border-right: 12px solid var(--diagram-primary);
-      }
-      
-      /* Bidirectional arrow */
-      .diagram-shape.arrow.bidirectional::before {
-        left: 15%;
-        width: 70%;
-      }
-      
-      .diagram-shape.arrow.bidirectional::after {
-        right: 0;
-        border-left: 12px solid var(--diagram-primary);
-      }
-      
-      .diagram-shape.arrow.bidirectional .arrow-head-left {
-        position: absolute;
-        left: 0;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 0;
-        height: 0;
-        border-right: 12px solid var(--diagram-primary);
-        border-top: 8px solid transparent;
-        border-bottom: 8px solid transparent;
-      }
-      
-      /* Vertical arrows */
-      .diagram-shape.arrow.up::before {
-        left: 50%;
-        top: 20%;
-        transform: translateX(-50%);
-        width: 4px;
-        height: 80%;
-      }
-      
-      .diagram-shape.arrow.up::after {
-        right: auto;
-        left: 50%;
-        top: 0;
-        transform: translateX(-50%);
-        border-left: 8px solid transparent;
-        border-right: 8px solid transparent;
-        border-bottom: 12px solid var(--diagram-primary);
-        border-top: none;
-      }
-      
-      .diagram-shape.arrow.down::before {
-        left: 50%;
-        top: 0;
-        transform: translateX(-50%);
-        width: 4px;
-        height: 80%;
-      }
-      
-      .diagram-shape.arrow.down::after {
-        right: auto;
-        left: 50%;
-        bottom: 0;
-        transform: translateX(-50%);
-        border-left: 8px solid transparent;
-        border-right: 8px solid transparent;
-        border-top: 12px solid var(--diagram-primary);
-        border-bottom: none;
-      }
-      
-      .arrow-text {
-        position: absolute;
-        top: -20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: white;
-        padding: 2px 6px;
-        border-radius: 3px;
-        font-size: 10px;
-        color: var(--diagram-dark);
-        border: 1px solid var(--diagram-primary);
-        white-space: nowrap;
-        z-index: 10;
-      }
-      
       .diagram-connector {
         position: absolute;
         background: var(--diagram-primary);
@@ -426,6 +300,7 @@ window.registerNextNotePlugin({
     let diagramData = JSON.parse(localStorage.getItem('nextnote_diagram_data') || '[]');
     let selectedShape = null;
     let selectedConnector = null;
+    let selectedArrow = null;
     let canvas = null;
     let shapes = [];
     let connectors = [];
@@ -497,12 +372,8 @@ window.registerNextNotePlugin({
         <button onclick="setTool('circle')">⭕ Circle</button>
         <button onclick="setTool('diamond')">💎 Diamond</button>
         <button onclick="setTool('hexagon')">⬡ Hexagon</button>
-        <button onclick="setTool('arrow')">➡️ Arrow</button>
-        <button onclick="setTool('arrow-left')">⬅️ Left</button>
-        <button onclick="setTool('arrow-bidirectional')">⬌ Bidirectional</button>
-        <button onclick="setTool('arrow-up')">⬆️ Up</button>
-        <button onclick="setTool('arrow-down')">⬇️ Down</button>
         <button onclick="setTool('text')">📝 Text</button>
+        <button onclick="setTool('draw-arrow')">✏️ Draw Arrow</button>
         <button onclick="setTool('connector')">🔗 Connector</button>
         <button onclick="showSelectedProperties()" id="propertiesBtn" disabled>⚙️ Properties</button>
         <button onclick="deleteSelected()" class="danger">🗑️ Delete</button>
@@ -582,12 +453,8 @@ window.registerNextNotePlugin({
         <button onclick="setTool('circle')">⭕ Circle</button>
         <button onclick="setTool('diamond')">💎 Diamond</button>
         <button onclick="setTool('hexagon')">⬡ Hexagon</button>
-        <button onclick="setTool('arrow')">➡️ Arrow</button>
-        <button onclick="setTool('arrow-left')">⬅️ Left</button>
-        <button onclick="setTool('arrow-bidirectional')">⬌ Bidirectional</button>
-        <button onclick="setTool('arrow-up')">⬆️ Up</button>
-        <button onclick="setTool('arrow-down')">⬇️ Down</button>
         <button onclick="setTool('text')">📝 Text</button>
+        <button onclick="setTool('draw-arrow')">✏️ Arrow</button>
         <button onclick="setTool('connector')">🔗 Connect</button>
       `;
       canvas.appendChild(palette);
@@ -638,11 +505,12 @@ window.registerNextNotePlugin({
     }
 
     function loadDiagramData() {
-      if (diagramData.length === 0) {
-        // Create default diagram
+      if (diagramData.length === 0 || !diagramData.arrows) {
+        // Create default diagram or upgrade old data structure
         diagramData = {
-          shapes: [],
-          connectors: []
+          shapes: diagramData.shapes || [],
+          connectors: diagramData.connectors || [],
+          arrows: []
         };
       }
     }
@@ -665,6 +533,23 @@ window.registerNextNotePlugin({
       diagramData.connectors.forEach(connectorData => {
         createConnector(connectorData);
       });
+
+      // Create arrows
+      if (diagramData.arrows) {
+          diagramData.arrows.forEach(arrowData => {
+              const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+              path.id = arrowData.id;
+              path.dataset.arrowId = arrowData.id;
+              updateArrowPath(path, arrowData);
+              path.addEventListener('click', function(e) {
+                  e.stopPropagation();
+                  selectArrow(arrowData.id);
+              });
+              canvas.svgLayer.appendChild(path);
+              // Note: We might need a separate array for arrows if they have different behaviors
+              connectors.push(path);
+          });
+      }
     }
 
     function createShape(shapeData) {
@@ -673,24 +558,7 @@ window.registerNextNotePlugin({
       shape.id = `shape-${shapeData.id}`;
       
       // Special handling for arrow shapes
-      if (shapeData.type === 'arrow') {
-        const arrowDirection = shapeData.direction || 'right';
-        shape.className = `diagram-shape ${shapeData.type} ${arrowDirection}`;
-        
-        if (arrowDirection === 'bidirectional') {
-          shape.innerHTML = `
-            <div class="arrow-head-left"></div>
-            <div class="arrow-text">${shapeData.text}</div>
-          `;
-        } else {
-          shape.innerHTML = `<div class="arrow-text">${shapeData.text}</div>`;
-        }
-        
-        shape.style.width = shapeData.width + 'px';
-        shape.style.height = shapeData.height + 'px';
-        shape.style.backgroundColor = 'transparent';
-        shape.style.border = 'none';
-      } else if (shapeData.type === 'text') {
+      if (shapeData.type === 'text') {
         // Text shapes
         shape.innerHTML = `<div class="shape-text">${shapeData.text}</div>`;
         shape.style.width = shapeData.width + 'px';
@@ -966,6 +834,16 @@ window.registerNextNotePlugin({
         }
         selectedConnector = null;
       }
+      if (selectedArrow) {
+          const arrow = document.getElementById(selectedArrow);
+          if (arrow) {
+              const arrowData = diagramData.arrows.find(a => a.id === selectedArrow);
+              if (arrowData) {
+                  arrow.setAttribute('stroke-width', arrowData.thickness || '2');
+              }
+          }
+          selectedArrow = null;
+      }
       hideProperties();
       
       // Disable properties button
@@ -1024,6 +902,9 @@ window.registerNextNotePlugin({
             createShapeAtPosition(e.clientX, e.clientY, tool);
           }
         };
+      } else if (tool === 'draw-arrow') {
+        canvas.style.cursor = 'crosshair';
+        // Drawing logic will be added here
       } else {
         canvas.style.cursor = 'default';
         canvas.onclick = function(e) {
@@ -1039,47 +920,12 @@ window.registerNextNotePlugin({
       
       // Set appropriate dimensions for different shape types
       let width, height, offsetX, offsetY;
-      let arrowDirection = 'right';
       
       if (type === 'circle') {
         width = 80;
         height = 80;
         offsetX = 40;
         offsetY = 40;
-      } else if (type === 'arrow') {
-        width = 100;
-        height = 20;
-        offsetX = 50;
-        offsetY = 10;
-        arrowDirection = 'right';
-      } else if (type === 'arrow-left') {
-        width = 100;
-        height = 20;
-        offsetX = 50;
-        offsetY = 10;
-        arrowDirection = 'left';
-        type = 'arrow';
-      } else if (type === 'arrow-bidirectional') {
-        width = 100;
-        height = 20;
-        offsetX = 50;
-        offsetY = 10;
-        arrowDirection = 'bidirectional';
-        type = 'arrow';
-      } else if (type === 'arrow-up') {
-        width = 20;
-        height = 100;
-        offsetX = 10;
-        offsetY = 50;
-        arrowDirection = 'up';
-        type = 'arrow';
-      } else if (type === 'arrow-down') {
-        width = 20;
-        height = 100;
-        offsetX = 10;
-        offsetY = 50;
-        arrowDirection = 'down';
-        type = 'arrow';
       } else if (type === 'text') {
         width = 120;
         height = 40;
@@ -1098,7 +944,7 @@ window.registerNextNotePlugin({
       const shapeData = {
         id: 'shape_' + Date.now(),
         type: type,
-        text: type === 'arrow' ? '→' : (type === 'text' ? 'Text Label' : type.charAt(0).toUpperCase() + type.slice(1)),
+        text: type === 'text' ? 'Text Label' : type.charAt(0).toUpperCase() + type.slice(1),
         x: snappedPos.x,
         y: snappedPos.y,
         width: width,
@@ -1107,11 +953,6 @@ window.registerNextNotePlugin({
         borderColor: '#2c3e50',
         fontSize: type === 'text' ? 14 : 12
       };
-      
-      // Add arrow direction if it's an arrow
-      if (type === 'arrow') {
-        shapeData.direction = arrowDirection;
-      }
       
       // Save to undo stack before adding shape
       saveToUndoStack();
@@ -1135,6 +976,13 @@ window.registerNextNotePlugin({
         selectedShape = null;
         renderDiagram();
         saveDiagramData();
+      }
+      if (selectedArrow) {
+          diagramData.arrows = diagramData.arrows.filter(a => a.id !== selectedArrow);
+          const arrow = document.getElementById(selectedArrow);
+          if (arrow) arrow.remove();
+          selectedArrow = null;
+          saveDiagramData();
       }
     }
 
@@ -1229,53 +1077,92 @@ window.registerNextNotePlugin({
     
     // Arrow property update functions
     function updateArrowStyle() {
-      if (!selectedConnector) return;
-      
       const style = document.getElementById('arrowStyle').value;
-      const connectorData = diagramData.connectors.find(c => c.id === selectedConnector);
-      if (connectorData) {
-        connectorData.style = style;
-        const connector = document.getElementById(`connector-${selectedConnector}`);
-        if (connector) {
-          if (style === 'dashed') {
-            connector.setAttribute('stroke-dasharray', '5,5');
-          } else if (style === 'dotted') {
-            connector.setAttribute('stroke-dasharray', '2,2');
-          } else {
-            connector.removeAttribute('stroke-dasharray');
+      if (selectedConnector) {
+          const connectorData = diagramData.connectors.find(c => c.id === selectedConnector);
+          if (connectorData) {
+              connectorData.style = style;
+              const connector = document.getElementById(`connector-${selectedConnector}`);
+              if (connector) {
+                  if (style === 'dashed') {
+                      connector.setAttribute('stroke-dasharray', '5,5');
+                  } else if (style === 'dotted') {
+                      connector.setAttribute('stroke-dasharray', '2,2');
+                  } else {
+                      connector.removeAttribute('stroke-dasharray');
+                  }
+              }
+              saveDiagramData();
           }
-        }
-        saveDiagramData();
+      }
+      if (selectedArrow) {
+          const arrowData = diagramData.arrows.find(a => a.id === selectedArrow);
+          if (arrowData) {
+              arrowData.style = style;
+              const arrow = document.getElementById(selectedArrow);
+              if (arrow) {
+                  if (style === 'dashed') {
+                      arrow.setAttribute('stroke-dasharray', '5,5');
+                  } else if (style === 'dotted') {
+                      arrow.setAttribute('stroke-dasharray', '2,2');
+                  } else {
+                      arrow.removeAttribute('stroke-dasharray');
+                  }
+              }
+              saveDiagramData();
+          }
       }
     }
     
     function updateArrowHeadStyle() {
-      if (!selectedConnector) return;
-      
       const headStyle = document.getElementById('arrowHeadStyle').value;
-      const connectorData = diagramData.connectors.find(c => c.id === selectedConnector);
-      if (connectorData) {
-        connectorData.headStyle = headStyle;
-        const connector = document.getElementById(`connector-${selectedConnector}`);
-        if (connector) {
-          connector.setAttribute('marker-end', `url(#${headStyle})`);
-        }
-        saveDiagramData();
+      if (selectedConnector) {
+          const connectorData = diagramData.connectors.find(c => c.id === selectedConnector);
+          if (connectorData) {
+              connectorData.headStyle = headStyle;
+              const connector = document.getElementById(`connector-${selectedConnector}`);
+              if (connector) {
+                  connector.setAttribute('marker-end', `url(#${headStyle})`);
+              }
+              saveDiagramData();
+          }
+      }
+      if (selectedArrow) {
+          const arrowData = diagramData.arrows.find(a => a.id === selectedArrow);
+          if (arrowData) {
+              arrowData.headStyle = headStyle;
+              const arrow = document.getElementById(selectedArrow);
+              if (arrow) {
+                  arrow.setAttribute('marker-end', `url(#${headStyle})`);
+              }
+              saveDiagramData();
+          }
       }
     }
     
     function updateArrowThickness() {
-      if (!selectedConnector) return;
-      
       const thickness = document.getElementById('arrowThickness').value;
-      const connectorData = diagramData.connectors.find(c => c.id === selectedConnector);
-      if (connectorData) {
-        connectorData.thickness = thickness;
-        const connector = document.getElementById(`connector-${selectedConnector}`);
-        if (connector) {
-          connector.setAttribute('stroke-width', thickness);
-        }
-        saveDiagramData();
+      if (selectedConnector) {
+          const connectorData = diagramData.connectors.find(c => c.id === selectedConnector);
+          if (connectorData) {
+              connectorData.thickness = thickness;
+              const connector = document.getElementById(`connector-${selectedConnector}`);
+              if (connector) {
+                  connector.setAttribute('stroke-width', thickness);
+              }
+              saveDiagramData();
+          }
+      }
+      if (selectedArrow) {
+          const arrowData = diagramData.arrows.find(a => a.id === selectedArrow);
+          if (arrowData) {
+              arrowData.thickness = thickness;
+              const arrow = document.getElementById(selectedArrow);
+              if (arrow) {
+                  arrow.setAttribute('stroke-width', thickness);
+              }
+              saveDiagramData();
+          }
       }
       
       // Update thickness display
@@ -1290,6 +1177,17 @@ window.registerNextNotePlugin({
         connector.setAttribute('stroke-width', (parseInt(connector.getAttribute('stroke-width')) + 2).toString());
         showConnectorProperties(connectorId);
       }
+    }
+
+    function selectArrow(arrowId) {
+        deselectAll();
+        selectedArrow = arrowId;
+        const arrow = document.getElementById(arrowId);
+        if (arrow) {
+            // Apply selection style
+            arrow.setAttribute('stroke-width', (parseInt(arrow.getAttribute('stroke-width') || 2) + 2).toString());
+            showArrowProperties(arrowId);
+        }
     }
     
     function showConnectorProperties(connectorId) {
@@ -1310,6 +1208,26 @@ window.registerNextNotePlugin({
         arrowThickness.value = connectorData.thickness || '2';
         document.getElementById('thicknessValue').textContent = (connectorData.thickness || '2') + 'px';
       }
+    }
+
+    function showArrowProperties(arrowId) {
+        const arrowData = diagramData.arrows.find(a => a.id === arrowId);
+        if (!arrowData) return;
+
+        const properties = document.querySelector('.diagram-properties');
+        properties.classList.add('show');
+
+        // Update arrow-specific properties
+        const arrowStyle = document.getElementById('arrowStyle');
+        const arrowHeadStyle = document.getElementById('arrowHeadStyle');
+        const arrowThickness = document.getElementById('arrowThickness');
+
+        if (arrowStyle) arrowStyle.value = arrowData.style || 'solid';
+        if (arrowHeadStyle) arrowHeadStyle.value = arrowData.headStyle || 'arrowhead';
+        if (arrowThickness) {
+            arrowThickness.value = arrowData.thickness || '2';
+            document.getElementById('thicknessValue').textContent = (arrowData.thickness || '2') + 'px';
+        }
     }
 
     function exportDiagram() {
@@ -1430,7 +1348,29 @@ window.registerNextNotePlugin({
 
     // Enhanced Features Functions
     
+    function updateArrowPath(path, arrowData) {
+        const d = `M ${arrowData.from.x} ${arrowData.from.y} L ${arrowData.to.x} ${arrowData.to.y}`;
+        path.setAttribute('d', d);
+        path.setAttribute('stroke', arrowData.color || 'var(--diagram-primary)');
+        path.setAttribute('stroke-width', arrowData.thickness || '2');
+        path.setAttribute('fill', 'none');
+        path.setAttribute('marker-end', `url(#${arrowData.headStyle || 'arrowhead'})`);
+    }
+
     function setupCanvasEventListeners() {
+      let isDrawingArrow = false;
+      let newArrowPath = null;
+      let currentArrowData = null;
+
+      function getCanvasCoordinates(e) {
+          const canvasRect = canvas.getBoundingClientRect();
+          const svgRect = canvas.svgLayer.getBoundingClientRect();
+          // This needs to account for zoom and pan
+          const x = (e.clientX - svgRect.left) / canvasZoom;
+          const y = (e.clientY - svgRect.top) / canvasZoom;
+          return {x, y};
+      }
+
       // Basic click handling
       canvas.addEventListener('click', function(e) {
         if (e.target === canvas) {
@@ -1472,6 +1412,52 @@ window.registerNextNotePlugin({
           const newZoom = Math.max(0.1, Math.min(3, canvasZoom * zoomFactor));
           setZoom(newZoom, e.offsetX, e.offsetY);
         }
+      });
+
+      canvas.addEventListener('mousedown', function(e) {
+          if (currentTool === 'draw-arrow') {
+              isDrawingArrow = true;
+              const coords = getCanvasCoordinates(e);
+
+              currentArrowData = {
+                  id: 'arrow_' + Date.now(),
+                  from: { x: coords.x, y: coords.y },
+                  to: { x: coords.x, y: coords.y },
+                  style: 'solid',
+                  headStyle: 'arrowhead',
+                  thickness: 2,
+                  color: 'var(--diagram-primary)'
+              };
+
+              newArrowPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+              newArrowPath.id = currentArrowData.id;
+              updateArrowPath(newArrowPath, currentArrowData);
+              canvas.svgLayer.appendChild(newArrowPath);
+          }
+      });
+
+      document.addEventListener('mousemove', function(e) {
+          if (isDrawingArrow) {
+              const coords = getCanvasCoordinates(e);
+              currentArrowData.to = { x: coords.x, y: coords.y };
+              updateArrowPath(newArrowPath, currentArrowData);
+          }
+      });
+
+      document.addEventListener('mouseup', function(e) {
+          if (isDrawingArrow) {
+              const coords = getCanvasCoordinates(e);
+              // Prevent creating a zero-length arrow
+              if (currentArrowData.from.x !== coords.x || currentArrowData.from.y !== coords.y) {
+                  diagramData.arrows.push(currentArrowData);
+                  saveDiagramData();
+              } else {
+                  newArrowPath.remove();
+              }
+              isDrawingArrow = false;
+              newArrowPath = null;
+              currentArrowData = null;
+          }
       });
     }
     

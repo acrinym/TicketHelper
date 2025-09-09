@@ -21,6 +21,7 @@ function runPlugins() {
       quill: window.quill,
       getNextNotePluginPanel: window.getNextNotePluginPanel,
       events: window.nextNoteEvents,
+      saveSections: window.saveSections,
       // Add other APIs here in the future
   };
 

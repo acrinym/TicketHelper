@@ -225,6 +225,7 @@ async function loadNotebook(name) {
   templates = t;
   versionHistory = h;
 
+  nextNoteEvents.emit('sectionsUpdated', sections);
   migrateAttachments();
   migrateSections();
   migratePages();
@@ -265,7 +266,11 @@ function populateNotebookSelect() {
 }
 
 // --- Data Saving Wrappers ---
-function saveSections() { return idbSet("sections_v4", sections); }
+function saveSections() {
+    return idbSet("sections_v4", sections).then(() => {
+        nextNoteEvents.emit('sectionsUpdated', sections);
+    });
+}
 function saveAttachments() { return idbSet("attachments_v1", attachments); }
 function saveTemplates() { return idbSet("templates_v1", templates); }
 function saveHistory() { return idbSet("history_v1", versionHistory); }
