@@ -1604,6 +1604,28 @@ window.registerNextNotePlugin({
       URL.revokeObjectURL(url);
     }
 
+    function loadDiagramFromData(data) {
+        if (data && (data.shapes || data.arrows)) {
+            diagramData = data;
+            if (!diagramData.shapes) diagramData.shapes = [];
+            if (!diagramData.arrows) diagramData.arrows = [];
+            if (!diagramData.connectors) diagramData.connectors = [];
+
+            saveDiagramData();
+
+            if (diagramMode) {
+                renderDiagram();
+            } else {
+                // If not in diagram mode, enable it. This will also render the diagram.
+                toggleDiagramMode();
+            }
+            app.showToast("Diagram template loaded successfully.");
+        } else {
+            console.error("Invalid diagram data provided to loadDiagramFromData", data);
+            app.showToast("Error: Invalid template format.", { type: 'error' });
+        }
+    }
+
     // Make functions globally available
     window.setTool = setTool;
     window.deleteSelected = deleteSelected;
@@ -1635,5 +1657,8 @@ window.registerNextNotePlugin({
     window.updateArrowHeadStyle = updateArrowHeadStyle;
     window.updateArrowThickness = updateArrowThickness;
     window.selectConnector = selectConnector;
+
+    // Expose the new function
+    window.loadDiagramFromData = loadDiagramFromData;
   }
 }); 
