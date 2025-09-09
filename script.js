@@ -16,6 +16,20 @@ const hermesThemes = {
 };
 
 // --- Application State ---
+const nextNoteEvents = {
+    events: {},
+    on(event, listener) {
+        if (!this.events[event]) {
+            this.events[event] = [];
+        }
+        this.events[event].push(listener);
+    },
+    emit(event, data) {
+        if (this.events[event]) {
+            this.events[event].forEach(listener => listener(data));
+        }
+    }
+};
 let db = null;
 let useLocalStorageFallback = false;
 const notebookList = JSON.parse(localStorage.getItem("notebook_list")) || ["default"];
@@ -470,6 +484,7 @@ function loadPage(sec, idx) {
   quill.clipboard.dangerouslyPasteHTML(htmlContent);
   document.getElementById("currentPageName").textContent = sec + " > " + page.name;
   document.getElementById("pageMeta").textContent = `id: ${page.id} created: ${page.created} modified: ${page.modified}`;
+  nextNoteEvents.emit('pageSelected', page);
   document.getElementById("preview").style.display = "none";
   document.getElementById("quillEditorContainer").style.display = "flex";
   quill.enable(true);
@@ -1072,6 +1087,31 @@ function showSettingsSection(section){
     document.querySelectorAll('#settingsContent > div').forEach(div=>div.classList.remove('active'));
     const target=document.getElementById('settings-'+section);
     if(target) target.classList.add('active');
+}
+
+function getNextNotePluginPanel(pluginName) {
+    const container = document.getElementById('plugin-container');
+    if (!container) return null;
+
+    const panel = document.createElement('div');
+    panel.className = 'plugin-panel';
+
+    const header = document.createElement('div');
+    header.className = 'plugin-panel-header';
+    header.textContent = pluginName;
+    header.onclick = () => {
+        const content = panel.querySelector('.plugin-panel-content');
+        content.style.display = content.style.display === 'none' ? 'block' : 'none';
+    };
+
+    const content = document.createElement('div');
+    content.className = 'plugin-panel-content';
+
+    panel.appendChild(header);
+    panel.appendChild(content);
+    container.appendChild(panel);
+
+    return content; // Return the content div for the plugin to populate
 }
 
 // --- Initial Load & Event Listeners ---

@@ -16,10 +16,18 @@ let pluginsLoaded = false;
 
 function runPlugins() {
   if (!(nextNoteReady && pluginsLoaded)) return;
+
+  const app = {
+      quill: window.quill,
+      getNextNotePluginPanel: window.getNextNotePluginPanel,
+      events: window.nextNoteEvents,
+      // Add other APIs here in the future
+  };
+
   window.nextNotePlugins.forEach(p => {
     try {
       if (typeof p.onLoad === 'function') {
-        p.onLoad(window);
+        p.onLoad(app);
       }
     } catch (e) {
       console.error(`Error in plugin ${p.name}`, e);
