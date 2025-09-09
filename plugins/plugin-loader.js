@@ -34,21 +34,9 @@ document.addEventListener('NextNoteReady', () => {
 
 (async () => {
   const pluginFolder = 'plugins/';
-  const pluginList = [
-    'plugin-resource-manager.js',
-    'plugin-fuzzysearch.js',
-    'plugin-multinotebook.js',
-    'plugin-quickactions.js',
-    'plugin-tags.js',
-    'plugin-backlinks.js',
-    'plugin-templates.js',
-    'plugin-reminders.js',
-    'plugin-outline.js',
-    'plugin-favorites.js',
-    'plugin-history.js'
-  ];
+  const enabledPlugins = JSON.parse(localStorage.getItem("nextnote_enabled_plugins")) || [];
 
-  for (const plugin of pluginList) {
+  for (const plugin of enabledPlugins) {
     await new Promise(resolve => {
       const path = pluginFolder + plugin;
       const script = document.createElement('script');

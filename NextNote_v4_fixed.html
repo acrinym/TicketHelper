@@ -22,6 +22,13 @@
     <div id="sections"></div>
   </div>
   <div id="main">
+    <div id="templateSelector" class="overlay">
+        <div class="template-box">
+            <h3>Choose a Template</h3>
+            <div id="templateSelectorList"></div>
+            <button onclick="document.getElementById('templateSelector').style.display='none'">Cancel</button>
+        </div>
+    </div>
     <div id="toolbar">
       <span id="currentPageName">No Page Selected</span>
       <span id="pageMeta" style="margin-left:10px;color:var(--hermes-disabled-text);"></span>
@@ -34,8 +41,11 @@
       <button onclick="document.getElementById('imgInput').click()">🏞️ Image</button>
       <input type="file" id="imgInput" accept="image/*" style="display:none" onchange="insertImage(event)"/>
       <button onclick="exportMarkdown()">⬇️ Export MD</button>
+      <button onclick="exportNotebook()">⬇️ Export All</button>
       <input type="file" id="importFile" style="display:none" onchange="importMarkdown(event)"/>
       <button onclick="document.getElementById('importFile').click()">⬆️ Import MD</button>
+      <input type="file" id="importNotebookFile" style="display:none" onchange="importNotebook(event)" accept=".json,.nextnote.json"/>
+      <button onclick="document.getElementById('importNotebookFile').click()">⬆️ Import All</button>
       <input id="searchInput" placeholder="Search..." oninput="updateSearch()" style="margin-left:auto;">
       <button onclick="showSettingsPanel()">⚙️</button>
       <button onclick="toggleAttachments()">📎 Attachments</button>
@@ -57,11 +67,23 @@
     </div>
   </div>
   <div id="templateManager" class="overlay">
-    <div class="template-box">
-      <h3>Templates</h3>
-      <div id="templateList"></div>
-      <button onclick="addTemplate()">+ Add Template</button>
-      <button onclick="hideTemplateManager()">Close</button>
+    <div class="template-box" style="width: 600px; display: flex; gap: 10px;">
+        <div id="templateMaster" style="width: 200px; border-right: 1px solid var(--hermes-border); padding-right: 10px;">
+            <h3>Templates</h3>
+            <div id="templateList" style="cursor:pointer;"></div>
+            <button id="newTemplateBtn">New Template</button>
+        </div>
+        <div id="templateDetail" style="flex: 1;">
+            <input type="hidden" id="templateId" />
+            <label>Name: <input type="text" id="templateNameInput" style="width: 95%;"></label>
+            <br><br>
+            <label>Content (Markdown): <textarea id="templateContentInput" style="width: 95%; height: 200px;"></textarea></label>
+            <div style="margin-top:10px;">
+                <button id="saveTemplateBtn">Save</button>
+                <button id="deleteTemplateBtn">Delete</button>
+                <button onclick="hideTemplateManager()">Close</button>
+            </div>
+        </div>
     </div>
   </div>
   <div id="historyPanel" class="overlay">
@@ -77,20 +99,31 @@
         <button onclick="showSettingsSection('appearance')">Appearance</button>
         <button onclick="showSettingsSection('editor')">Editor</button>
         <button onclick="showSettingsSection('notebooks')">Notebooks</button>
+        <button onclick="showSettingsSection('plugins')">Plugins</button>
         <button onclick="hideSettingsPanel()" style="margin-left:auto;">Close</button>
       </div>
       <div id="settingsContent">
-        <div id="settings-appearance">
+        <div id="settings-appearance" class="settings-section">
+          <h3>Appearance</h3>
           <label>Theme:
             <select id="themeSelect"></select>
           </label>
         </div>
-        <div id="settings-editor">
+        <div id="settings-editor" class="settings-section">
+          <h3>Editor</h3>
           <label>Font Size:<input type="number" id="fontSizeInput" min="10" max="32" step="1"></label>
+          <br>
           <label>Autosave (ms):<input type="number" id="autosaveInput" min="5000" step="1000"></label>
         </div>
-        <div id="settings-notebooks">
+        <div id="settings-notebooks" class="settings-section">
+          <h3>Notebooks</h3>
           <p>Notebook preferences coming soon.</p>
+        </div>
+        <div id="settings-plugins" class="settings-section">
+          <h3>Plugin Management</h3>
+          <div id="pluginList">
+            <!-- Plugin toggles will be dynamically added here -->
+          </div>
         </div>
       </div>
     </div>
