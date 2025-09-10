@@ -16,6 +16,20 @@ const hermesThemes = {
 };
 
 // --- Application State ---
+const nextNoteEvents = {
+    events: {},
+    on(event, listener) {
+        if (!this.events[event]) {
+            this.events[event] = [];
+        }
+        this.events[event].push(listener);
+    },
+    emit(event, data) {
+        if (this.events[event]) {
+            this.events[event].forEach(listener => listener(data));
+        }
+    }
+};
 let db = null;
 let useLocalStorageFallback = false;
 const notebookList = JSON.parse(localStorage.getItem("notebook_list")) || ["default"];
@@ -32,6 +46,7 @@ let quill;
 let autosaveInterval = parseInt(localStorage.getItem("autosave-interval")) || 30000;
 let autosaveTimer = null;
 let editorFontSize = parseInt(localStorage.getItem("editor-font-size")) || 16;
+let enabledPlugins = JSON.parse(localStorage.getItem("nextnote_enabled_plugins")) || [];
 
 // --- IndexedDB Core Logic ---
 function openDB(name) {
@@ -43,11 +58,14 @@ function openDB(name) {
       resolve();
       return;
     }
-    const request = indexedDB.open("nextnote_" + name, 1);
+    const request = indexedDB.open("nextnote_" + name, 2); // Version updated to 2
     request.onupgradeneeded = e => {
       const dbInstance = e.target.result;
       if (!dbInstance.objectStoreNames.contains("data")) {
         dbInstance.createObjectStore("data");
+      }
+      if (!dbInstance.objectStoreNames.contains("attachments_store")) {
+        dbInstance.createObjectStore("attachments_store");
       }
     };
     request.onsuccess = e => {
@@ -101,6 +119,90 @@ function idbSet(key, value) {
   });
 }
 
+function idbGetAttachment(key) {
+    return new Promise((resolve, reject) => {
+        if (useLocalStorageFallback || !db) {
+            console.warn("Attachments not supported in localStorage fallback mode.");
+            resolve(null);
+            return;
+        }
+        const tx = db.transaction("attachments_store", "readonly");
+        const req = tx.objectStore("attachments_store").get(key);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = (e) => reject(e);
+    });
+}
+
+function idbSetAttachment(key, value) {
+    return new Promise((resolve, reject) => {
+        if (useLocalStorageFallback || !db) {
+            console.warn("Attachments not supported in localStorage fallback mode.");
+            resolve();
+            return;
+        }
+        const tx = db.transaction("attachments_store", "readwrite");
+        tx.objectStore("attachments_store").put(value, key);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+    });
+}
+
+function idbDeleteAttachment(key) {
+    return new Promise((resolve, reject) => {
+        if (useLocalStorageFallback || !db) {
+            console.warn("Attachments not supported in localStorage fallback mode.");
+            resolve();
+            return;
+        }
+        const tx = db.transaction("attachments_store", "readwrite");
+        const req = tx.objectStore("attachments_store").delete(key);
+        req.onsuccess = () => resolve();
+        req.onerror = (e) => reject(e);
+    });
+}
+
+function b64toBlob(b64Data, contentType='', sliceSize=512) {
+    const byteCharacters = atob(b64Data.split(',')[1]);
+    const byteArrays = [];
+    for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+        const slice = byteCharacters.slice(offset, offset + sliceSize);
+        const byteNumbers = new Array(slice.length);
+        for (let i = 0; i < slice.length; i++) {
+            byteNumbers[i] = slice.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        byteArrays.push(byteArray);
+    }
+    const blob = new Blob(byteArrays, {type: contentType});
+    return blob;
+}
+
+function migrateAttachments() {
+    // This is a one-time migration for users who have old base64 attachments.
+    let migrationNeeded = false;
+    const newAttachments = attachments.map(att => {
+        if (att.data) { // Old format detected
+            migrationNeeded = true;
+            const id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2);
+            // We need to convert the base64 data back to a blob.
+            const blob = b64toBlob(att.data, att.name.endsWith('.png') ? 'image/png' : 'application/octet-stream');
+            idbSetAttachment(id, blob);
+            return {
+                id: id,
+                name: att.name,
+                type: blob.type,
+                size: blob.size
+            };
+        }
+        return att; // Already in new format
+    });
+
+    if (migrationNeeded) {
+        attachments = newAttachments;
+        saveAttachments(); // Save the new metadata array
+    }
+}
+
 // --- Notebook Management ---
 async function loadNotebook(name) {
   try {
@@ -123,6 +225,8 @@ async function loadNotebook(name) {
   templates = t;
   versionHistory = h;
 
+  nextNoteEvents.emit('sectionsUpdated', sections);
+  migrateAttachments();
   migrateSections();
   migratePages();
   renderSections();
@@ -162,7 +266,11 @@ function populateNotebookSelect() {
 }
 
 // --- Data Saving Wrappers ---
-function saveSections() { return idbSet("sections_v4", sections); }
+function saveSections() {
+    return idbSet("sections_v4", sections).then(() => {
+        nextNoteEvents.emit('sectionsUpdated', sections);
+    });
+}
 function saveAttachments() { return idbSet("attachments_v1", attachments); }
 function saveTemplates() { return idbSet("templates_v1", templates); }
 function saveHistory() { return idbSet("history_v1", versionHistory); }
@@ -320,28 +428,33 @@ function renderSections() {
 
     const addPgBtn = document.createElement("button");
     addPgBtn.textContent = "+ Page";
-    addPgBtn.onclick = () => {
-      const name = prompt("Page Name?");
-      if (name) {
-        let markdown = "";
-        if (templates.length && confirm('Create from template?')) {
-          const tpl = newPageWithTemplate();
-          if (tpl !== null) { markdown = tpl; }
+    addPgBtn.onclick = async () => {
+        const name = prompt("Page Name?");
+        if (name) {
+            let markdown = '';
+            if (templates.length > 0 && confirm('Create from template?')) {
+                const tpl = await newPageWithTemplate();
+                if (tpl !== null) { // tpl will be null if cancelled
+                    markdown = tpl;
+                } else {
+                    return; // User cancelled template selection
+                }
+            }
+
+            const now = new Date().toISOString();
+            sections[sec].pages.push({
+                name,
+                markdown,
+                id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2),
+                created: now,
+                modified: now,
+                color: "",
+                icon: ""
+            });
+            saveSections();
+            renderSections();
+            loadPage(sec, sections[sec].pages.length - 1);
         }
-        const now = new Date().toISOString();
-        sections[sec].pages.push({
-          name,
-          markdown,
-          id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2),
-          created: now,
-          modified: now,
-          color: "",
-          icon: ""
-        });
-        saveSections();
-        renderSections();
-        loadPage(sec, sections[sec].pages.length - 1);
-      }
     };
     secDiv.appendChild(addPgBtn);
     container.appendChild(secDiv);
@@ -376,6 +489,7 @@ function loadPage(sec, idx) {
   quill.clipboard.dangerouslyPasteHTML(htmlContent);
   document.getElementById("currentPageName").textContent = sec + " > " + page.name;
   document.getElementById("pageMeta").textContent = `id: ${page.id} created: ${page.created} modified: ${page.modified}`;
+  nextNoteEvents.emit('pageSelected', page);
   document.getElementById("preview").style.display = "none";
   document.getElementById("quillEditorContainer").style.display = "flex";
   quill.enable(true);
@@ -432,19 +546,25 @@ function togglePreview() {
   }
 }
 
-function insertImage(ev) {
-  const file = ev.target.files[0];
-  if (!file) return;
-  const fr = new FileReader();
-  fr.onload = e => {
-    const range = quill.getSelection();
-    if (range) {
-      quill.insertEmbed(range.index, 'image', e.target.result);
-    } else {
-      quill.insertEmbed(quill.getLength(), 'image', e.target.result);
-    }
-  };
-  fr.readAsDataURL(file);
+async function insertImage(ev) {
+    const file = ev.target.files[0];
+    if (!file) return;
+
+    // Use a temporary event object to pass to addAttachments
+    const tempEvent = {
+        target: {
+            files: [file],
+            value: '' // to be cleared
+        }
+    };
+    await addAttachments(tempEvent);
+
+    // The new attachment is the last one in the array
+    const newAttachmentIndex = attachments.length - 1;
+    await insertAttachment(newAttachmentIndex);
+
+    // Clear the file input value
+    ev.target.value = '';
 }
 
 function exportMarkdown() {
@@ -455,6 +575,124 @@ function exportMarkdown() {
   a.href = URL.createObjectURL(blob);
   a.download = sections[currentSection].pages[currentPage].name.replace(/\s+/g, "_") + ".md";
   a.click();
+}
+
+function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+}
+
+async function exportNotebook() {
+    console.log("Starting notebook export...");
+
+    // 1. Create a deep copy of sections to avoid modifying the original data
+    const notebookData = {
+        version: '1.0',
+        exportedAt: new Date().toISOString(),
+        notebookName: currentNotebook,
+        sections: JSON.parse(JSON.stringify(sections)),
+        templates: JSON.parse(JSON.stringify(templates)),
+        attachments: [] // We will populate this below
+    };
+
+    // 2. Process attachments
+    for (const attMeta of attachments) {
+        try {
+            const blob = await idbGetAttachment(attMeta.id);
+            if (blob) {
+                const data = await blobToBase64(blob);
+                notebookData.attachments.push({
+                    ...attMeta,
+                    data: data // Add base64 data to the export
+                });
+            }
+        } catch (e) {
+            console.error(`Could not export attachment ${attMeta.name}:`, e);
+        }
+    }
+
+    // 3. Create and download the JSON file
+    const jsonString = JSON.stringify(notebookData, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${currentNotebook}.nextnote.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    console.log("Notebook export complete.");
+}
+
+async function importNotebook(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+
+            // Basic validation
+            if (!data.notebookName || !data.sections) {
+                throw new Error("Invalid notebook file format.");
+            }
+
+            // Prompt for a new notebook name
+            const newNotebookName = prompt(`Enter a name for the imported notebook:`, `${data.notebookName}-imported`);
+            if (newNotebookName === null) {
+                alert("Import cancelled.");
+                return;
+            }
+            if (!newNotebookName.trim() || notebookList.includes(newNotebookName)) {
+                alert("Invalid or duplicate notebook name. Please try again.");
+                return;
+            }
+
+            // Create and switch to the new notebook
+            notebookList.push(newNotebookName);
+            saveNotebookList();
+            await openDB(newNotebookName); // This sets up the new DB
+            currentNotebook = newNotebookName;
+            localStorage.setItem("current_notebook", newNotebookName);
+
+
+            // Import sections and templates
+            await idbSet("sections_v4", data.sections || {});
+            await idbSet("templates_v1", data.templates || []);
+
+            // Import attachments
+            const importedAttachmentsMeta = [];
+            if (data.attachments && Array.isArray(data.attachments)) {
+                for (const att of data.attachments) {
+                    if (att.data) {
+                        const blob = b64toBlob(att.data, att.type);
+                        await idbSetAttachment(att.id, blob);
+                        // Save metadata without the 'data' field
+                        const { data, ...meta } = att;
+                        importedAttachmentsMeta.push(meta);
+                    }
+                }
+            }
+            await idbSet("attachments_v1", importedAttachmentsMeta);
+
+            alert(`Notebook "${newNotebookName}" imported successfully! The application will now reload.`);
+            location.reload();
+
+        } catch (err) {
+            console.error("Failed to import notebook:", err);
+            alert("Error importing notebook. See console for details.");
+        } finally {
+            // Reset file input so the same file can be loaded again
+            event.target.value = '';
+        }
+    };
+    reader.readAsText(file);
 }
 
 function importMarkdown(event) {
@@ -531,13 +769,21 @@ function renderAttachments(){
         const div=document.createElement('div');
         div.className='attachment-item';
         const name=document.createElement('span');
-        name.textContent=att.name;
+        name.textContent = `${att.name} (${att.size ? (att.size / 1024).toFixed(2) + ' KB' : 'N/A'})`; // Display size too
         const insert=document.createElement('button');
         insert.textContent='Insert';
         insert.onclick=()=>insertAttachment(idx);
         const del=document.createElement('button');
         del.textContent='Delete';
-        del.onclick=()=>{attachments.splice(idx,1); saveAttachments(); renderAttachments();};
+        del.onclick= async ()=>{
+            const attMeta = attachments[idx];
+            if (attMeta) {
+                await idbDeleteAttachment(attMeta.id);
+                attachments.splice(idx,1);
+                saveAttachments();
+                renderAttachments();
+            }
+        };
         div.appendChild(name);
         div.appendChild(insert);
         div.appendChild(del);
@@ -545,74 +791,137 @@ function renderAttachments(){
     });
 }
 
-function addAttachments(ev){
+async function addAttachments(ev){
     const files=Array.from(ev.target.files);
-    files.forEach(file=>{
-        const fr=new FileReader();
-        fr.onload=e=>{attachments.push({name:file.name,data:e.target.result}); saveAttachments(); renderAttachments();};
-        fr.readAsDataURL(file);
-    });
+    for (const file of files) {
+        const id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2);
+        const attachmentMeta = {
+            id: id,
+            name: file.name,
+            type: file.type,
+            size: file.size,
+        };
+        await idbSetAttachment(id, file); // Store the file Blob
+        attachments.push(attachmentMeta);
+    }
+    saveAttachments(); // This now saves the metadata array
+    renderAttachments();
     ev.target.value='';
 }
 
-function insertAttachment(idx){
-    const att=attachments[idx];
-    const range=quill.getSelection();
-    if(att.data.startsWith('data:image/')){
-        if(range){ quill.insertEmbed(range.index,'image',att.data); }
-        else { quill.insertEmbed(quill.getLength(),'image',att.data); }
-    } else {
-        const linkText=att.name;
-        const link=`[${linkText}](${att.data})`;
-        if(range){ quill.insertText(range.index, link); }
-        else { quill.insertText(quill.getLength(), link); }
+async function insertAttachment(idx){
+    const attMeta = attachments[idx];
+    if (!attMeta) return;
+
+    const blob = await idbGetAttachment(attMeta.id);
+    if (!blob) {
+        alert('Error: Attachment data not found.');
+        return;
     }
+
+    const range = quill.getSelection();
+    const reader = new FileReader();
+
+    reader.onload = e => {
+        const dataUrl = e.target.result;
+        if (attMeta.type.startsWith('image/')) {
+            if(range){ quill.insertEmbed(range.index, 'image', dataUrl); }
+            else { quill.insertEmbed(quill.getLength(), 'image', dataUrl); }
+        } else {
+            // For non-image files, we can't embed them.
+            // A common approach is to link to them, but blobs don't have a permanent URL.
+            // For now, we'll just insert the name as text.
+            // A more advanced implementation might upload the file and get a URL.
+            const linkText = attMeta.name;
+            if(range){ quill.insertText(range.index, linkText); }
+            else { quill.insertText(quill.getLength(), linkText); }
+        }
+    };
+
+    reader.readAsDataURL(blob);
     toggleAttachments();
 }
 
 // --- UI Panels (Templates, History, Palette) ---
 
-function showTemplateManager(){
-    const mgr=document.getElementById('templateManager');
-    const list=document.getElementById('templateList');
-    list.innerHTML='';
-    templates.forEach((t,i)=>{
-        const div=document.createElement('div');
-        div.textContent=t.name;
-        const edit=document.createElement('button');
-        edit.textContent='Edit';
-        edit.onclick=()=>editTemplate(i);
-        const del=document.createElement('button');
-        del.textContent='Delete';
-        del.onclick=()=>{templates.splice(i,1); saveTemplates(); showTemplateManager();};
-        div.appendChild(edit);
-        div.appendChild(del);
-        list.appendChild(div);
-    });
-    mgr.style.display='flex';
-}
-
 function hideTemplateManager(){
     document.getElementById('templateManager').style.display='none';
 }
 
-function addTemplate(){
-    const name=prompt('Template name?');
-    if(!name) return;
-    const content=prompt('Template markdown?');
-    templates.push({name,markdown:content||''});
-    saveTemplates();
-    showTemplateManager();
-}
+function showTemplateManager() {
+    const mgr = document.getElementById('templateManager');
+    const listDiv = document.getElementById('templateList');
+    const nameInput = document.getElementById('templateNameInput');
+    const contentInput = document.getElementById('templateContentInput');
+    const idInput = document.getElementById('templateId');
 
-function editTemplate(idx){
-    const t=templates[idx];
-    const name=prompt('Template name?', t.name);
-    if(!name) return;
-    const content=prompt('Template markdown?', t.markdown);
-    templates[idx]={name,markdown:content||''};
-    saveTemplates();
-    showTemplateManager();
+    function renderList() {
+        listDiv.innerHTML = '';
+        templates.forEach((t, i) => {
+            const div = document.createElement('div');
+            div.textContent = t.name;
+            div.dataset.index = i;
+            div.onclick = () => loadTemplateForEditing(i);
+            listDiv.appendChild(div);
+        });
+    }
+
+    function clearEditor() {
+        idInput.value = '';
+        nameInput.value = '';
+        contentInput.value = '';
+    }
+
+    function loadTemplateForEditing(index) {
+        const t = templates[index];
+        if (t) {
+            idInput.value = index;
+            nameInput.value = t.name;
+            contentInput.value = t.markdown;
+        }
+    }
+
+    document.getElementById('newTemplateBtn').onclick = clearEditor;
+
+    document.getElementById('saveTemplateBtn').onclick = () => {
+        const name = nameInput.value.trim();
+        const markdown = contentInput.value;
+        const id = idInput.value;
+
+        if (!name) {
+            alert("Template name cannot be empty.");
+            return;
+        }
+
+        if (id !== '') {
+            // Update existing template
+            templates[id] = { name, markdown };
+        } else {
+            // Create new template
+            if (templates.some(t => t.name === name)) {
+                alert("A template with this name already exists.");
+                return;
+            }
+            templates.push({ name, markdown });
+        }
+        saveTemplates();
+        renderList();
+        clearEditor();
+    };
+
+    document.getElementById('deleteTemplateBtn').onclick = () => {
+        const id = idInput.value;
+        if (id !== '' && confirm('Are you sure you want to delete this template?')) {
+            templates.splice(id, 1);
+            saveTemplates();
+            renderList();
+            clearEditor();
+        }
+    };
+
+    renderList();
+    clearEditor();
+    mgr.style.display = 'flex';
 }
 
 function showHistory(){
@@ -644,15 +953,50 @@ function hideHistory(){
     document.getElementById('historyPanel').style.display='none';
 }
 
-function newPageWithTemplate(){
-    if(!templates.length){ return null; }
-    const opts=templates.map((t,i)=>`${i+1}: ${t.name}`).join('\n');
-    const choice=prompt(`Choose template number or Cancel for blank:\n${opts}`);
-    const idx=parseInt(choice)-1;
-    if(!isNaN(idx) && templates[idx]){
-        return templates[idx].markdown;
-    }
-    return '';
+function newPageWithTemplate() {
+    return new Promise(resolve => {
+        if (!templates.length) {
+            resolve(null); // No templates exist, so resolve with null.
+            return;
+        }
+
+        const overlay = document.getElementById('templateSelector');
+        const listDiv = document.getElementById('templateSelectorList');
+        listDiv.innerHTML = '';
+
+        templates.forEach((t, i) => {
+            const div = document.createElement('div');
+            div.textContent = t.name;
+            div.style.cursor = 'pointer';
+            div.style.padding = '5px';
+            div.onclick = () => {
+                overlay.style.display = 'none';
+                resolve(t.markdown);
+            };
+            listDiv.appendChild(div);
+        });
+
+        // Add a "Blank Page" option
+        const blankDiv = document.createElement('div');
+        blankDiv.textContent = "Blank Page";
+        blankDiv.style.cursor = 'pointer';
+        blankDiv.style.padding = '5px';
+        blankDiv.style.marginTop = '10px';
+        blankDiv.onclick = () => {
+            overlay.style.display = 'none';
+            resolve(''); // Resolve with empty string for blank page
+        };
+        listDiv.appendChild(blankDiv);
+
+        const cancelButton = overlay.querySelector('button');
+        const originalOnclick = cancelButton.onclick;
+        cancelButton.onclick = () => {
+            originalOnclick();
+            resolve(null); // Resolve with null on cancel
+        }
+
+        overlay.style.display = 'flex';
+    });
 }
 
 function showCommandPalette(){
@@ -687,8 +1031,56 @@ function updateCommandResults(){
     });
 }
 
+function renderPluginManager() {
+    const pluginListDiv = document.getElementById('pluginList');
+    pluginListDiv.innerHTML = '';
+
+    const availablePlugins = [
+        'plugin-backlinks.js',
+        'plugin-favorites.js',
+        'plugin-fuzzysearch.js',
+        'plugin-history.js',
+        'plugin-multinotebook.js',
+        'plugin-outline.js',
+        'plugin-quickactions.js',
+        'plugin-reminders.js',
+        'plugin-resource-manager.js',
+        'plugin-tags.js',
+        'plugin-templates.js'
+    ];
+
+    availablePlugins.forEach(pluginFile => {
+        const label = document.createElement('label');
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = pluginFile;
+        checkbox.checked = enabledPlugins.includes(pluginFile);
+
+        checkbox.onchange = () => {
+            if (checkbox.checked) {
+                if (!enabledPlugins.includes(pluginFile)) {
+                    enabledPlugins.push(pluginFile);
+                }
+            } else {
+                const index = enabledPlugins.indexOf(pluginFile);
+                if (index > -1) {
+                    enabledPlugins.splice(index, 1);
+                }
+            }
+            localStorage.setItem("nextnote_enabled_plugins", JSON.stringify(enabledPlugins));
+            alert("Plugin changes will take effect after reloading the application.");
+        };
+
+        label.appendChild(checkbox);
+        label.appendChild(document.createTextNode(' ' + pluginFile.replace('plugin-', '').replace('.js', '')));
+        pluginListDiv.appendChild(label);
+        pluginListDiv.appendChild(document.createElement('br'));
+    });
+}
+
 function showSettingsPanel(){
     document.getElementById('settingsPanel').style.display='flex';
+    renderPluginManager(); // Add this call
     showSettingsSection('appearance');
 }
 
@@ -700,6 +1092,31 @@ function showSettingsSection(section){
     document.querySelectorAll('#settingsContent > div').forEach(div=>div.classList.remove('active'));
     const target=document.getElementById('settings-'+section);
     if(target) target.classList.add('active');
+}
+
+function getNextNotePluginPanel(pluginName) {
+    const container = document.getElementById('plugin-container');
+    if (!container) return null;
+
+    const panel = document.createElement('div');
+    panel.className = 'plugin-panel';
+
+    const header = document.createElement('div');
+    header.className = 'plugin-panel-header';
+    header.textContent = pluginName;
+    header.onclick = () => {
+        const content = panel.querySelector('.plugin-panel-content');
+        content.style.display = content.style.display === 'none' ? 'block' : 'none';
+    };
+
+    const content = document.createElement('div');
+    content.className = 'plugin-panel-content';
+
+    panel.appendChild(header);
+    panel.appendChild(content);
+    container.appendChild(panel);
+
+    return content; // Return the content div for the plugin to populate
 }
 
 // --- Initial Load & Event Listeners ---

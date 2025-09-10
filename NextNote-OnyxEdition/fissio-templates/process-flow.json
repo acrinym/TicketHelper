@@ -1,0 +1,60 @@
+{
+    "name": "Basic Process Flow",
+    "description": "A simple process flow with a start, process, decision, and end.",
+    "shapes": [
+        {
+            "id": "shape_1",
+            "type": "circle",
+            "text": "Start",
+            "x": 50,
+            "y": 150,
+            "width": 80,
+            "height": 80
+        },
+        {
+            "id": "shape_2",
+            "type": "rectangle",
+            "text": "Process Step 1",
+            "x": 200,
+            "y": 160,
+            "width": 120,
+            "height": 60
+        },
+        {
+            "id": "shape_3",
+            "type": "diamond",
+            "text": "Decision",
+            "x": 400,
+            "y": 150,
+            "width": 100,
+            "height": 100
+        },
+        {
+            "id": "shape_4",
+            "type": "circle",
+            "text": "End",
+            "x": 550,
+            "y": 150,
+            "width": 80,
+            "height": 80
+        }
+    ],
+    "connectors": [
+        {
+            "id": "conn_1",
+            "from": "shape_1",
+            "to": "shape_2"
+        },
+        {
+            "id": "conn_2",
+            "from": "shape_2",
+            "to": "shape_3"
+        },
+        {
+            "id": "conn_3",
+            "from": "shape_3",
+            "to": "shape_4"
+        }
+    ],
+    "arrows": []
+}

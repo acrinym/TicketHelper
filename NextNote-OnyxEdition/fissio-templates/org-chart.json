@@ -1,0 +1,78 @@
+{
+    "name": "Organization Chart",
+    "description": "A simple organization chart with a CEO, two managers, and employees.",
+    "shapes": [
+        {
+            "id": "shape_ceo",
+            "type": "rectangle",
+            "text": "CEO",
+            "x": 350,
+            "y": 50,
+            "width": 120,
+            "height": 60
+        },
+        {
+            "id": "shape_mgr1",
+            "type": "rectangle",
+            "text": "Manager 1",
+            "x": 150,
+            "y": 150,
+            "width": 120,
+            "height": 60
+        },
+        {
+            "id": "shape_mgr2",
+            "type": "rectangle",
+            "text": "Manager 2",
+            "x": 550,
+            "y": 150,
+            "width": 120,
+            "height": 60
+        },
+        {
+            "id": "shape_emp1",
+            "type": "rectangle",
+            "text": "Employee 1",
+            "x": 50,
+            "y": 250,
+            "width": 120,
+            "height": 60
+        },
+        {
+            "id": "shape_emp2",
+            "type": "rectangle",
+            "text": "Employee 2",
+            "x": 250,
+            "y": 250,
+            "width": 120,
+            "height": 60
+        },
+        {
+            "id": "shape_emp3",
+            "type": "rectangle",
+            "text": "Employee 3",
+            "x": 450,
+            "y": 250,
+            "width": 120,
+            "height": 60
+        },
+        {
+            "id": "shape_emp4",
+            "type": "rectangle",
+            "text": "Employee 4",
+            "x": 650,
+            "y": 250,
+            "width": 120,
+            "height": 60
+        }
+    ],
+    "connectors": [
+        { "id": "conn_c1", "from": "shape_ceo", "to": "shape_mgr1" },
+        { "id": "conn_c2", "from": "shape_ceo", "to": "shape_mgr2" },
+        { "id": "conn_m1e1", "from": "shape_mgr1", "to": "shape_emp1" },
+        { "id": "conn_m1e2", "from": "shape_mgr1", "to": "shape_emp2" },
+        { "id": "conn_m2e3", "from": "shape_mgr2", "to": "shape_emp3" },
+        { "id": "conn_m2e4", "from": "shape_mgr2", "to": "shape_emp4" }
+    ],
+    "arrows": []
+}

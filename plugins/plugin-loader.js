@@ -16,10 +16,19 @@ let pluginsLoaded = false;
 
 function runPlugins() {
   if (!(nextNoteReady && pluginsLoaded)) return;
+
+  const app = {
+      quill: window.quill,
+      getNextNotePluginPanel: window.getNextNotePluginPanel,
+      events: window.nextNoteEvents,
+      saveSections: window.saveSections,
+      // Add other APIs here in the future
+  };
+
   window.nextNotePlugins.forEach(p => {
     try {
       if (typeof p.onLoad === 'function') {
-        p.onLoad(window);
+        p.onLoad(app);
       }
     } catch (e) {
       console.error(`Error in plugin ${p.name}`, e);
@@ -34,21 +43,9 @@ document.addEventListener('NextNoteReady', () => {
 
 (async () => {
   const pluginFolder = 'plugins/';
-  const pluginList = [
-    'plugin-resource-manager.js',
-    'plugin-fuzzysearch.js',
-    'plugin-multinotebook.js',
-    'plugin-quickactions.js',
-    'plugin-tags.js',
-    'plugin-backlinks.js',
-    'plugin-templates.js',
-    'plugin-reminders.js',
-    'plugin-outline.js',
-    'plugin-favorites.js',
-    'plugin-history.js'
-  ];
+  const enabledPlugins = JSON.parse(localStorage.getItem("nextnote_enabled_plugins")) || [];
 
-  for (const plugin of pluginList) {
+  for (const plugin of enabledPlugins) {
     await new Promise(resolve => {
       const path = pluginFolder + plugin;
       const script = document.createElement('script');
