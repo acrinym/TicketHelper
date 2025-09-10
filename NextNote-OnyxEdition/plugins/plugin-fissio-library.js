@@ -147,7 +147,7 @@ window.registerNextNotePlugin({
       let html = '<h2 style="margin-top: 0; color: var(--fissio-primary);">📐 Fissio Diagram Library</h2>';
       
       const templates = await getFissioTemplates();
-      
+
       if (templates.length === 0) {
           html += '<p>No templates found.</p>';
       } else {
