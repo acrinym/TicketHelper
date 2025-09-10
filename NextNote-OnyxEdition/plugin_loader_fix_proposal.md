@@ -1,3 +1,53 @@
+# Fix Proposal for `plugin-loader.js`
+
+This document outlines the fix for the regression identified in the pull request comment.
+
+## Current (Broken) Code
+
+The `read_file` tool is showing the following content for `NextNote-OnyxEdition/plugins/plugin-loader.js`. This appears to be the original file content, not the version in the PR.
+
+```javascript
+// Plugin Loader
+console.log('Plugin Loader Initialized');
+
+const pluginContext = {
+  register(name, fn) {
+    console.log(`[NextNote Plugin] Registered: ${name}`);
+    try { fn(); } catch (e) { console.error(`Error in plugin ${name}`, e); }
+  }
+};
+
+(async () => {
+  const pluginFolder = "plugins/";
+  const pluginList = [
+    "plugin-resource-manager.js",
+    "plugin-fuzzysearch.js",
+    "plugin-multinotebook.js",
+    "plugin-quickactions.js",
+    "plugin-tags.js",
+    "plugin-backlinks.js",
+    "plugin-templates.js",
+    "plugin-reminders.js",
+    "plugin-outline.js",
+    "plugin-favorites.js",
+    "plugin-history.js"
+  ];
+
+  for (const plugin of pluginList) {
+    const path = pluginFolder + plugin;
+    const script = document.createElement('script');
+    script.src = path;
+    script.defer = true;
+    document.body.appendChild(script);
+  }
+})();
+```
+
+## Proposed Fixed Code
+
+The following code will be used to overwrite `NextNote-OnyxEdition/plugins/plugin-loader.js`. This version incorporates the logic from the pull request (loading from `localStorage`) and adds the requested fix (falling back to a default list).
+
+```javascript
 // Plugin Loader
 // Note: This file is being overwritten to fix a regression.
 console.log('Plugin Loader Initialized');
@@ -97,3 +147,4 @@ window.registerNextNotePlugin = (plugin) => {
         }
     }
 })();
+```
