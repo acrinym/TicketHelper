@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="FS & CEC Toolkit for processing support tickets and escalations">
+  <meta name="author" content="USDA/FS/IIA/ICAM">
+  
+  <!-- Security Headers -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' https://cdnjs.cloudflare.com;">
+  
+  <title>FS & CEC Toolkit - Refactored</title>
+  
+  <!-- External Dependencies -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+  
+  <!-- Local Styles -->
+  <link rel="stylesheet" href="cec-toolkit-styles.css">
+</head>
+<body>
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay" style="display: none;" aria-hidden="true">
+    <div class="loading-content">
+      <div class="preloader-wrapper big active">
+        <div class="spinner-layer spinner-blue-only">
+          <div class="circle-clipper left">
+            <div class="circle"></div>
+          </div>
+          <div class="gap-patch">
+            <div class="circle"></div>
+          </div>
+          <div class="circle-clipper right">
+            <div class="circle"></div>
+          </div>
+        </div>
+      </div>
+      <p>Processing...</p>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="blue lighten-1" role="navigation">
+    <div class="nav-wrapper container">
+      <a href="#" class="brand-logo" aria-label="FS & CEC Toolkit Home">
+        <i class="material-icons left">build</i>Toolkit
+      </a>
+      <ul id="nav-mobile" class="right hide-on-med-and-down">
+        <li><a href="#fs-tab" aria-label="FS Tools Section">FS</a></li>
+        <li><a href="#cec-tab" aria-label="CEC Tools Section">CEC</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="container" role="main">
+    <!-- Error Alert -->
+    <div id="errorAlert" class="card-panel red lighten-4 red-text text-darken-4" style="display: none;" role="alert" aria-live="polite">
+      <i class="material-icons left">error</i>
+      <span id="errorMessage"></span>
+      <button class="btn-flat right" onclick="hideError()" aria-label="Close error message">
+        <i class="material-icons">close</i>
+      </button>
+    </div>
+
+    <!-- Success Alert -->
+    <div id="successAlert" class="card-panel green lighten-4 green-text text-darken-4" style="display: none;" role="alert" aria-live="polite">
+      <i class="material-icons left">check_circle</i>
+      <span id="successMessage"></span>
+      <button class="btn-flat right" onclick="hideSuccess()" aria-label="Close success message">
+        <i class="material-icons">close</i>
+      </button>
+    </div>
+
+    <!-- Tab Navigation -->
+    <ul id="tabs-swipe-demo" class="tabs" role="tablist">
+      <li class="tab col s6" role="presentation">
+        <a href="#fs-tab" role="tab" aria-controls="fs-tab" aria-selected="false">FS Tools</a>
+      </li>
+      <li class="tab col s6" role="presentation">
+        <a href="#cec-tab" role="tab" aria-controls="cec-tab" aria-selected="true">CEC Tools</a>
+      </li>
+    </ul>
+
+    <!-- FS Tab Content -->
+    <div id="fs-tab" class="col s12" role="tabpanel" aria-labelledby="fs-tab-label">
+      <div class="section">
+        <h2 id="fs-tab-label">FS Tools</h2>
+        <p class="grey-text">FS-specific tools will be added here in future updates.</p>
+      </div>
+    </div>
+
+    <!-- CEC Tab Content -->
+    <div id="cec-tab" class="col s12" role="tabpanel" aria-labelledby="cec-tab-label">
+      <div class="section">
+        <h2 id="cec-tab-label">CEC Tools</h2>
+        
+        <ul class="collapsible" data-collapsible="accordion" role="tablist">
+          <!-- Teams + Phone Issues Tool -->
+          <li role="presentation">
+            <div class="collapsible-header" role="tab" aria-expanded="false" aria-controls="phone-issues-panel">
+              <i class="material-icons">phone_in_talk</i>
+              <span>Teams + Phone Issues</span>
+            </div>
+            <div class="collapsible-body" id="phone-issues-panel" role="tabpanel">
+              <div class="tool-card card">
+                <div class="card-content">
+                  <span class="card-title">Extract Fields Tool</span>
+                  <p class="grey-text">Extract structured information from raw ticket text for phone and Teams issues.</p>
+                  
+                  <form id="phoneIssuesForm" novalidate>
+                    <div class="input-field">
+                      <textarea 
+                        id="inputArea" 
+                        class="materialize-textarea" 
+                        rows="10" 
+                        placeholder="Paste raw ticket text here..."
+                        aria-describedby="inputArea-help"
+                        data-testid="phone-input-area"
+                        required>
+                      </textarea>
+                      <label for="inputArea">Ticket Input *</label>
+                      <span id="inputArea-help" class="helper-text">
+                        Paste the complete ticket information including customer details and issue description.
+                      </span>
+                    </div>
+                    
+                    <div class="center-align">
+                      <button 
+                        type="submit"
+                        class="btn waves-effect waves-light blue"
+                        data-testid="extract-fields-btn"
+                        aria-describedby="extract-help">
+                        <i class="material-icons left">play_arrow</i>Extract Fields
+                      </button>
+                      <div id="extract-help" class="helper-text">
+                        Click to process the ticket and extract structured information.
+                      </div>
+                    </div>
+                    
+                    <div class="input-field" style="margin-top: 24px;">
+                      <textarea 
+                        id="outputArea" 
+                        class="materialize-textarea" 
+                        rows="8" 
+                        readonly
+                        aria-describedby="outputArea-help"
+                        data-testid="phone-output-area">
+                      </textarea>
+                      <label for="outputArea">Extracted Information</label>
+                      <span id="outputArea-help" class="helper-text">
+                        Structured information extracted from the ticket will appear here.
+                      </span>
+                    </div>
+                    
+                    <div class="center-align" style="margin-top: 16px;">
+                      <button 
+                        type="button"
+                        class="btn-flat grey-text"
+                        onclick="clearPhoneFields()"
+                        data-testid="clear-phone-btn">
+                        <i class="material-icons left">clear</i>Clear All Fields
+                      </button>
+                      <button 
+                        type="button"
+                        class="btn-flat blue-text"
+                        onclick="copyToClipboard('outputArea')"
+                        data-testid="copy-phone-btn">
+                        <i class="material-icons left">content_copy</i>Copy Results
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </li>
+
+          <!-- CEC/CHD Escalation Notes Tool -->
+          <li role="presentation">
+            <div class="collapsible-header" role="tab" aria-expanded="false" aria-controls="escalation-panel">
+              <i class="material-icons">report_problem</i>
+              <span>CEC/CHD Escalation Notes Tool</span>
+            </div>
+            <div class="collapsible-body" id="escalation-panel" role="tabpanel">
+              <div class="tool-card card">
+                <div class="card-content">
+                  <span class="card-title">Escalation Extractor</span>
+                  <p class="grey-text">Generate structured escalation notes from People Record and Notes field data.</p>
+                  
+                  <form id="escalationForm" novalidate>
+                    <div class="input-field">
+                      <textarea 
+                        id="peopleRecordInput" 
+                        class="materialize-textarea" 
+                        rows="8" 
+                        placeholder="Paste People Record (customer info from BMC Remedy) here..."
+                        aria-describedby="peopleRecord-help"
+                        data-testid="people-record-input"
+                        required>
+                      </textarea>
+                      <label for="peopleRecordInput">People Record Input *</label>
+                      <span id="peopleRecord-help" class="helper-text">
+                        Customer information from BMC Remedy including name, phone, email, and agency details.
+                      </span>
+                    </div>
+                    
+                    <div class="input-field" style="margin-top: 24px;">
+                      <textarea 
+                        id="notesInput" 
+                        class="materialize-textarea" 
+                        rows="12" 
+                        placeholder="Paste Notes field (issue details, computer info, troubleshooting) here..."
+                        aria-describedby="notes-help"
+                        data-testid="notes-input"
+                        required>
+                      </textarea>
+                      <label for="notesInput">Notes Input *</label>
+                      <span id="notes-help" class="helper-text">
+                        Detailed issue description, troubleshooting steps, and technical information.
+                      </span>
+                    </div>
+
+                    <div class="center-align">
+                      <button 
+                        type="submit"
+                        class="btn waves-effect waves-light red darken-1"
+                        data-testid="generate-escalation-btn"
+                        aria-describedby="escalation-help">
+                        <i class="material-icons left">play_circle</i>Generate Escalation Template
+                      </button>
+                      <div id="escalation-help" class="helper-text">
+                        Process the inputs to create a structured escalation template.
+                      </div>
+                    </div>
+                    
+                    <div class="center-align" style="margin-top: 12px;">
+                      <button 
+                        type="button"
+                        class="btn grey lighten-1 black-text"
+                        onclick="clearEscalationFields()"
+                        data-testid="clear-escalation-btn">
+                        <i class="material-icons left">clear</i>Clear Fields
+                      </button>
+                      <button 
+                        type="button"
+                        class="btn-flat blue-text"
+                        onclick="copyToClipboard('cecEscalationOutput')"
+                        data-testid="copy-escalation-btn">
+                        <i class="material-icons left">content_copy</i>Copy Results
+                      </button>
+                    </div>
+                    
+                    <div class="input-field" style="margin-top: 24px;">
+                      <textarea 
+                        id="cecEscalationOutput" 
+                        class="materialize-textarea" 
+                        rows="12" 
+                        readonly
+                        aria-describedby="escalationOutput-help"
+                        data-testid="escalation-output">
+                      </textarea>
+                      <label for="cecEscalationOutput">Escalation Output</label>
+                      <span id="escalationOutput-help" class="helper-text">
+                        Generated escalation template with structured information for Tier 2.0.
+                      </span>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="page-footer blue lighten-1" role="contentinfo">
+    <div class="container">
+      <div class="center-align">
+        <span class="white-text">© 2025 FS & CEC Toolkit - Refactored Edition</span>
+        <br>
+        <small class="white-text">Built with security and accessibility in mind</small>
+      </div>
+    </div>
+  </footer>
+
+  <!-- External Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js" defer></script>
+  
+  <!-- Local Scripts -->
+  <script src="cec-toolkit-config.js" defer></script>
+  <script src="cec-toolkit-utils.js" defer></script>
+  <script src="cec-toolkit-processors.js" defer></script>
+  <script src="cec-toolkit-main.js" defer></script>
+</body>
+</html>
