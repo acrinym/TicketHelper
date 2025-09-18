@@ -1,63 +1,116 @@
-/* CEC Toolkit Styles - Refactored Edition */
-/* Following BEM methodology and CSS custom properties */
+/* CEC Toolkit Styles - Enhanced Theming Edition */
+/* Following BEM methodology and CSS custom properties with advanced theming */
 
 :root {
-  /* Color Palette */
-  --primary-color: #42a5f5;
-  --primary-dark: #1976d2;
-  --secondary-color: #f44336;
-  --success-color: #4caf50;
-  --warning-color: #ff9800;
-  --error-color: #f44336;
-  --info-color: #2196f3;
-  
-  /* Text Colors */
-  --text-primary: #212121;
-  --text-secondary: #757575;
+  /* Theme-aware Color System */
+  --cec-bg: #ffffff;
+  --cec-text: #2c3e50;
+  --cec-border: #bdc3c7;
+  --cec-panel-bg: #f8f9fa;
+  --cec-panel-border: #dee2e6;
+  --cec-button-bg: #e9ecef;
+  --cec-button-hover: #dee2e6;
+  --cec-button-active: #ced4da;
+  --cec-primary: #007bff;
+  --cec-primary-hover: #0056b3;
+  --cec-success: #28a745;
+  --cec-warning: #ffc107;
+  --cec-danger: #dc3545;
+  --cec-info: #17a2b8;
+  --cec-input-bg: #ffffff;
+  --cec-input-border: #ced4da;
+  --cec-input-focus: #80bdff;
+  --cec-header-bg: #343a40;
+  --cec-header-text: #ffffff;
+  --cec-sidebar-bg: #f1f3f4;
+  --cec-card-bg: #ffffff;
+  --cec-card-shadow: rgba(0,0,0,0.1);
+
+  /* Legacy Color Support (for backward compatibility) */
+  --primary-color: var(--cec-primary);
+  --primary-dark: var(--cec-primary-hover);
+  --secondary-color: var(--cec-danger);
+  --success-color: var(--cec-success);
+  --warning-color: var(--cec-warning);
+  --error-color: var(--cec-danger);
+  --info-color: var(--cec-info);
+  --text-primary: var(--cec-text);
+  --text-secondary: var(--cec-text);
   --text-disabled: #bdbdbd;
-  --text-white: #ffffff;
-  
-  /* Background Colors */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f5f5f5;
-  --bg-dark: #303030;
-  
-  /* Spacing */
+  --text-white: var(--cec-header-text);
+  --bg-primary: var(--cec-bg);
+  --bg-secondary: var(--cec-panel-bg);
+  --bg-dark: var(--cec-header-bg);
+
+  /* Spacing System */
   --spacing-xs: 4px;
   --spacing-sm: 8px;
   --spacing-md: 16px;
   --spacing-lg: 24px;
   --spacing-xl: 32px;
-  
-  /* Border Radius */
+
+  /* Border Radius System */
   --border-radius-sm: 4px;
   --border-radius-md: 8px;
   --border-radius-lg: 12px;
   
-  /* Shadows */
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
-  --shadow-md: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
-  --shadow-lg: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);
-  
-  /* Transitions */
+  /* Shadow System */
+  --shadow-sm: 0 1px 3px var(--cec-card-shadow), 0 1px 2px var(--cec-card-shadow);
+  --shadow-md: 0 3px 6px var(--cec-card-shadow), 0 3px 6px var(--cec-card-shadow);
+  --shadow-lg: 0 10px 20px var(--cec-card-shadow), 0 6px 6px var(--cec-card-shadow);
+
+  /* Transition System */
   --transition-fast: 0.2s ease-in-out;
   --transition-normal: 0.3s ease-in-out;
   --transition-slow: 0.5s ease-in-out;
 }
 
-/* Base Styles */
+/* Theme-specific Body Classes */
+body.cec-theme-professional {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+body.cec-theme-government {
+  font-family: "Times New Roman", serif;
+  font-weight: 500;
+}
+
+body.cec-theme-accessibility {
+  font-family: Arial, sans-serif;
+  font-size: 1.1em;
+  line-height: 1.6;
+}
+
+body.cec-theme-material {
+  font-family: "Roboto", sans-serif;
+}
+
+body.cec-theme-seasonal {
+  font-family: Georgia, serif;
+}
+
+/* Base Styles with Theme Support */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
 body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   line-height: 1.6;
-  color: var(--text-primary);
+  color: var(--cec-text);
+  background-color: var(--cec-bg);
+  transition: background-color var(--transition-normal), color var(--transition-normal);
 }
 
 main {
   flex: 1 0 auto;
   padding: var(--spacing-lg);
+  background-color: var(--cec-bg);
 }
 
 /* Loading Overlay */
